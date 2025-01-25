@@ -1,37 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase"; // Make sure this is the correct path to your firebase.js
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification } from "firebase/auth";
+import { auth, db } from "../firebase"; // Ensure Firestore is initialized in firebase.js
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import './Login.css';
 
 // Navbar Component
-function Navbar() {
+function Navbar({ user, onLogout }) {
   const navigate = useNavigate();
 
   const goToPage = (page) => {
     if (page === 'Home') {
-      navigate('/'); // Navigate to the root (actual home page)
+      navigate('/');
     } else {
       navigate(`/${page}`);
     }
   };
 
   return (
-    <div className='contain'>
+    <div className="contain">
       <nav style={styles.navbar}>
         <div style={styles.logoContainer}>
           <img src="/images/nepal_logo.png" alt="Nepal Logo" style={styles.logoImage} />
           <p style={styles.logoText}>NepAir</p>
         </div>
         <div style={styles.navLinks}>
-          <button
-            style={styles.navButton}
-            onMouseEnter={(e) => (e.target.style.backgroundColor = styles.navButtonHover.backgroundColor)}
-            onMouseLeave={(e) => (e.target.style.backgroundColor = styles.navButton.backgroundColor)}
-            onClick={() => goToPage('Home')}
-          >
-            Home
-          </button>
+          {user ? (
+            <>
+              <span style={styles.userName}>{user.fullName}</span>
+              <button
+                style={styles.navButton}
+                onMouseEnter={(e) => (e.target.style.backgroundColor = styles.navButtonHover.backgroundColor)}
+                onMouseLeave={(e) => (e.target.style.backgroundColor = styles.navButton.backgroundColor)}
+                onClick={onLogout}
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <button
+              style={styles.navButton}
+              onMouseEnter={(e) => (e.target.style.backgroundColor = styles.navButtonHover.backgroundColor)}
+              onMouseLeave={(e) => (e.target.style.backgroundColor = styles.navButton.backgroundColor)}
+              onClick={() => goToPage('Home')}
+            >
+              Home
+            </button>
+          )}
         </div>
       </nav>
     </div>
@@ -68,6 +83,7 @@ const styles = {
   navLinks: {
     display: 'flex',
     gap: '15px',
+    alignItems: 'center',
   },
   navButton: {
     padding: '10px 15px',
@@ -84,6 +100,11 @@ const styles = {
   navButtonHover: {
     backgroundColor: '#FF6F61',
   },
+  userName: {
+    color: '#FFF',
+    fontSize: '16px',
+    marginRight: '15px',
+  },
 };
 
 // Login Component
@@ -98,7 +119,12 @@ const Login = () => {
     password: '',
     confirmPassword: ''
   });
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) navigate('/');
+  }, [user, navigate]);
 
   const toggleForm = () => {
     setIsLogin(!isLogin);
@@ -125,9 +151,17 @@ const Login = () => {
       // Handle Login
       try {
         const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
-        console.log("Logged in:", userCredential.user);
-        alert("Login successful!");
-        navigate("/"); // Redirect to home page
+        const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
+        if (userDoc.exists()) {
+          if (userCredential.user.emailVerified) {
+            setUser({ uid: userCredential.user.uid, fullName: `${userDoc.data().firstName} ${userDoc.data().lastName}` });
+            alert("Login successful!");
+          } else {
+            alert("Please verify your email address.");
+          }
+        } else {
+          alert("User data not found.");
+        }
       } catch (error) {
         console.error("Login Error:", error.message);
         alert(error.message);
@@ -141,9 +175,22 @@ const Login = () => {
 
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-        console.log("User signed up:", userCredential.user);
-        alert("Account created successfully!");
-        navigate("/"); // Redirect to home page
+
+        // Send email verification link
+        await sendEmailVerification(userCredential.user);
+
+        // Save user data to Firestore
+        await setDoc(doc(db, "users", userCredential.user.uid), {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          age: formData.age,
+          gender: formData.gender,
+          email: formData.email,
+          createdAt: new Date(),
+        });
+
+        alert("Account created successfully! Please verify your email.");
+        setIsLogin(true);
       } catch (error) {
         console.error("Signup Error:", error.message);
         alert(error.message);
@@ -151,9 +198,21 @@ const Login = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      alert("Logged out successfully!");
+      navigate('/login');
+    } catch (error) {
+      console.error("Logout Error:", error.message);
+      alert(error.message);
+    }
+  };
+
   return (
     <>
-      <Navbar />
+      <Navbar user={user} onLogout={handleLogout} />
       <div className="container">
         <div className="card">
           <h1>{isLogin ? 'Login' : 'Sign Up'}</h1>
