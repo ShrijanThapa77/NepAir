@@ -1,37 +1,112 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
+import { auth } from "../firebase"; // Make sure this is the correct path to your firebase.js
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 function Navbar() {
+  const [user, setUser] = useState(null); // Track user state
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Track user state with Firebase authentication
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser(user); // If user is logged in, store user info
+      } else {
+        setUser(null); // If no user, set user as null
+      }
+    });
+
+    // Clean up subscription on component unmount
+    return () => unsubscribe();
+  }, []);
+
+  const goToPage = (page) => {
+    if (page === 'Home') {
+      navigate('/'); // Navigate to the root page
+    } else {
+      navigate(`/${page}`);
+    }
+  };
 
   const goToLogin = (e) => {
     e.preventDefault();
     navigate("/login");
   };
 
-  const goToPage = (page) => {
-    navigate(`/${page}`);
+  const handleLogout = () => {
+    signOut(auth); // Sign out the user
+    navigate("/"); // Redirect to login page after signing out
   };
 
   return (
     <div className='contain'>
       <nav style={styles.navbar}>
-        <div className="logo" style={styles.logoContainer}>
+        {/* Logo Section */}
+        <div style={styles.logoContainer}>
           <img src="/images/nepal_logo.png" alt="Nepal Logo" style={styles.logoImage} />
-          <div style={styles.logoTextContainer}>
-            <p style={styles.logoText}>NepAir</p>
-          </div>
+          <p style={styles.logoText}>NepAir</p>
         </div>
+
+        {/* Navigation Links */}
         <div style={styles.navLinks}>
-          <button style={styles.navButton} onClick={() => goToPage('home')}>Home</button>
-          <button style={styles.navButton} onClick={() => goToPage('dashboard')}>Dashboard</button>
-          <button style={styles.navButton} onClick={() => goToPage('education')}>Education</button>
-          <button style={styles.navButton} onClick={() => goToPage('analysis')}>Analysis</button>
+          <button
+            style={styles.navButton}
+            onMouseEnter={(e) => (e.target.style.backgroundColor = styles.navButtonHover.backgroundColor)}
+            onMouseLeave={(e) => (e.target.style.backgroundColor = styles.navButton.backgroundColor)}
+            onClick={() => goToPage('Home')}
+          >
+            Home
+          </button>
+          <button
+            style={styles.navButton}
+            onMouseEnter={(e) => (e.target.style.backgroundColor = styles.navButtonHover.backgroundColor)}
+            onMouseLeave={(e) => (e.target.style.backgroundColor = styles.navButton.backgroundColor)}
+            onClick={() => goToPage('dashboard')}
+          >
+            Dashboard
+          </button>
+          <button
+            style={styles.navButton}
+            onMouseEnter={(e) => (e.target.style.backgroundColor = styles.navButtonHover.backgroundColor)}
+            onMouseLeave={(e) => (e.target.style.backgroundColor = styles.navButton.backgroundColor)}
+            onClick={() => goToPage('education')}
+          >
+            Education
+          </button>
+          <button
+            style={styles.navButton}
+            onMouseEnter={(e) => (e.target.style.backgroundColor = styles.navButtonHover.backgroundColor)}
+            onMouseLeave={(e) => (e.target.style.backgroundColor = styles.navButton.backgroundColor)}
+            onClick={() => goToPage('analysis')}
+          >
+            Analysis
+          </button>
         </div>
-        <div className="auth-btn" style={styles.authButtonContainer}>
-          <form onSubmit={goToLogin}>
-            <input type="submit" value="Go to Login" style={styles.loginButton} />
-          </form>
+
+        {/* Authentication Button */}
+        <div style={styles.authButtonContainer}>
+          {user ? (
+            <div style={styles.userName}>
+              {user.displayName || "User"} {/* Display user's full name */}
+              <button 
+                style={styles.navButton} 
+                onClick={handleLogout}
+              >
+                Log Out
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={goToLogin}>
+              <input
+                type="submit"
+                value="Login"
+                style={styles.loginButton}
+                onMouseEnter={(e) => (e.target.style.backgroundColor = styles.loginButtonHover.backgroundColor)}
+                onMouseLeave={(e) => (e.target.style.backgroundColor = styles.loginButton.backgroundColor)}
+              />
+            </form>
+          )}
         </div>
       </nav>
     </div>
@@ -43,10 +118,10 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#002E3D', // Deep blue for clean air and sky
+    backgroundColor: '#003049', // Modern deep blue
     padding: '15px 30px',
-    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-    borderRadius: '10px', // Rounded edges for a modern look
+    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+    borderRadius: '10px',
   },
   logoContainer: {
     display: 'flex',
@@ -57,63 +132,56 @@ const styles = {
     width: '50px',
     height: '50px',
     borderRadius: '50%',
-  },
-  logoTextContainer: {
-    display: 'flex',
-    flexDirection: 'column',
+    border: '2px solid #E63946', // Red border for emphasis
   },
   logoText: {
-    fontSize: '40px',
+    fontSize: '24px',
     fontWeight: 'bold',
-    color: '#fff', // White color for the text
-    background: 'linear-gradient(to left, #1E6FB3, #D6403F)', // Gradient from blue to red
-    padding: '5px 20px',
-    borderRadius: '10px', // Rounded corners for the text background
-    boxShadow: '2px 2px 8px rgba(0, 0, 0, 0.2)', // Slight shadow for depth
-    fontFamily: '"Arial", sans-serif',
-    letterSpacing: '2px',
-    textTransform: 'uppercase',  // Official and bold look
+    color: '#F4F4F4',
+    letterSpacing: '1.5px',
   },
   navLinks: {
     display: 'flex',
-    alignItems: 'center',
-    gap: '20px',
+    gap: '15px',
   },
   navButton: {
-    padding: '10px 20px',
-    backgroundColor: '#A11B16', // Red color inspired by Nepal flag
+    padding: '10px 15px',
+    backgroundColor: '#E63946', // Nepal-inspired red
     border: 'none',
-    color: '#fff',
+    color: '#FFF',
     fontSize: '16px',
     fontWeight: 'bold',
     cursor: 'pointer',
     borderRadius: '5px',
-    textTransform: 'uppercase', // Bold uppercase text
-    transition: 'background-color 0.3s, transform 0.3s', // Smooth transition for hover effects
-    letterSpacing: '1px',
+    textTransform: 'uppercase',
+    transition: 'background-color 0.3s, transform 0.3s',
   },
   navButtonHover: {
-    backgroundColor: '#D6403F', // Lighter red for hover effect
-    transform: 'scale(1.05)', // Slight scaling effect on hover
+    backgroundColor: '#FF6F61', // Lighter red for hover
   },
   authButtonContainer: {
     display: 'flex',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
   },
   loginButton: {
     padding: '10px 20px',
-    backgroundColor: '#A11B16', // Red color inspired by Nepal flag
+    backgroundColor: '#E63946', // Match navigation button color
     border: 'none',
-    color: '#fff',
+    color: '#FFF',
     fontSize: '16px',
     fontWeight: 'bold',
-    cursor: 'pointer',
     borderRadius: '5px',
+    cursor: 'pointer',
     transition: 'background-color 0.3s',
   },
   loginButtonHover: {
-    backgroundColor: '#D6403F', // Lighter red for hover effect
+    backgroundColor: '#FF6F61',
   },
+  userName: {
+    display: 'flex',
+    gap: '10px',
+    alignItems: 'center',
+  }
 };
 
 export default Navbar;
