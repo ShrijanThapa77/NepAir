@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification } from "firebase/auth";
-import { auth, db } from "../firebase"; // Ensure Firestore is initialized in firebase.js
+import { auth, db } from "../firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import './Login.css';
 
@@ -9,11 +9,11 @@ import './Login.css';
 function Navbar({ user, onLogout }) {
   const navigate = useNavigate();
 
-  const goToPage = (page) => {
-    if (page === 'Home') {
-      navigate('/');
+  const goToDashboard = () => {
+    if (user && user.role === 'admin') {
+      navigate('/admindash');
     } else {
-      navigate(`/${page}`);
+      navigate('/userdash');
     }
   };
 
@@ -27,7 +27,20 @@ function Navbar({ user, onLogout }) {
         <div style={styles.navLinks}>
           {user ? (
             <>
-              <span style={styles.userName}>{user.fullName}</span>
+              <span style={styles.userName}>
+                {user.fullName}
+              </span>
+              <span style={styles.userRole}>
+                ({user.role})
+              </span>
+              <button
+                style={styles.navButton}
+                onMouseEnter={(e) => (e.target.style.backgroundColor = styles.navButtonHover.backgroundColor)}
+                onMouseLeave={(e) => (e.target.style.backgroundColor = styles.navButton.backgroundColor)}
+                onClick={goToDashboard}
+              >
+                Dashboard
+              </button>
               <button
                 style={styles.navButton}
                 onMouseEnter={(e) => (e.target.style.backgroundColor = styles.navButtonHover.backgroundColor)}
@@ -42,7 +55,7 @@ function Navbar({ user, onLogout }) {
               style={styles.navButton}
               onMouseEnter={(e) => (e.target.style.backgroundColor = styles.navButtonHover.backgroundColor)}
               onMouseLeave={(e) => (e.target.style.backgroundColor = styles.navButton.backgroundColor)}
-              onClick={() => goToPage('Home')}
+              onClick={() => navigate('/')}
             >
               Home
             </button>
@@ -103,6 +116,11 @@ const styles = {
   userName: {
     color: '#FFF',
     fontSize: '16px',
+    marginRight: '5px',
+  },
+  userRole: {
+    color: '#FFF',
+    fontSize: '14px',
     marginRight: '15px',
   },
 };
@@ -117,9 +135,10 @@ const Login = () => {
     gender: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    role: 'user', // Default role is user
   });
-  const [user, setUser] = useState(null);
+  const [user, setUser ] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -135,7 +154,8 @@ const Login = () => {
       gender: '',
       email: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      role: 'user',
     });
   };
 
@@ -154,13 +174,18 @@ const Login = () => {
         const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
         if (userDoc.exists()) {
           if (userCredential.user.emailVerified) {
-            setUser({ uid: userCredential.user.uid, fullName: `${userDoc.data().firstName} ${userDoc.data().lastName}` });
+            const userData = userDoc.data();
+            if (userData.role === 'admin' && userData.status !== 'approved') {
+              alert("Your admin account is pending approval.");
+              return;
+            }
+            setUser ({ uid: userCredential.user.uid, fullName: `${userData.firstName} ${userData.lastName}`, role: userData.role });
             alert("Login successful!");
           } else {
             alert("Please verify your email address.");
           }
         } else {
-          alert("User data not found.");
+          alert("User  data not found.");
         }
       } catch (error) {
         console.error("Login Error:", error.message);
@@ -186,6 +211,8 @@ const Login = () => {
           age: formData.age,
           gender: formData.gender,
           email: formData.email,
+          role: formData.role,
+          status: formData.role === 'admin' ? 'pending' : 'approved', // Admins need approval
           createdAt: new Date(),
         });
 
@@ -201,7 +228,7 @@ const Login = () => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      setUser(null);
+      setUser (null);
       alert("Logged out successfully!");
       navigate('/login');
     } catch (error) {
@@ -248,6 +275,10 @@ const Login = () => {
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                   <option value="other">Other</option>
+                </select>
+                <select name="role" value={formData.role} onChange={handleChange} required>
+                  <option value="user">User </option>
+                  <option value="admin">Admin</option>
                 </select>
               </>
             )}

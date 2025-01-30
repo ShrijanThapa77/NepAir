@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase"; // Ensure Firestore is initialized in firebase.js
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from "firebase/firestore";
-import { FaUserCircle } from 'react-icons/fa';
+import { FaUserCircle } from 'react-icons/fa'; // Corrected import statement
 
 function Navbar() {
-  const [userName, setUserName] = useState(null); // To store user's full name
+  const [userName, setUserName] = useState(null);
+const [userRole, setUserRole] = useState(null);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,11 +19,13 @@ function Navbar() {
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setUserName(`${userData.firstName} ${userData.lastName}`);
+          setUserRole(userData.role); // Store the user's role
         } else {
           console.error("No such user document!");
         }
       } else {
         setUserName(null);
+        setUserRole(null);
       }
     });
 
@@ -31,6 +35,7 @@ function Navbar() {
   const handleLogout = async () => {
     await signOut(auth);
     setUserName(null);
+    setUserRole(null);
     alert("You have been logged out successfully.");
     navigate('/');
   };
@@ -45,7 +50,7 @@ function Navbar() {
 
         <div style={styles.navLinks}>
           <button style={styles.navButton} onClick={() => navigate('/')}>Home</button>
-          <button style={styles.navButton} onClick={() => navigate('/dashboard')}>Dashboard</button>
+          <button style={styles.navButton} onClick={() => navigate(userRole === 'admin' ? '/admindash' : '/userdash')}>Dashboard</button>
           <button style={styles.navButton} onClick={() => navigate('/education')}>Education</button>
           <button style={styles.navButton} onClick={() => navigate('/analysis')}>Analysis</button>
         </div>
@@ -55,6 +60,7 @@ function Navbar() {
             <div style={styles.userSection}>
               <FaUserCircle style={styles.userIcon} />
               <span style={styles.userName}>{userName}</span>
+              <span style={styles.userRole}>{userRole}</span> {/* Display user role */}
               <button style={styles.navButton} onClick={handleLogout}>Logout</button>
             </div>
           ) : (
@@ -125,6 +131,11 @@ const styles = {
   userName: {
     color: '#FFF',
     fontSize: '16px',
+  },
+  userRole: {
+    color: '#FFF',
+    fontSize: '14px',
+    marginLeft: '5px',
   },
 };
 
