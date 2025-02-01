@@ -278,7 +278,10 @@ const Login = () => {
                 </select>
                 <select name="role" value={formData.role} onChange={handleChange} required>
                   <option value="user">User </option>
-                  <option value="admin">Admin</option>
+                  <option value="admin">Admin
+
+                    
+                  </option>
                 </select>
               </>
             )}

@@ -1,0 +1,111 @@
+/* HealthAlert.css */
+
+/* Page Layout */
+.health-alert-page {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f9;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+  
+  /* Container Styling */
+  .health-alert-container {
+    max-width: 500px;
+    margin: 20px auto;
+    padding: 30px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  
+  /* Heading Styling */
+  h2 {
+    font-size: 28px;
+    color: #333333;
+    margin-bottom: 15px;
+  }
+  
+  p {
+    font-size: 16px;
+    color: #666666;
+    margin-bottom: 25px;
+  }
+  
+  /* Form Styling */
+  .subscription-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .input-group {
+    text-align: left;
+  }
+  
+  label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333333;
+    margin-bottom: 5px;
+  }
+  
+  input[type='email'] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cccccc;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+  }
+  
+  input[type='email']:focus {
+    border-color: #007bff;
+    outline: none;
+  }
+  
+  /* Button Styling */
+  .subscribe-btn {
+    padding: 12px;
+    background-color: #007bff;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .subscribe-btn:hover {
+    background-color: #0056b3;
+  }
+  
+  /* Message Styling */
+  .message {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #28a745; /* Green for success */
+  }
+  
+  .message.error {
+    color: #dc3545; /* Red for errors */
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 600px) {
+    .health-alert-container {
+      padding: 20px;
+    }
+  
+    h2 {
+      font-size: 24px;
+    }
+  
+    p {
+      font-size: 14px;
+    }
+  }

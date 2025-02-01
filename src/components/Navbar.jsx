@@ -52,7 +52,7 @@ const [userRole, setUserRole] = useState(null);
           <button style={styles.navButton} onClick={() => navigate('/')}>Home</button>
           <button style={styles.navButton} onClick={() => navigate(userRole === 'admin' ? '/admindash' : '/userdash')}>Dashboard</button>
           <button style={styles.navButton} onClick={() => navigate('/education')}>Education</button>
-          <button style={styles.navButton} onClick={() => navigate('/analysis')}>Analysis</button>
+          <button style={styles.navButton} onClick={() => navigate('/HealthAlert')}>HealthAlert</button>
         </div>
 
         <div style={styles.authSection}>
