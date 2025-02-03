@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+} from "firebase/auth";
 import { auth, db } from "../firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import './Login.css';
@@ -8,7 +14,6 @@ import './Login.css';
 // Navbar Component
 function Navbar({ user, onLogout }) {
   const navigate = useNavigate();
-
   const goToDashboard = () => {
     if (user && user.role === 'admin') {
       navigate('/admindash');
@@ -18,112 +23,32 @@ function Navbar({ user, onLogout }) {
   };
 
   return (
-    <div className="contain">
-      <nav style={styles.navbar}>
-        <div style={styles.logoContainer}>
-          <img src="/images/nepal_logo.png" alt="Nepal Logo" style={styles.logoImage} />
-          <p style={styles.logoText}>NepAir</p>
-        </div>
-        <div style={styles.navLinks}>
-          {user ? (
-            <>
-              <span style={styles.userName}>
-                {user.fullName}
-              </span>
-              <span style={styles.userRole}>
-                ({user.role})
-              </span>
-              <button
-                style={styles.navButton}
-                onMouseEnter={(e) => (e.target.style.backgroundColor = styles.navButtonHover.backgroundColor)}
-                onMouseLeave={(e) => (e.target.style.backgroundColor = styles.navButton.backgroundColor)}
-                onClick={goToDashboard}
-              >
-                Dashboard
-              </button>
-              <button
-                style={styles.navButton}
-                onMouseEnter={(e) => (e.target.style.backgroundColor = styles.navButtonHover.backgroundColor)}
-                onMouseLeave={(e) => (e.target.style.backgroundColor = styles.navButton.backgroundColor)}
-                onClick={onLogout}
-              >
-                Logout
-              </button>
-            </>
-          ) : (
-            <button
-              style={styles.navButton}
-              onMouseEnter={(e) => (e.target.style.backgroundColor = styles.navButtonHover.backgroundColor)}
-              onMouseLeave={(e) => (e.target.style.backgroundColor = styles.navButton.backgroundColor)}
-              onClick={() => navigate('/')}
-            >
-              Home
+    <nav className="navbar">
+      <div className="logo-container">
+        <img src="logo.png" alt="Logo" className="logo-image" />
+        <span className="logo-text">NepAir</span>
+      </div>
+      <div className="nav-links">
+        {user ? (
+          <>
+            <span className="user-name">{user.fullName}</span>
+            <span className="user-role">({user.role})</span>
+            <button className="nav-button" onClick={goToDashboard}>
+              Dashboard
             </button>
-          )}
-        </div>
-      </nav>
-    </div>
+            <button className="nav-button" onClick={onLogout}>
+              Logout
+            </button>
+          </>
+        ) : (
+          <button className="nav-button" onClick={() => navigate('/')}>
+            Home
+          </button>
+        )}
+      </div>
+    </nav>
   );
 }
-
-const styles = {
-  navbar: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#003049',
-    padding: '15px 30px',
-    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
-    borderRadius: '10px',
-  },
-  logoContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-  },
-  logoImage: {
-    width: '50px',
-    height: '50px',
-    borderRadius: '50%',
-    border: '2px solid #E63946',
-  },
-  logoText: {
-    fontSize: '24px',
-    fontWeight: 'bold',
-    color: '#F4F4F4',
-    letterSpacing: '1.5px',
-  },
-  navLinks: {
-    display: 'flex',
-    gap: '15px',
-    alignItems: 'center',
-  },
-  navButton: {
-    padding: '10px 15px',
-    backgroundColor: '#E63946',
-    border: 'none',
-    color: '#FFF',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    borderRadius: '5px',
-    textTransform: 'uppercase',
-    transition: 'background-color 0.3s, transform 0.3s',
-  },
-  navButtonHover: {
-    backgroundColor: '#FF6F61',
-  },
-  userName: {
-    color: '#FFF',
-    fontSize: '16px',
-    marginRight: '5px',
-  },
-  userRole: {
-    color: '#FFF',
-    fontSize: '14px',
-    marginRight: '15px',
-  },
-};
 
 // Login Component
 const Login = () => {
@@ -138,35 +63,22 @@ const Login = () => {
     confirmPassword: '',
     role: 'user', // Default role is user
   });
-  const [user, setUser ] = useState(null);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false); // Controls visibility of forgot password form
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user) navigate('/');
-  }, [user, navigate]);
-
-  const toggleForm = () => {
-    setIsLogin(!isLogin);
-    setFormData({
-      firstName: '',
-      lastName: '',
-      age: '',
-      gender: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      role: 'user',
-    });
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleForgotPasswordChange = (e) => {
+    setForgotPasswordEmail(e.target.value);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (isLogin) {
       // Handle Login
       try {
@@ -179,13 +91,24 @@ const Login = () => {
               alert("Your admin account is pending approval.");
               return;
             }
-            setUser ({ uid: userCredential.user.uid, fullName: `${userData.firstName} ${userData.lastName}`, role: userData.role });
+            setUser({ uid: userCredential.user.uid, fullName: `${userData.firstName} ${userData.lastName}`, role: userData.role });
             alert("Login successful!");
+            // Clear form fields after login
+            setFormData({
+              firstName: '',
+              lastName: '',
+              age: '',
+              gender: '',
+              email: '',
+              password: '',
+              confirmPassword: '',
+              role: 'user',
+            });
           } else {
             alert("Please verify your email address.");
           }
         } else {
-          alert("User  data not found.");
+          alert("User data not found.");
         }
       } catch (error) {
         console.error("Login Error:", error.message);
@@ -197,13 +120,10 @@ const Login = () => {
         alert("Passwords do not match!");
         return;
       }
-
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-
         // Send email verification link
         await sendEmailVerification(userCredential.user);
-
         // Save user data to Firestore
         await setDoc(doc(db, "users", userCredential.user.uid), {
           firstName: formData.firstName,
@@ -215,9 +135,19 @@ const Login = () => {
           status: formData.role === 'admin' ? 'pending' : 'approved', // Admins need approval
           createdAt: new Date(),
         });
-
         alert("Account created successfully! Please verify your email.");
         setIsLogin(true);
+        // Clear form fields after signup
+        setFormData({
+          firstName: '',
+          lastName: '',
+          age: '',
+          gender: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          role: 'user',
+        });
       } catch (error) {
         console.error("Signup Error:", error.message);
         alert(error.message);
@@ -225,12 +155,55 @@ const Login = () => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!forgotPasswordEmail) {
+      alert("Please enter your email address.");
+      return;
+    }
+
+    try {
+      // Check if the email exists in Firestore
+      const userDoc = await getDoc(doc(db, "users", forgotPasswordEmail));
+      if (!userDoc.exists()) {
+        alert("No account found with this email.");
+        return;
+      }
+
+      const userData = userDoc.data();
+      if (!userData.emailVerified) {
+        alert("Your email is not verified. Please verify your email first.");
+        return;
+      }
+
+      // Send password reset email
+      await sendPasswordResetEmail(auth, forgotPasswordEmail);
+      alert("Password reset email sent. Please check your inbox.");
+      setShowForgotPassword(false); // Hide the forgot password form after sending the email
+      // Clear forgot password email field
+      setForgotPasswordEmail('');
+    } catch (error) {
+      console.error("Forgot Password Error:", error.message);
+      alert(error.message);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      setUser (null);
+      setUser(null);
       alert("Logged out successfully!");
       navigate('/login');
+      // Clear form fields after logout
+      setFormData({
+        firstName: '',
+        lastName: '',
+        age: '',
+        gender: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        role: 'user',
+      });
     } catch (error) {
       console.error("Logout Error:", error.message);
       alert(error.message);
@@ -271,17 +244,14 @@ const Login = () => {
                   required
                 />
                 <select name="gender" value={formData.gender} onChange={handleChange} required>
-                  <option value="">Select Gender</option>
+                  <option value="" disabled>Select Gender</option>
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                   <option value="other">Other</option>
                 </select>
                 <select name="role" value={formData.role} onChange={handleChange} required>
-                  <option value="user">User </option>
-                  <option value="admin">Admin
-
-                    
-                  </option>
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
                 </select>
               </>
             )}
@@ -305,7 +275,7 @@ const Login = () => {
               <input
                 type="password"
                 name="confirmPassword"
-                placeholder="Retype Password"
+                placeholder="Confirm Password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
@@ -315,9 +285,33 @@ const Login = () => {
               {isLogin ? 'Login' : 'Sign Up'}
             </button>
           </form>
+          {isLogin && (
+            <p style={{ marginTop: '15px', cursor: 'pointer', color: '#2575fc' }} onClick={() => setShowForgotPassword(true)}>
+              Forgot Password?
+            </p>
+          )}
+          {showForgotPassword && (
+            <div>
+              <p>Enter your email to reset your password:</p>
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={forgotPasswordEmail}
+                onChange={handleForgotPasswordChange}
+              />
+              <button onClick={handleForgotPassword} className="submit-btn">
+                Reset Password
+              </button>
+              <button onClick={() => setShowForgotPassword(false)} style={{ marginTop: '10px', background: '#FF6F61' }}>
+                Cancel
+              </button>
+            </div>
+          )}
           <p className="toggle-link">
             {isLogin ? 'Don’t have an account? ' : 'Already have an account? '}
-            <span onClick={toggleForm}>{isLogin ? 'Sign Up' : 'Login'}</span>
+            <span onClick={() => setIsLogin(!isLogin)}>
+              {isLogin ? 'Sign Up' : 'Login'}
+            </span>
           </p>
         </div>
       </div>
