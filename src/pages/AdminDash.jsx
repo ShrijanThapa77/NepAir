@@ -43,65 +43,67 @@ const AdminDash = () => {
   }, []);
 
   return (
-    <div className="admin-dashboard">
+    <div >
       <Navbar /> {/* Include the Navbar component here */}
+      <div className='admin-dashboard'>
       <h1>Admin Dashboard</h1>
 
-      {/* Display number of users signed up */}
-      <div className="stats">
-        <h2>Number of Users Signed Up: {users.length}</h2>
-      </div>
+{/* Display number of users signed up */}
+<div className="stats">
+  <h2>Number of Users Signed Up: {users.length}</h2>
+</div>
 
-      {/* Display full names of users in a table */}
-      <div className="user-table">
-        <h2>Users</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>First Name</th>
-              <th>Last Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(user => (
-              <tr key={user.id}>
-                <td>{user.id}</td>
-                <td>{user.firstName}</td>
-                <td>{user.lastName}</td>
-                <td>{user.email}</td>
-                <td>{user.role}</td>
-                <td>{user.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+{/* Display full names of users in a table */}
+<div className="user-table">
+  <h2>Users</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>First Name</th>
+        <th>Last Name</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {users.map(user => (
+        <tr key={user.id}>
+          <td>{user.id}</td>
+          <td>{user.firstName}</td>
+          <td>{user.lastName}</td>
+          <td>{user.email}</td>
+          <td>{user.role}</td>
+          <td>{user.status}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
 
-      {/* Display pending admins with email and approve button */}
-      <div className="pending-admins">
-        <h2>Pending Admins: {pendingAdmins.length}</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pendingAdmins.map(admin => (
-              <tr key={admin.id}>
-                <td>{admin.email}</td>
-                <td>
-                  <button onClick={() => handleApprove(admin.id)}>Approve</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+{/* Display pending admins with email and approve button */}
+<div className="pending-admins">
+  <h2>Pending Admins: {pendingAdmins.length}</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {pendingAdmins.map(admin => (
+        <tr key={admin.id}>
+          <td>{admin.email}</td>
+          <td>
+            <button onClick={() => handleApprove(admin.id)}>Approve</button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
       </div>
     </div>
   );

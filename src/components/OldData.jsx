@@ -4,7 +4,6 @@ import { collection, getDocs, query, where } from 'firebase/firestore'; // Fires
 import emailjs from '@emailjs/browser';
 
 function OldData({ setShowInfo }) {
-  // State to hold the real-time PM2.5 value for Khumaltar
   const [khumaltarPM25, setKhumaltarPM25] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -51,16 +50,16 @@ function OldData({ setShowInfo }) {
   // Memoize the `data` array with dynamic PM2.5 value for Khumaltar
   const data = useMemo(() => {
     return [
-      { station: 'Khumaltar', value: khumaltarPM25, category: getCategory(khumaltarPM25) },
-      { station: 'Ratnapark', value: 150, category: 'Hazardous' },
-      { station: 'Deukhuri, Dang', value: 165, category: 'Hazardous' },
-      { station: 'Bharatpur', value: 156, category: 'Unhealthy' },
-      { station: 'Bhaktapur', value: 155, category: 'Unhealthy' },
-      { station: 'Nepalgunj', value: 105, category: 'Sensitive' },
-      { station: 'Dhulikhel', value: 80, category: 'Moderate' },
-      { station: 'Ilam', value: 42, category: 'Good' },
-      { station: 'Shankapark', value: '-', category: '' },
-      { station: 'Achaam', value: '-', category: '' },
+      { station: 'Kathmandu', value: khumaltarPM25, category: getCategory(khumaltarPM25) },
+      { station: 'Janakpur', value: 180,category: 'Hazardous' },
+      { station: 'Pokhara', value: 140,category: 'Hazardous' },
+      { station: 'Butwal', value: 100,category: 'Unhealthy' },
+      { station: 'Bhaktapur', value: 100, category: 'Unhealthy' },
+      { station: 'Nepalgunj', value: 100, category: 'Sensitive' },
+      { station: 'Mahendranagr', value: 80, category: 'Moderate' },
+      { station: 'Biratnagar', value: 40,category: 'Good' },
+      { station: 'Birgunj', value: 90, category: 'Moderate' },
+      { station: 'Dharan', value: 80, category: 'Moderate' },
     ];
   }, [khumaltarPM25]);
 
@@ -70,53 +69,64 @@ function OldData({ setShowInfo }) {
       // Filter stations with high AQI values
       const highAQIStations = data.filter((entry) => entry.value !== '-' && entry.value > 200);
       console.log('High AQI stations:', highAQIStations);
+
       if (highAQIStations.length === 0) {
         console.log('No high AQI stations detected.');
         return;
       }
 
-      // Fetch user emails from Firestore
-      const usersRef = collection(db, 'users'); // Assuming 'users' is the collection name
-      const q = query(usersRef, where('subscribed', '==', true)); // Only notify subscribed users
-      const querySnapshot = await getDocs(q);
-      const userEmails = [];
-      querySnapshot.forEach((doc) => {
-        const userData = doc.data();
-        userEmails.push(userData.email); // Collect user emails
-        console.log('Fetched user:', userData); // Log each user document
-      });
-      console.log('Fetched emails:', userEmails);
-      if (userEmails.length === 0) {
-        console.warn('No subscribed users found in Firestore.');
-        return;
-      }
+      try {
+        // Fetch user emails from Firestore
+        const usersRef = collection(db, 'users'); // Assuming 'users' is the collection name
+        const q = query(usersRef, where('healthAlert.subscribed', '==', true)); // Only notify subscribed users
+        const querySnapshot = await getDocs(q);
 
-      // Prepare email content
-      const stationsText = highAQIStations
-        .map((station) => `${station.station}: ${station.value}`)
-        .join('\n');
+        if (querySnapshot.empty) {
+          console.warn('No subscribed users found in Firestore.');
+          return;
+        }
 
-      // Send email using EmailJS
-      userEmails.forEach((email) => {
-        emailjs
-          .send(
-            'service_thkeu45', // Your Service ID
-            'template_kk30yhg', // Your Template ID
-            {
-              to_email: email,
-              stations: stationsText,
-            },
-            'v6pNvmbYK2iyUdR2Z' // Your Public Key
-          )
-          .then(
-            (result) => {
-              console.log('Email sent successfully:', result.text);
-            },
-            (error) => {
-              console.error('Error sending email:', error.text);
-            }
+        // Process each user document
+        querySnapshot.forEach((doc) => {
+          const userData = doc.data();
+          const userEmail = userData.email;
+          const userStations = userData.healthAlert.stations; // Array of stations selected by the user
+
+          // Find high AQI stations that match the user's selected stations
+          const relevantStations = highAQIStations.filter((station) =>
+            userStations.includes(station.station)
           );
-      });
+
+          if (relevantStations.length > 0) {
+            // Prepare email content
+            const stationsText = relevantStations
+              .map((station) => `${station.station}: ${station.value}`)
+              .join('\n');
+
+            // Send email using EmailJS
+            emailjs
+              .send(
+                'service_thkeu45', // Your Service ID
+                'template_kk30yhg', // Your Template ID
+                {
+                  to_email: userEmail,
+                  stations: stationsText,
+                },
+                'v6pNvmbYK2iyUdR2Z' // Your Public Key
+              )
+              .then(
+                (result) => {
+                  console.log('Email sent successfully to:', userEmail, result.text);
+                },
+                (error) => {
+                  console.error('Error sending email to:', userEmail, error.text);
+                }
+              );
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching Firestore data:', error.message);
+      }
     };
 
     checkAQIAndNotify();

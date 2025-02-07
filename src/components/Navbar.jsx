@@ -4,11 +4,25 @@ import { auth, db } from "../firebase"; // Ensure Firestore is initialized in fi
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from "firebase/firestore";
 import { FaUserCircle } from 'react-icons/fa'; // Corrected import statement
+import './navbar.css';
 
 function Navbar() {
   const [userName, setUserName] = useState(null);
 const [userRole, setUserRole] = useState(null);
+const [scrolled, setScrolled] = useState(false);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,30 +55,41 @@ const [userRole, setUserRole] = useState(null);
   };
 
   return (
-    <div className='contain'>
-      <nav style={styles.navbar}>
+    <div className='containNav'>
+      <nav style={{
+        ...styles.navbar,
+        backgroundColor: scrolled ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
+        transition: 'background 0.3s ease-in-out'
+      }}>
         <div style={styles.logoContainer}>
-          <img src="/images/nepal_logo.png" alt="Nepal Logo" style={styles.logoImage} />
+          <img src="/images/clouds.png" alt="Nepal Logo" style={styles.logoImage} />
           <p style={styles.logoText}>NepAir</p>
         </div>
 
         <div style={styles.navLinks}>
-          <button style={styles.navButton} onClick={() => navigate('/')}>Home</button>
-          <button style={styles.navButton} onClick={() => navigate(userRole === 'admin' ? '/admindash' : '/userdash')}>Dashboard</button>
-          <button style={styles.navButton} onClick={() => navigate('/education')}>Education</button>
-          <button style={styles.navButton} onClick={() => navigate('/HealthAlert')}>HealthAlert</button>
+          <button className='navButtons' onClick={() => navigate('/')}>Home</button>
+          <button className='navButtons' onClick={() => navigate(userRole === 'admin' ? '/admindash' : '/userdash')}>Dashboard</button>
+          <button className='navButtons' onClick={() => navigate('/education')}>Education</button>
+          <button className='navButtons' onClick={() => navigate('/HealthAlert')}>HealthAlert</button>
+
         </div>
 
         <div style={styles.authSection}>
           {userName ? (
             <div style={styles.userSection}>
-              <FaUserCircle style={styles.userIcon} />
+              <FaUserCircle style={styles.userIcon} className='userface'/>
+              <div className='userInfo'>
+                <div>
               <span style={styles.userName}>{userName}</span>
+                </div>
+                <div>
               <span style={styles.userRole}>{userRole}</span> {/* Display user role */}
-              <button style={styles.navButton} onClick={handleLogout}>Logout</button>
+                </div>
+              </div>
+              <button className='authButton' onClick={handleLogout}>Logout</button>
             </div>
           ) : (
-            <button style={styles.navButton} onClick={() => navigate('/login')}>Login</button>
+            <button className='authButton' onClick={() => navigate('/login')}>Login</button>
           )}
         </div>
       </nav>
@@ -74,29 +99,28 @@ const [userRole, setUserRole] = useState(null);
 
 const styles = {
   navbar: {
+    position: 'sticky',
+    top: 0,
+    zindex:'100',
+    width: '100%',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#003049',
-    padding: '15px 30px',
-    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
-    borderRadius: '10px',
+    padding: '5px 8px',
+    margin: '0',
   },
   logoContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
+    display: 'grid',
   },
   logoImage: {
-    width: '50px',
-    height: '50px',
-    borderRadius: '50%',
-    border: '2px solid #E63946',
+    width: '70px',
+    height: '70px',
   },
   logoText: {
-    fontSize: '24px',
+    fontSize: '18px',
     fontWeight: 'bold',
     color: '#F4F4F4',
+    paddingLeft:'10px',
   },
   navLinks: {
     display: 'flex',
@@ -105,14 +129,12 @@ const styles = {
   },
   navButton: {
     padding: '10px 15px',
-    backgroundColor: '#E63946',
     border: 'none',
     color: '#FFF',
+    backgroundColor: 'transparent',
     fontSize: '16px',
     fontWeight: 'bold',
     cursor: 'pointer',
-    borderRadius: '5px',
-    transition: 'background-color 0.3s',
   },
   authSection: {
     display: 'flex',
@@ -140,3 +162,4 @@ const styles = {
 };
 
 export default Navbar;
+
