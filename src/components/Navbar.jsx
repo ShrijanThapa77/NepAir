@@ -8,8 +8,8 @@ import './navbar.css';
 
 function Navbar() {
   const [userName, setUserName] = useState(null);
-const [userRole, setUserRole] = useState(null);
-const [scrolled, setScrolled] = useState(false);
+  const [userRole, setUserRole] = useState(null);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,6 +23,7 @@ const [scrolled, setScrolled] = useState(false);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -54,6 +55,14 @@ const [scrolled, setScrolled] = useState(false);
     navigate('/');
   };
 
+  const handleProfileClick = () => {
+    if (userRole === 'admin') {
+      navigate('/AdminDash');
+    } else if (userRole === 'user') {
+      navigate('/userprofile');
+    }
+  };
+
   return (
     <div className='containNav'>
       <nav style={{
@@ -71,19 +80,20 @@ const [scrolled, setScrolled] = useState(false);
           <button className='navButtons' onClick={() => navigate(userRole === 'admin' ? '/admindash' : '/userdash')}>Dashboard</button>
           <button className='navButtons' onClick={() => navigate('/education')}>Education</button>
           <button className='navButtons' onClick={() => navigate('/HealthAlert')}>HealthAlert</button>
-
         </div>
 
         <div style={styles.authSection}>
           {userName ? (
             <div style={styles.userSection}>
-              <FaUserCircle style={styles.userIcon} className='userface'/>
+              <button className='navButtons' onClick={handleProfileClick}>
+                <FaUserCircle style={styles.userIcon} className='userface' />
+              </button>
               <div className='userInfo'>
                 <div>
-              <span style={styles.userName}>{userName}</span>
+                  <span style={styles.userName}>{userName}</span>
                 </div>
                 <div>
-              <span style={styles.userRole}>{userRole}</span> {/* Display user role */}
+                  <span style={styles.userRole}>{userRole}</span> {/* Display user role */}
                 </div>
               </div>
               <button className='authButton' onClick={handleLogout}>Logout</button>
@@ -101,7 +111,7 @@ const styles = {
   navbar: {
     position: 'sticky',
     top: 0,
-    zindex:'100',
+    zIndex: '100',
     width: '100%',
     display: 'flex',
     justifyContent: 'space-between',
@@ -120,7 +130,7 @@ const styles = {
     fontSize: '18px',
     fontWeight: 'bold',
     color: '#F4F4F4',
-    paddingLeft:'10px',
+    paddingLeft: '10px',
   },
   navLinks: {
     display: 'flex',
@@ -162,4 +172,3 @@ const styles = {
 };
 
 export default Navbar;
-
