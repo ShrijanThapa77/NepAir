@@ -1,26 +1,25 @@
 /* Global Styles */
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: #f9f9f9;
+  font-family: 'Arial', sans-serif;
+  background-color: #f0f4f8;
   color: #333;
 }
 
 .health-alert-page {
   position: relative;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
   width: 100%;
   background-color: #4caf50;
   color: white;
   padding: 1rem;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
   text-align: center;
 }
 
@@ -30,11 +29,10 @@ body {
 }
 
 .health-alert-container {
-  margin-top: 6rem; /* Space for fixed navbar */
+  margin-top: 6rem;
   padding: 2rem;
   max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
+  width: 100%;
   background: white;
   border-radius: 8px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -56,6 +54,7 @@ h2 {
   font-size: 1rem;
   margin-bottom: 2rem;
   line-height: 1.6;
+  color: #555;
 }
 
 .cta-button {
@@ -86,6 +85,7 @@ label {
   font-weight: bold;
   display: block;
   margin-bottom: 0.5rem;
+  color: #333;
 }
 
 .station-select {
@@ -93,8 +93,9 @@ label {
   padding: 0.5rem;
   border: 1px solid #ccc;
   border-radius: 5px;
-  height: 100px;
+  height: 120px;
   background-color: #fff;
+  font-size: 1rem;
 }
 
 .disease-grid {
@@ -107,6 +108,7 @@ label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  font-size: 1rem;
 }
 
 .other-input {
@@ -122,6 +124,7 @@ label {
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 1rem;
+  font-size: 0.9rem;
 }
 
 .message {
@@ -129,6 +132,7 @@ label {
   padding: 0.8rem;
   border-radius: 5px;
   font-weight: bold;
+  text-align: center;
 }
 
 .message.error {
@@ -152,4 +156,5 @@ label {
   font-size: 1rem;
   margin-bottom: 1rem;
   line-height: 1.6;
+  color: #555;
 }

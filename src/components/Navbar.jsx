@@ -59,7 +59,7 @@ function Navbar() {
     if (userRole === 'admin') {
       navigate('/AdminDash');
     } else if (userRole === 'user') {
-      navigate('/userprofile');
+      navigate('/UserProfile');
     }
   };
 

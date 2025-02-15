@@ -51,13 +51,13 @@ function OldData({ setShowInfo }) {
   const data = useMemo(() => {
     return [
       { station: 'Kathmandu', value: khumaltarPM25, category: getCategory(khumaltarPM25) },
-      { station: 'Janakpur', value: 180,category: 'Hazardous' },
-      { station: 'Pokhara', value: 140,category: 'Hazardous' },
-      { station: 'Butwal', value: 100,category: 'Unhealthy' },
+      { station: 'Janakpur', value: 180, category: 'Hazardous' },
+      { station: 'Pokhara', value: '100', category: 'Hazardous' },
+      { station: 'Butwal', value: 100, category: 'Unhealthy' },
       { station: 'Bhaktapur', value: 100, category: 'Unhealthy' },
       { station: 'Nepalgunj', value: 100, category: 'Sensitive' },
       { station: 'Mahendranagr', value: 80, category: 'Moderate' },
-      { station: 'Biratnagar', value: 40,category: 'Good' },
+      { station: 'Biratnagar', value: 400, category: 'Good' },
       { station: 'Birgunj', value: 90, category: 'Moderate' },
       { station: 'Dharan', value: 80, category: 'Moderate' },
     ];

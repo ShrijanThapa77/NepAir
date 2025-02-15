@@ -1,5 +1,6 @@
 import React from 'react';
 import Info from './Info';
+import './map.css'
 
 function Map({ showInfo, setShowInfo }) {
   return (

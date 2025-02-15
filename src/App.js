@@ -4,7 +4,9 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import AdminDash from "./pages/AdminDash";
 import HealthAlert from "./pages/HealthAlert";
-import UserProfile from "./pages/UserProfile"; // Import the UserProfile component
+import UserProfile from "./pages/UserProfile";
+ 
+ // Import the UserProfile component
 import './App.css';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
