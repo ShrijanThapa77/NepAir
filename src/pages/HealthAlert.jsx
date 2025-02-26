@@ -14,6 +14,7 @@ function HealthAlert() {
   const [agreed, setAgreed] = useState(false);
   const [message, setMessage] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
   const navigate = useNavigate();
 
   // List of available stations
@@ -43,6 +44,7 @@ function HealthAlert() {
           setIsSubscribed(true);
           setStations(userDoc.data().healthAlert.stations);
           setSelectedDiseases(userDoc.data().healthAlert.diseases);
+          setPhoneNumber(userDoc.data().healthAlert.phoneNumber || '');
         }
       } else {
         setUser(null);
@@ -73,7 +75,7 @@ function HealthAlert() {
   // Handle subscription form submission
   const handleSubscribe = async (e) => {
     e.preventDefault();
-    if (!stations.length || selectedDiseases.length === 0 || !agreed) {
+    if (!stations.length || selectedDiseases.length === 0 || !agreed || !phoneNumber) {
       setMessage('Please fill all fields and agree to terms');
       return;
     }
@@ -85,6 +87,7 @@ function HealthAlert() {
             stations,
             diseases: selectedDiseases.map((d) => (d === 'Other' ? otherDisease : d)),
             subscribed: true,
+            phoneNumber,
           },
         },
         { merge: true }
@@ -124,7 +127,7 @@ function HealthAlert() {
           <div className="auth-required">
             <h2>NepAir - AQI Monitoring Service</h2>
             <p className="description">
-              Protect your health with our free email alert service. Get notified about
+              Protect your health with our free email and SMS alert service. Get notified about
               dangerous air quality levels in your area.
             </p>
             <button onClick={() => navigate('/login')} className="cta-button">
@@ -137,6 +140,8 @@ function HealthAlert() {
             <h2>Subscription Active!</h2>
             <p className="success-message">
               Email: {user.email}
+              <br />
+              Phone: {phoneNumber}
               <br />
               You'll receive alerts for {stations.join(', ')}.<br />
               Monitoring diseases: {selectedDiseases.join(', ')}.
@@ -203,6 +208,17 @@ function HealthAlert() {
                 ))}
               </div>
             </div>
+            <div className="form-group">
+              <label>Phone Number (Nepal):</label>
+              <input
+                type="text"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="Enter your phone number"
+                required
+                className="phone-input"
+              />
+            </div>
             <label className="agreement">
               <input
                 type="checkbox"
@@ -210,7 +226,7 @@ function HealthAlert() {
                 onChange={(e) => setAgreed(e.target.checked)}
                 required
               />
-              I agree to receive email alerts based on my preferences
+              I agree to receive email and SMS alerts based on my preferences
             </label>
             <button type="submit" className="cta-button">
               Subscribe Now

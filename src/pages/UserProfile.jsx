@@ -20,7 +20,7 @@ const UserProfile = () => {
     },
   });
   const [isEditing, setIsEditing] = useState(false);
-  const navigate = useNavigate();
+
 
   useEffect(() => {
     const fetchUserData = async () => {

@@ -36,6 +36,8 @@ body {
   background: white;
   border-radius: 8px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  margin-top: 150px;
+  margin-bottom: 100px;
 }
 
 .auth-required,
@@ -98,17 +100,16 @@ label {
   font-size: 1rem;
 }
 
-.disease-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-}
-
 .disease-option {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 1rem;
+  gap: 10px;
+  width: auto;
+}
+
+.disease-option input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 2rem;
 }
 
 .other-input {
@@ -119,12 +120,25 @@ label {
   width: 100%;
 }
 
+.phone-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
 .agreement {
-  display: flex;
-  align-items: center;
   gap: 0.5rem;
   margin-bottom: 1rem;
   font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+}
+
+.agreement input[type="checkbox"] {
+  width: 2rem;
+  flex-shrink: 0;
 }
 
 .message {
