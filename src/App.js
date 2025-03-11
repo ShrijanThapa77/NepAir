@@ -4,8 +4,10 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import AdminDash from "./pages/AdminDash";
 import HealthAlert from "./pages/HealthAlert";
-import UserProfile from "./pages/UserProfile";
- 
+
+import EducationModule from "./pages/EducationModule"; 
+
+
  // Import the UserProfile component
 import './App.css';
 import AOS from 'aos';
@@ -22,10 +24,9 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/healthalert" element={<HealthAlert />} />
-
-        {/* User Routes */}
-        <Route path="/userprofile" element={<UserProfile />} /> {/* Add UserProfile route */}
-
+        <Route path="/education" element={<EducationModule/>}/>
+       
+     
         {/* Admin Routes */}
         <Route path="/admindash" element={<AdminDash />} />
       </Routes>

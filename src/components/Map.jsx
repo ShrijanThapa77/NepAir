@@ -1,26 +1,51 @@
-import React from 'react';
-import Info from './Info';
-import './map.css'
+import React from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet"; // Import Leaflet
+import "leaflet/dist/leaflet.css";
+import Info from "./Info";
+
+// Fix for default icon issue
+delete L.Icon.Default.prototype._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+});
 
 function Map({ showInfo, setShowInfo }) {
+  const locations = [
+    { name: "Kathmandu", coords: [27.7172, 85.324] },
+    { name: "Janakpur", coords: [26.7288, 85.9263] },
+    { name: "Pokhara", coords: [28.2096, 83.9856] },
+    { name: "Butwal", coords: [27.7006, 83.4483] },
+    { name: "Bhaktapur", coords: [27.6722, 85.4279] },
+    { name: "Nepalgunj", coords: [28.05, 81.6167] },
+    { name: "Mahendranagar", coords: [28.9634, 80.1838] },
+    { name: "Biratnagar", coords: [26.4525, 87.2718] },
+    { name: "Birgunj", coords: [27.0167, 84.8667] },
+    { name: "Dharan", coords: [26.8129, 87.2832] },
+  ];
+
   return (
-    <div className="box MAPP">
+    <>
       {showInfo && (
         <div className="info-container">
           <Info setShowInfo={setShowInfo} />
         </div>
       )}
-      <iframe
-        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3594655.686011312!2d81.48772452740837!3d28.376804582334014!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3995e8c77d2e68cf%3A0x34a29abcd0cc86de!2sNepal!5e0!3m2!1sen!2snp!4v1737380383271!5m2!1sen!2snp"
-        width="600"
-        height="450"
-        style={{ border: 0 }}
-        allowFullScreen=""
-        loading="lazy"
-        referrerPolicy="no-referrer-when-downgrade"
-        title="Map of Nepal"
-      ></iframe>
-    </div>
+      <MapContainer center={[27.7172, 85.324]} zoom={7} className="frame">
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+        {locations.map((location, index) => (
+          <Marker key={index} position={location.coords}>
+            <Popup>{location.name}</Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+    </>
   );
 }
 

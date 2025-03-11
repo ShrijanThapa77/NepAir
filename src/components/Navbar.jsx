@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase"; // Ensure Firestore is initialized in firebase.js
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { FaUserCircle } from 'react-icons/fa'; // Corrected import statement
-import './navbar.css';
+import { FaUserCircle } from "react-icons/fa"; // Corrected import statement
+import "./navbar.css";
 
 function Navbar() {
   const [userName, setUserName] = useState(null);
@@ -52,43 +52,56 @@ function Navbar() {
     setUserName(null);
     setUserRole(null);
     alert("You have been logged out successfully.");
-    navigate('/');
+    navigate("/");
   };
 
   const handleProfileClick = () => {
-    if (userRole === 'admin') {
-      navigate('/AdminDash');
-    } else if (userRole === 'user') {
-      navigate('/UserProfile');
+    if (userRole === "admin") {
+      navigate("/admindash");
+    } else if (userRole === "user") {
+      navigate("/userprofile");
     }
   };
 
   return (
-    <div className='containNav'>
-      <nav style={{
-        ...styles.navbar,
-        backgroundColor: scrolled ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
-        transition: 'background 0.3s ease-in-out'
-      }}>
+    <div className="containNav">
+      <nav
+        style={{
+          ...styles.navbar,
+          backgroundColor: scrolled ? "rgba(0, 0, 0, 0.5)" : "transparent",
+          transition: "background 0.3s ease-in-out",
+        }}
+      >
         <div style={styles.logoContainer}>
           <img src="/images/clouds.png" alt="Nepal Logo" style={styles.logoImage} />
           <p style={styles.logoText}>NepAir</p>
         </div>
 
         <div style={styles.navLinks}>
-          <button className='navButtons' onClick={() => navigate('/')}>Home</button>
-          <button className='navButtons' onClick={() => navigate(userRole === 'admin' ? '/admindash' : '/userdash')}>Dashboard</button>
-          <button className='navButtons' onClick={() => navigate('/education')}>Education</button>
-          <button className='navButtons' onClick={() => navigate('/HealthAlert')}>HealthAlert</button>
+          <button className="navButtons" onClick={() => navigate("/")}>
+            Home
+          </button>
+          <button
+            className="navButtons"
+            onClick={() => navigate(userRole === "admin" ? "/admindash" : "/userprofile")}
+          >
+            Dashboard
+          </button>
+          <button className="navButtons" onClick={() => navigate("/education")}>
+            Education
+          </button>
+          <button className="navButtons" onClick={() => navigate("/healthalert")}>
+            HealthAlert
+          </button>
         </div>
 
         <div style={styles.authSection}>
           {userName ? (
             <div style={styles.userSection}>
-              <button className='navButtons' onClick={handleProfileClick}>
-                <FaUserCircle style={styles.userIcon} className='userface' />
+              <button className="navButtons" onClick={handleProfileClick}>
+                <FaUserCircle style={styles.userIcon} className="userface" />
               </button>
-              <div className='userInfo'>
+              <div className="userInfo">
                 <div>
                   <span style={styles.userName}>{userName}</span>
                 </div>
@@ -96,10 +109,14 @@ function Navbar() {
                   <span style={styles.userRole}>{userRole}</span> {/* Display user role */}
                 </div>
               </div>
-              <button className='authButton' onClick={handleLogout}>Logout</button>
+              <button className="authButton" onClick={handleLogout}>
+                Logout
+              </button>
             </div>
           ) : (
-            <button className='authButton' onClick={() => navigate('/login')}>Login</button>
+            <button className="authButton" onClick={() => navigate("/login")}>
+              Login
+            </button>
           )}
         </div>
       </nav>
@@ -109,65 +126,65 @@ function Navbar() {
 
 const styles = {
   navbar: {
-    position: 'sticky',
+    position: "sticky",
     top: 0,
-    zIndex: '100',
-    width: '100%',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '5px 8px',
-    margin: '0',
+    zIndex: "100",
+    width: "100%",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "5px 8px",
+    margin: "0",
   },
   logoContainer: {
-    display: 'grid',
+    display: "grid",
   },
   logoImage: {
-    width: '70px',
-    height: '70px',
+    width: "70px",
+    height: "70px",
   },
   logoText: {
-    fontSize: '18px',
-    fontWeight: 'bold',
-    color: '#F4F4F4',
-    paddingLeft: '10px',
+    fontSize: "18px",
+    fontWeight: "bold",
+    color: "#F4F4F4",
+    paddingLeft: "10px",
   },
   navLinks: {
-    display: 'flex',
-    gap: '15px',
-    alignItems: 'center',
+    display: "flex",
+    gap: "15px",
+    alignItems: "center",
   },
   navButton: {
-    padding: '10px 15px',
-    border: 'none',
-    color: '#FFF',
-    backgroundColor: 'transparent',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
+    padding: "10px 15px",
+    border: "none",
+    color: "#FFF",
+    backgroundColor: "transparent",
+    fontSize: "16px",
+    fontWeight: "bold",
+    cursor: "pointer",
   },
   authSection: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
   },
   userSection: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
   },
   userIcon: {
-    fontSize: '24px',
-    color: '#FFF',
+    fontSize: "24px",
+    color: "#FFF",
   },
   userName: {
-    color: '#FFF',
-    fontSize: '16px',
+    color: "#FFF",
+    fontSize: "16px",
   },
   userRole: {
-    color: '#FFF',
-    fontSize: '14px',
-    marginLeft: '5px',
+    color: "#FFF",
+    fontSize: "14px",
+    marginLeft: "5px",
   },
 };
 
