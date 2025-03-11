@@ -4,12 +4,9 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import AdminDash from "./pages/AdminDash";
 import HealthAlert from "./pages/HealthAlert";
-import UserProfile from "./pages/UserProfile";
-import EducationModule from "./pages/EducationModule"; // Fixed import
+
+import EducationModule from "./pages/EducationModule"; // Import the EducationModule component
 import Navbar from "./components/Navbar"; // Import the Navbar component
-
-
-
 import "./App.css";
 import AOS from "aos";
 import "aos/dist/aos.css";
@@ -20,6 +17,8 @@ function App() {
 
   return (
     <BrowserRouter>
+      {/* Add the Navbar component here if you want it to appear on all pages */}
+      <Navbar />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
@@ -27,8 +26,7 @@ function App() {
         <Route path="/healthalert" element={<HealthAlert />} />
         <Route path="/education" element={<EducationModule />} />
 
-        {/* User Routes */}
-        <Route path="/userprofile" element={<UserProfile />} />
+        
 
         {/* Admin Routes */}
         <Route path="/admindash" element={<AdminDash />} />
