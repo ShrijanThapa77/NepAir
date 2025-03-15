@@ -93,7 +93,7 @@ const EducationModule = () => {
     top: '50%',
     left: '10px',
     transform: 'translateY(0,-50%)',
-    
+    left:'32px',
     fontSize: '24px',
     cursor: 'pointer',
     color:'#fff',
@@ -104,7 +104,7 @@ const EducationModule = () => {
       top: '50%',
       left: '10px',
       transform: 'translateY(0,-50%)',
-     
+      left:'1140px',
       fontSize: '24px',
       cursor: 'pointer',
       color:'#fff',
