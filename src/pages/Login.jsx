@@ -159,8 +159,44 @@ const Login = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  // Password validation function
+  const validatePassword = (password) => {
+    const minLength = 8;
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+
+    if (password.length < minLength) {
+      return "Password must be at least 8 characters long.";
+    }
+    if (!hasSpecialChar) {
+      return "Password must contain at least one special character.";
+    }
+    if (!hasUppercase) {
+      return "Password must contain at least one uppercase letter.";
+    }
+    if (!hasNumber) {
+      return "Password must contain at least one number.";
+    }
+    return null; // No error
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate password during signup
+    if (!isLogin) {
+      const passwordError = validatePassword(formData.password);
+      if (passwordError) {
+        alert(passwordError);
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        alert("Passwords do not match!");
+        return;
+      }
+    }
+
     if (isLogin) {
       // Handle Login
       try {
@@ -187,10 +223,6 @@ const Login = () => {
       }
     } else {
       // Handle Signup
-      if (formData.password !== formData.confirmPassword) {
-        alert("Passwords do not match!");
-        return;
-      }
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
         // Send email verification link
