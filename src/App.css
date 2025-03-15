@@ -52,7 +52,7 @@ nav{
   width: 100%;
   background-color: #1b1b1b;
   color: #fff;
-  positon: relative;
+  position: relative;
   top:0;
 }
 
@@ -85,21 +85,23 @@ nav{
 
 .content{
   display: flex;
-  justify-content: space-between;
+  gap: 150px;
   padding: 15px 20px;
   background: #318CE7;
 }
 
-iframe{
+.frame{
   border-radius: 10px;
-  width:950px;
   box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
-  height: 100vh;
+  height: 450px;
+  width: 1800px;
   padding: 15px 20px;
+  z-index: 0;
+  margin-top:10px;
 }
 
 .tab1 td,th{
-  positon: relative;
+  position: relative;
   padding: 8px;
 }
 
@@ -110,14 +112,24 @@ iframe{
 }
 
 .tab1 td{
-  font-size: 12px;
+  font-size: 15px;
   text-align: center;
   background-color: white;
-  border-bottom: 1px solid #bbbbbb;
+}
+
+.tab1 #category{
+  display: flex;
+  gap:8px;
+  justify-content: space-between;
+  font-weight: bolder;
 }
 
 .tab1 td:not(:last-child), th:not(:last-child) {
   padding-right: 40px;
+}
+
+#category:last-child{
+  border-bottom: none;
 }
 
 .tab1 {
@@ -133,28 +145,23 @@ iframe{
 }
 
 .tab1 .Hazardous{
-  background-color:rgb(124, 7, 26);
-  color: white;
+  color:rgb(124, 7, 26);
 }
 
 .tab1 .Unhealthy{
-  background-color:rgb(211, 43, 52);
-  color: white;
+  color:rgb(211, 43, 52);
 }
 
 .tab1 .Moderate{
-  background-color:rgb(228, 200, 40);
-  color: white;
+  color:rgb(228, 200, 40);
 }
 
 .tab1 .Good{
-  background-color:rgb(31, 190, 31);
-  color: white;
+  color:rgb(31, 190, 31);
 }
 
 .tab1 .Sensitive{
-  background-color:rgb(255, 102, 0);
-  color: white;
+  color:rgb(255, 102, 0);
 }
 
 .Footer{
@@ -224,14 +231,14 @@ iframe{
 }
 
 .yesterdayInfo{
-  width:220px;
+  width:250px;
   height:150px;
   background-color:rgb(124, 7, 26);
+  color: #1b1b1b;
 }
 
 .yesterdayInfoTop{
-  width:220px;
-  text-align: center;
+  width:250px;
 }
 
 .yesterdayInfoTop h1{
@@ -245,9 +252,10 @@ iframe{
 .yesterdayInfoTop h2{
   font-size: 22px;
   color: white;
+  text-align: center;
 }
 .tableOld{
-  width:220px;
+  width:250px;
   height:125px;
   border: 1px solid black;
   background-color: white;
@@ -256,22 +264,26 @@ iframe{
 
 .tableOld .stationName{
   font-size: 18px;
+  padding-left: 20px !important;
 }
 
 .exitTable{
   font-size:18px;
-  text-align:center;
 }
 
-.tableOld td{
-  border-bottom: 1px solid #bbbbbb;
+.exitTable p{
+  cursor: pointer;
+  position: relative;
+  top: 0 !important;
+  left:55px;
 }
-
-
+.tdata{
+color: #020024;
+}
 .info-container {
   position: absolute;
-  top: 567px;
-  left: 71%;
+  top: 650px;
+  left: 72%;
   transform: translateX(-50%);
   padding: 10px;
   border-radius: 5px;
@@ -282,8 +294,6 @@ iframe{
 .exitTable p:hover{
   cursor: pointer;
 }
-
-
 
 /* Responsive Styles */
 @media (max-width: 1024px) {
@@ -296,8 +306,8 @@ iframe{
     align-items: center;
   }
 
-  iframe {
-    width: 90%;
+  .frame {
+    width: 100%;
   }
 
   .info-container {
