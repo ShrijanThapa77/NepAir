@@ -5,6 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import './HealthAlert.css';
+import BG from '../assets/BGGG.jpg';
 
 function HealthAlert() {
   const [user, setUser] = useState(null);
@@ -120,7 +121,7 @@ function HealthAlert() {
   };
 
   return (
-    <div className="health-alert-page">
+    <div className="health-alert-page" style={{ backgroundImage: `url(${BG})` }}>
       <Navbar />
       <div className="health-alert-container">
         {!user ? (
