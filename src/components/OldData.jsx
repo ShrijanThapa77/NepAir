@@ -68,7 +68,7 @@ function OldData({ setShowInfo }) {
       { station: 'Bhaktapur', value: 100, category: 'Unhealthy' },
       { station: 'Nepalgunj', value: 100, category: 'Sensitive' },
       { station: 'Mahendranagar', value: 80, category: 'Moderate' },
-      { station: 'Biratnagar', value: 400, category: 'Good' },
+      { station: 'Biratnagar', value: 40, category: 'Good' },
       { station: 'Birgunj', value: 90, category: 'Moderate' },
       { station: 'Dharan', value: 80, category: 'Moderate' },
     ].map((entry) => ({
