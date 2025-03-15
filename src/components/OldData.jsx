@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { db } from '../firebase'; // Import Firestore database
 import { collection, getDocs, query, where } from 'firebase/firestore'; // Firestore utilities
 import emailjs from '@emailjs/browser';
+import { FaBiohazard, FaSkull, FaExclamationTriangle } from "react-icons/fa";
+import { MdDangerous, MdHealthAndSafety } from "react-icons/md";
 
 function OldData({ setShowInfo }) {
   const [khumaltarPM25, setKhumaltarPM25] = useState(null);
@@ -11,10 +13,19 @@ function OldData({ setShowInfo }) {
   const getCategory = (value) => {
     if (value === '-') return '';
     if (value > 200) return 'Hazardous';
-    if (value > 150) return 'Very Unhealthy';
+    if (value > 150) return 'Sensitive';
     if (value > 100) return 'Unhealthy';
     if (value > 50) return 'Moderate';
     return 'Good';
+  };
+
+  // Mapping of categories to icons
+  const categoryIcons = {
+    Hazardous: <FaBiohazard />,
+    Sensitive: <FaSkull />,
+    Unhealthy: <FaExclamationTriangle />,
+    Moderate: <MdDangerous />,
+    Good: <MdHealthAndSafety />,
   };
 
   // Function to fetch real-time PM2.5 data for Khumaltar
@@ -51,16 +62,19 @@ function OldData({ setShowInfo }) {
   const data = useMemo(() => {
     return [
       { station: 'Kathmandu', value: khumaltarPM25, category: getCategory(khumaltarPM25) },
-      { station: 'Janakpur', value: 180,category: 'Hazardous' },
-      { station: 'Pokhara', value: '100',category: 'Hazardous' },
+      { station: 'Janakpur', value: 180, category: 'Hazardous' },
+      { station: 'Pokhara', value: '100', category: 'Hazardous' },
       { station: 'Butwal', value: 100, category: 'Unhealthy' },
       { station: 'Bhaktapur', value: 100, category: 'Unhealthy' },
       { station: 'Nepalgunj', value: 100, category: 'Sensitive' },
-      { station: 'Mahendranagr', value: 80, category: 'Moderate' },
-      { station: 'Biratnagar', value: 40, category: 'Good' },
+      { station: 'Mahendranagar', value: 80, category: 'Moderate' },
+      { station: 'Biratnagar', value: 400, category: 'Good' },
       { station: 'Birgunj', value: 90, category: 'Moderate' },
       { station: 'Dharan', value: 80, category: 'Moderate' },
-    ];
+    ].map((entry) => ({
+      ...entry,
+      icon: categoryIcons[entry.category] || null, // Assign the icon based on the category
+    }));
   }, [khumaltarPM25]);
 
   // Effect to check AQI and notify users
@@ -149,8 +163,8 @@ function OldData({ setShowInfo }) {
         <tbody>
           {data.map((entry, index) => (
             <tr key={index} onMouseEnter={() => setShowInfo(true)}>
-              <td className={entry.category}>{entry.station}</td>
-              <td className={entry.category}>{entry.value}</td>
+              <td id='category' className={entry.category}>{entry.station}{entry.icon}</td>
+              <td className='tdata'>{entry.value}</td>
             </tr>
           ))}
         </tbody>
