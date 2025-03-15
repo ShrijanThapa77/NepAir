@@ -1,5 +1,5 @@
 import React,{ useState } from "react";
-import Navbar from '../components/Navbar'; // Import the Navbar component
+
 import "./EducationModule.css"; // Import the CSS file for styling
 import Footer from "../components/Footer";
 import BG from '../assets/BGG.jpg';
@@ -144,7 +144,7 @@ const EducationModule = () => {
 
   return (
     <div className="education-module" style={{ backgroundImage: `url(${BG})` }}>
-      <Navbar /> {/* Include the Navbar */}
+     
       <div style={containerStyle}>
         <div style={sliderStyle}>
           <div style={Left} onClick={goToPrevious}>⮜</div>
