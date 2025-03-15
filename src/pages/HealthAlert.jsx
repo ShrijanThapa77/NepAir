@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from '../components/Navbar';
+
 import { auth, db } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -122,7 +122,7 @@ function HealthAlert() {
 
   return (
     <div className="health-alert-page" style={{ backgroundImage: `url(${BG})` }}>
-      <Navbar />
+     
       <div className="health-alert-container">
         {!user ? (
           <div className="auth-required">
