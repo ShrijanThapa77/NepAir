@@ -1,17 +1,19 @@
+/* General styles for the Login page */
 .containerlogin {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: auto;
-  width:100vw;
-  font-family: 'Arial', sans-serif;
-  background: url('../assets/loginbg.jpg') no-repeat center center/cover;
+  height: 100vh; /* Full viewport height */
+  width: 100vw; /* Full viewport width */
+  font-family: Arial, sans-serif;
+  background: url('../assets/BGG.jpg') no-repeat center center/cover; /* Same background as EducationModule */
+  padding-top: 80px; /* Added padding to prevent overlap with navbar */
 }
 
 .cardwrapper {
-  padding-top:30vh;
-  padding-bottom:30vh;
-  height:auto;
+  padding-top: 30vh;
+  padding-bottom: 30vh;
+  height: auto;
 }
 
 .card {
@@ -24,9 +26,10 @@
 }
 
 h1 {
-  font-size: 2rem;
+  font-size: 2.5rem; /* Larger font size */
   margin-bottom: 20px;
   color: #333333;
+  font-weight: bolder; /* Bold font weight */
 }
 
 input, select {
@@ -41,7 +44,7 @@ input, select {
 
 .submit-btn {
   width: 100%;
-  background: #2575fc;
+  background: #007bff; /* Updated button color */
   color: #ffffff;
   padding: 12px;
   border: none;
@@ -52,7 +55,7 @@ input, select {
 }
 
 .submit-btn:hover {
-  background: #6a11cb;
+  background: #0056b3; /* Darker shade on hover */
 }
 
 .toggle-link {
@@ -62,7 +65,7 @@ input, select {
 }
 
 .toggle-link span {
-  color: #2575fc;
+  color: #007bff; /* Updated link color */
   cursor: pointer;
   font-weight: bold;
 }

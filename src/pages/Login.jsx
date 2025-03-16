@@ -11,6 +11,7 @@ import { auth, db } from "../firebase";
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import './Login.css';
 import '../components/navbar.css';
+import BG from '../assets/BGG.jpg'; // Import the same background image
 
 // Navbar Component
 function Navbar({ user, onLogout }) {
@@ -67,14 +68,16 @@ function Navbar({ user, onLogout }) {
 
 const styles = {
   navbar: {
-    position: 'absolute',
+    position: 'fixed', // Changed to fixed to ensure it stays at the top
     top: 0,
-    zIndex: '100',
+    zIndex: 1000, // Higher z-index to ensure it stays above other elements
     width: '100%',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     margin: '0',
+    backgroundColor: '#0D98BA', // Added background color for better visibility
+    padding: '10px 20px', // Added padding for better spacing
   },
   logoContainer: {
     display: 'flex',
@@ -292,7 +295,7 @@ const Login = () => {
   return (
     <>
       <Navbar user={user} onLogout={handleLogout} />
-      <div className="containerlogin">
+      <div className="containerlogin" style={{ backgroundImage: `url(${BG})` }}>
         <div className="cardwrapper">
           <div className="card">
             <h1>{isLogin ? 'Login' : 'Sign Up'}</h1>

@@ -75,7 +75,7 @@ function OldData({ setShowInfo }) {
       ...entry,
       icon: categoryIcons[entry.category] || null, // Assign the icon based on the category
     }));
-  }, [khumaltarPM25]);
+  }, [khumaltarPM25, categoryIcons]); // Added categoryIcons to the dependency array
 
   // Effect to check AQI and notify users
   useEffect(() => {
