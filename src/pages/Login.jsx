@@ -9,121 +9,10 @@ import {
 } from "firebase/auth";
 import { auth, db } from "../firebase";
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import Navbar from "../components/Navbar"; // Import the shared Navbar
 import './Login.css';
-import '../components/navbar.css';
 import BG from '../assets/BGG.jpg'; // Import the same background image
 
-// Navbar Component
-function Navbar({ user, onLogout }) {
-  const navigate = useNavigate();
-  const goToDashboard = () => {
-    if (user && user.role === 'admin') {
-      navigate('/admindash');
-    } else {
-      navigate('/userdash');
-    }
-  };
-  return (
-    <nav style={styles.navbar}>
-      <div style={styles.logoContainer}>
-        <img src="/images/clouds.png" alt="Logo" style={styles.logoImage} />
-        <span style={styles.logoText}>NepAir</span>
-      </div>
-      <div style={styles.navLinks}>
-        {user ? (
-          <>
-            <span style={styles.userName}>{user.fullName}</span>
-            <span style={styles.userRole}>({user.role})</span>
-            <button
-              style={styles.navButton}
-              onMouseEnter={(e) => (e.target.style.backgroundColor = styles.navButtonHover.backgroundColor)}
-              onMouseLeave={(e) => (e.target.style.backgroundColor = styles.navButton.backgroundColor)}
-              onClick={goToDashboard}
-            >
-              Dashboard
-            </button>
-            <button
-              style={styles.navButton}
-              onMouseEnter={(e) => (e.target.style.backgroundColor = styles.navButtonHover.backgroundColor)}
-              onMouseLeave={(e) => (e.target.style.backgroundColor = styles.navButton.backgroundColor)}
-              onClick={onLogout}
-            >
-              Logout
-            </button>
-          </>
-        ) : (
-          <button
-            style={styles.navButton}
-            onMouseEnter={(e) => (e.target.style.backgroundColor = styles.navButtonHover.backgroundColor)}
-            onMouseLeave={(e) => (e.target.style.backgroundColor = styles.navButton.backgroundColor)}
-            onClick={() => navigate('/')}
-          >
-            Home
-          </button>
-        )}
-      </div>
-    </nav>
-  );
-}
-
-const styles = {
-  navbar: {
-    position: 'fixed', // Changed to fixed to ensure it stays at the top
-    top: 0,
-    zIndex: 1000, // Higher z-index to ensure it stays above other elements
-    width: '100%',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    margin: '0',
-    backgroundColor: '#0D98BA', // Added background color for better visibility
-    padding: '10px 20px', // Added padding for better spacing
-  },
-  logoContainer: {
-    display: 'flex',
-    alignItems: 'center',
-  },
-  logoImage: {
-    width: '70px',
-    height: '70px',
-  },
-  logoText: {
-    fontSize: '18px',
-    fontWeight: 'bold',
-    color: '#F4F4F4',
-    paddingLeft: '10px',
-  },
-  navLinks: {
-    display: 'flex',
-    gap: '15px',
-    alignItems: 'center',
-  },
-  navButton: {
-    padding: '10px 15px',
-    border: 'none',
-    color: '#FFF',
-    backgroundColor: '#0D98BA',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    marginRight: '10px',
-  },
-  navButtonHover: {
-    backgroundColor: '#FF6F61',
-  },
-  userName: {
-    color: '#FFF',
-    fontSize: '16px',
-    marginRight: '5px',
-  },
-  userRole: {
-    color: '#FFF',
-    fontSize: '14px',
-    marginRight: '15px',
-  },
-};
-
-// Login Component
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
@@ -280,21 +169,9 @@ const Login = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth); // Now properly imported
-      setUser(null);
-      alert("Logged out successfully!");
-      navigate('/login');
-    } catch (error) {
-      console.error("Logout Error:", error.message);
-      alert(error.message);
-    }
-  };
-
   return (
     <>
-      <Navbar user={user} onLogout={handleLogout} />
+      <Navbar /> {/* Use the shared Navbar */}
       <div className="containerlogin" style={{ backgroundImage: `url(${BG})` }}>
         <div className="cardwrapper">
           <div className="card">
