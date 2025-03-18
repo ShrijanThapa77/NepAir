@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signOut,
-  sendEmailVerification,
+   sendEmailVerification,
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth, db } from "../firebase";

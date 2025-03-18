@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-
+import Navbar from '../components/Navbar'; // Import your Navbar component
 import './UserProfile.css';
 
 const UserProfile = () => {
