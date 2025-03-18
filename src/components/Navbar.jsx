@@ -57,9 +57,9 @@ function Navbar() {
 
   const handleProfileClick = () => {
     if (userRole === "admin") {
-      navigate("/admindash");
+      navigate("/admindash"); // Navigate to admin dashboard
     } else if (userRole === "user") {
-      navigate("/userprofile");
+      navigate("/userprofile"); // Navigate to user profile
     }
   };
 

@@ -102,7 +102,7 @@ const UserProfile = () => {
 
   return (
     <>
-      <Navbar />
+     
       <div className="profile-container">
         <div className="profile-card">
           <h1>User Profile</h1>
