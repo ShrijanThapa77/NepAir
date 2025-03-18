@@ -4,8 +4,8 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import AdminDash from "./pages/AdminDash";
 import HealthAlert from "./pages/HealthAlert";
-
 import EducationModule from "./pages/EducationModule"; // Import the EducationModule component
+import UserProfile from "./pages/UserProfile"; // Import the UserProfile component
 import Navbar from "./components/Navbar"; // Import the Navbar component
 import "./App.css";
 import AOS from "aos";
@@ -25,8 +25,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/healthalert" element={<HealthAlert />} />
         <Route path="/education" element={<EducationModule />} />
-
-        
+        <Route path="/userprofile" element={<UserProfile />} /> {/* Add this route */}
 
         {/* Admin Routes */}
         <Route path="/admindash" element={<AdminDash />} />
