@@ -65,7 +65,7 @@ function OldData({ setShowInfo }) {
       { station: 'Janakpur', value: 180, category: 'Hazardous' },
       { station: 'Pokhara', value: '100', category: 'Hazardous' },
       { station: 'Butwal', value: 100, category: 'Unhealthy' },
-      { station: 'Bhaktapur', value: 100, category: 'Unhealthy' },
+      { station: 'Bharatpur', value: 100, category: 'Unhealthy' },
       { station: 'Nepalgunj', value: 100, category: 'Sensitive' },
       { station: 'Mahendranagar', value: 80, category: 'Moderate' },
       { station: 'Biratnagar', value: 40, category: 'Good' },

@@ -24,7 +24,7 @@ function HealthAlert() {
     'Janakpur',
     'Pokhara',
     'Butwal',
-    'Bhaktapur',
+    'Bharatpur',
     'Nepalgunj',
     'Mahendranagar',
     'Biratnagar',

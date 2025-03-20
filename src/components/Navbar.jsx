@@ -63,6 +63,14 @@ function Navbar() {
     }
   };
 
+  const handleDashboardClick = () => {
+    if (userRole === "admin") {
+      navigate("/admindash"); // Navigate to admin dashboard
+    } else if (userRole === "user") {
+      navigate("/userdashboard"); // Navigate to user dashboard
+    }
+  };
+
   return (
     <div className="containNav">
       <nav
@@ -81,10 +89,7 @@ function Navbar() {
           <button className="navButtons" onClick={() => navigate("/")}>
             Home
           </button>
-          <button
-            className="navButtons"
-            onClick={() => navigate(userRole === "admin" ? "/admindash" : "/userprofile")}
-          >
+          <button className="navButtons" onClick={handleDashboardClick}>
             Dashboard
           </button>
           <button className="navButtons" onClick={() => navigate("/education")}>
