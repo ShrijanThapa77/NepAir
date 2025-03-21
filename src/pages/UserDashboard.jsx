@@ -1,17 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import Papa from 'papaparse';
 import BG from '../assets/BGGG.jpg';
-
-const data = [
-  // Replace this with your actual data from Historicaldataofcities.csv
-  { City: 'Kathmandu', pm25: 120, pm10: 150, o3: 30, no2: 40, so2: 20, co: 1.5 },
-  { City: 'Pokhara', pm25: 80, pm10: 100, o3: 25, no2: 35, so2: 15, co: 1.2 },
-  // Add more data points as needed
-];
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF1919'];
 
 const UserDashboard = () => {
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    // Fetch and parse the CSV data
+    const fetchData = async () => {
+      const response = await fetch('/path/to/Historicaldataofcities.csv');
+      const reader = response.body.getReader();
+      const result = await reader.read();
+      const decoder = new TextDecoder('utf-8');
+      const csv = decoder.decode(result.value);
+      const parsedData = Papa.parse(csv, { header: true }).data;
+      setData(parsedData);
+    };
+
+    fetchData();
+  }, []);
+
   const styles = {
     container: {
       backgroundImage: `url(${BG})`,
@@ -89,7 +100,7 @@ const UserDashboard = () => {
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="City" />
+              <XAxis dataKey="city" />
               <YAxis />
               <Tooltip />
               <Legend />
