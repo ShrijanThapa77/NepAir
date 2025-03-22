@@ -89,7 +89,7 @@ function Navbar() {
           <button className="navButtons" onClick={() => navigate("/")}>
             Home
           </button>
-          <button className="navButtons" onClick={handleDashboardClick}>
+          <button className="navButtons" onClick={() => navigate("/userdashboard")}>
             Dashboard
           </button>
           <button className="navButtons" onClick={() => navigate("/education")}>
