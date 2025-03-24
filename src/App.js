@@ -12,6 +12,18 @@ import "./App.css";
 import AOS from "aos";
 import "aos/dist/aos.css";
 
+// City Pages
+import Kathmandu from "./pages/cities/Kathmandu";
+import Pokhara from "./pages/cities/Pokhara";
+import Janakpur from "./pages/cities/Janakpur";
+import Butwal from "./pages/cities/Butwal";
+import Bhaktapur from "./pages/cities/Bhaktapur";
+import Nepalgunj from "./pages/cities/Nepalgunj";
+import Mahendranagar from "./pages/cities/Mahendranagar";
+import Biratnagar from "./pages/cities/Biratnagar";
+import Birgunj from "./pages/cities/Birgunj";
+import Dharan from "./pages/cities/Dharan";
+
 function App() {
   // Initialize AOS (Animate On Scroll)
   AOS.init();
@@ -31,6 +43,18 @@ function App() {
 
         {/* Admin Routes */}
         <Route path="/admindash" element={<AdminDash />} />
+
+        {/* City Routes */}
+        <Route path="/kathmandu" element={<Kathmandu />} />
+        <Route path="/pokhara" element={<Pokhara />} />
+        <Route path="/janakpur" element={<Janakpur />} />
+        <Route path="/butwal" element={<Butwal />} />
+        <Route path="/bhaktapur" element={<Bhaktapur />} />
+        <Route path="/nepalgunj" element={<Nepalgunj />} />
+        <Route path="/mahendranagar" element={<Mahendranagar />} />
+        <Route path="/biratnagar" element={<Biratnagar />} />
+        <Route path="/birgunj" element={<Birgunj />} />
+        <Route path="/dharan" element={<Dharan />} />
       </Routes>
     </BrowserRouter>
   );
