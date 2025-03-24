@@ -1,49 +1,51 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth, db } from "../firebase"; // Ensure Firestore is initialized in firebase.js
+import { auth, db } from "../firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { FaUserCircle } from "react-icons/fa"; // Corrected import statement
+import { FaUserCircle, FaSearch } from "react-icons/fa";
 import "./navbar.css";
 
 function Navbar() {
   const [userName, setUserName] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [scrolled, setScrolled] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const navigate = useNavigate();
+
+  // Sample list of cities (replace with your actual city data)
+  const cities = [
+    "Kathmandu", "Pokhara", "Birgunj", "Biratnagar", "Lalitpur", 
+    "Bhaktapur", "Bharatpur", "Hetauda", "Butwal", "Nepalgunj"
+  ];
+
+  const filteredCities = cities.filter(city =>
+    city.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 50) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
+      setScrolled(window.scrollY > 50);
     };
-
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const navigate = useNavigate();
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Fetch user details from Firestore
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setUserName(`${userData.firstName} ${userData.lastName}`);
-          setUserRole(userData.role); // Store the user's role
-        } else {
-          console.error("No such user document!");
+          setUserRole(userData.role);
         }
       } else {
         setUserName(null);
         setUserRole(null);
       }
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -56,19 +58,17 @@ function Navbar() {
   };
 
   const handleProfileClick = () => {
-    if (userRole === "admin") {
-      navigate("/admindash"); // Navigate to admin dashboard
-    } else if (userRole === "user") {
-      navigate("/userprofile"); // Navigate to user profile
-    }
+    navigate(userRole === "admin" ? "/admindash" : "/userprofile");
   };
 
   const handleDashboardClick = () => {
-    if (userRole === "admin") {
-      navigate("/admindash"); // Navigate to admin dashboard
-    } else if (userRole === "user") {
-      navigate("/userdashboard"); // Navigate to user dashboard
-    }
+    navigate(userRole === "admin" ? "/admindash" : "/userdashboard");
+  };
+
+  const handleSearch = (city) => {
+    setSearchQuery("");
+    setShowSuggestions(false);
+    navigate(`/city/${city.toLowerCase()}`);
   };
 
   return (
@@ -85,11 +85,42 @@ function Navbar() {
           <p style={styles.logoText}>NepAir</p>
         </div>
 
+        <div style={styles.searchContainer}>
+          <div style={styles.searchWrapper}>
+            <FaSearch style={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Search any Location, City, State or Country"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSuggestions(e.target.value.length > 0);
+              }}
+              style={styles.searchInput}
+              onFocus={() => setShowSuggestions(searchQuery.length > 0)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+            />
+            {showSuggestions && filteredCities.length > 0 && (
+              <div style={styles.suggestionsContainer}>
+                {filteredCities.map((city) => (
+                  <div
+                    key={city}
+                    style={styles.suggestionItem}
+                    onClick={() => handleSearch(city)}
+                  >
+                    {city}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         <div style={styles.navLinks}>
           <button className="navButtons" onClick={() => navigate("/")}>
             Home
           </button>
-          <button className="navButtons" onClick={() => navigate("/userdashboard")}>
+          <button className="navButtons" onClick={handleDashboardClick}>
             Dashboard
           </button>
           <button className="navButtons" onClick={() => navigate("/education")}>
@@ -111,7 +142,7 @@ function Navbar() {
                   <span style={styles.userName}>{userName}</span>
                 </div>
                 <div>
-                  <span style={styles.userRole}>{userRole}</span> {/* Display user role */}
+                  <span style={styles.userRole}>{userRole}</span>
                 </div>
               </div>
               <button className="authButton" onClick={handleLogout}>
@@ -133,7 +164,7 @@ const styles = {
   navbar: {
     position: "sticky",
     top: 0,
-    zIndex: "100",
+    zIndex: "1000",
     width: "100%",
     display: "flex",
     justifyContent: "space-between",
@@ -154,19 +185,60 @@ const styles = {
     color: "#F4F4F4",
     paddingLeft: "10px",
   },
+  searchContainer: {
+    flex: 1,
+    maxWidth: "500px",
+    margin: "0 20px",
+    position: "relative",
+  },
+  searchWrapper: {
+    position: "relative",
+    width: "100%",
+  },
+  searchIcon: {
+    position: "absolute",
+    left: "10px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    color: "#FFF",
+    fontSize: "16px",
+  },
+  searchInput: {
+    width: "100%",
+    padding: "10px 15px 10px 35px",
+    borderRadius: "25px",
+    border: "1px solid rgba(255, 255, 255, 0.3)",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    color: "#FFF",
+    fontSize: "14px",
+    outline: "none",
+    transition: "all 0.3s ease",
+  },
+  suggestionsContainer: {
+    position: "absolute",
+    top: "100%",
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    borderRadius: "0 0 10px 10px",
+    zIndex: "1001",
+    maxHeight: "300px",
+    overflowY: "auto",
+    borderTop: "none",
+  },
+  suggestionItem: {
+    padding: "10px 15px",
+    color: "#FFF",
+    cursor: "pointer",
+    transition: "background 0.2s ease",
+  },
+  suggestionItemHover: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+  },
   navLinks: {
     display: "flex",
     gap: "15px",
     alignItems: "center",
-  },
-  navButton: {
-    padding: "10px 15px",
-    border: "none",
-    color: "#FFF",
-    backgroundColor: "transparent",
-    fontSize: "16px",
-    fontWeight: "bold",
-    cursor: "pointer",
   },
   authSection: {
     display: "flex",
