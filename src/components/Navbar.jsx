@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -12,17 +12,47 @@ function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const navigate = useNavigate();
+  const searchRef = useRef(null);
 
-  // Sample list of cities (replace with your actual city data)
+  // List of cities that match your route structure
   const cities = [
-    "Kathmandu", "Pokhara", "Birgunj", "Biratnagar", "Lalitpur", 
-    "Bhaktapur", "Bharatpur", "Hetauda", "Butwal", "Nepalgunj"
+    { name: "Kathmandu", path: "/kathmandu" },
+    { name: "Pokhara", path: "/pokhara" },
+    { name: "Janakpur", path: "/janakpur" },
+    { name: "Butwal", path: "/butwal" },
+    { name: "Bhaktapur", path: "/bhaktapur" },
+    { name: "Nepalgunj", path: "/nepalgunj" },
+    { name: "Mahendranagar", path: "/mahendranagar" },
+    { name: "Biratnagar", path: "/biratnagar" },
+    { name: "Birgunj", path: "/birgunj" },
+    { name: "Dharan", path: "/dharan" }
   ];
 
   const filteredCities = cities.filter(city =>
-    city.toLowerCase().includes(searchQuery.toLowerCase())
+    city.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Handle Enter key press
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      if (filteredCities.length > 0) {
+        handleSearch(filteredCities[0].path);
+      } else if (searchQuery.trim() !== '') {
+        // Optional: Handle case when no suggestions match but user presses Enter
+        navigate(`/search?query=${encodeURIComponent(searchQuery)}`);
+        setSearchQuery("");
+        setShowSuggestions(false);
+      }
+    }
+  };
+
+  const handleSearch = (cityPath) => {
+    setSearchQuery("");
+    setShowSuggestions(false);
+    navigate(cityPath);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -30,6 +60,19 @@ function Navbar() {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   useEffect(() => {
@@ -65,12 +108,6 @@ function Navbar() {
     navigate(userRole === "admin" ? "/admindash" : "/userdashboard");
   };
 
-  const handleSearch = (city) => {
-    setSearchQuery("");
-    setShowSuggestions(false);
-    navigate(`/city/${city.toLowerCase()}`);
-  };
-
   return (
     <div className="containNav">
       <nav
@@ -86,7 +123,14 @@ function Navbar() {
         </div>
 
         <div style={styles.searchContainer}>
-          <div style={styles.searchWrapper}>
+          <div 
+            style={{ 
+              ...styles.searchWrapper,
+              borderColor: isSearchFocused ? "#4CAF50" : "rgba(255, 255, 255, 0.3)",
+              boxShadow: isSearchFocused ? "0 0 0 2px rgba(76, 175, 80, 0.2)" : "none"
+            }}
+            ref={searchRef}
+          >
             <FaSearch style={styles.searchIcon} />
             <input
               type="text"
@@ -96,19 +140,27 @@ function Navbar() {
                 setSearchQuery(e.target.value);
                 setShowSuggestions(e.target.value.length > 0);
               }}
+              onKeyDown={handleKeyDown}
               style={styles.searchInput}
-              onFocus={() => setShowSuggestions(searchQuery.length > 0)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              onFocus={() => {
+                setIsSearchFocused(true);
+                setShowSuggestions(searchQuery.length > 0);
+              }}
+              onBlur={() => {
+                setIsSearchFocused(false);
+                setTimeout(() => setShowSuggestions(false), 200);
+              }}
             />
             {showSuggestions && filteredCities.length > 0 && (
               <div style={styles.suggestionsContainer}>
                 {filteredCities.map((city) => (
                   <div
-                    key={city}
+                    key={city.name}
                     style={styles.suggestionItem}
-                    onClick={() => handleSearch(city)}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleSearch(city.path)}
                   >
-                    {city}
+                    {city.name}
                   </div>
                 ))}
               </div>
@@ -171,6 +223,7 @@ const styles = {
     alignItems: "center",
     padding: "5px 8px",
     margin: "0",
+    backdropFilter: "blur(10px)",
   },
   logoContainer: {
     display: "grid",
@@ -178,12 +231,14 @@ const styles = {
   logoImage: {
     width: "70px",
     height: "70px",
+    transition: "transform 0.3s ease",
   },
   logoText: {
     fontSize: "18px",
     fontWeight: "bold",
     color: "#F4F4F4",
     paddingLeft: "10px",
+    transition: "all 0.3s ease",
   },
   searchContainer: {
     flex: 1,
@@ -194,20 +249,24 @@ const styles = {
   searchWrapper: {
     position: "relative",
     width: "100%",
+    borderRadius: "25px",
+    border: "1px solid",
+    transition: "all 0.3s ease",
   },
   searchIcon: {
     position: "absolute",
-    left: "10px",
+    left: "15px",
     top: "50%",
     transform: "translateY(-50%)",
     color: "#FFF",
     fontSize: "16px",
+    transition: "all 0.3s ease",
   },
   searchInput: {
     width: "100%",
-    padding: "10px 15px 10px 35px",
+    padding: "12px 20px 12px 40px",
     borderRadius: "25px",
-    border: "1px solid rgba(255, 255, 255, 0.3)",
+    border: "none",
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     color: "#FFF",
     fontSize: "14px",
@@ -216,24 +275,29 @@ const styles = {
   },
   suggestionsContainer: {
     position: "absolute",
-    top: "100%",
+    top: "calc(100% + 5px)",
     left: 0,
     right: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    borderRadius: "0 0 10px 10px",
+    backgroundColor: "rgba(13, 27, 42, 0.95)",
+    borderRadius: "10px",
     zIndex: "1001",
     maxHeight: "300px",
     overflowY: "auto",
-    borderTop: "none",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+    boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+    padding: "5px 0",
   },
   suggestionItem: {
-    padding: "10px 15px",
+    padding: "12px 20px",
     color: "#FFF",
     cursor: "pointer",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
     transition: "background 0.2s ease",
-  },
-  suggestionItemHover: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    "&:hover": {
+      backgroundColor: "rgba(76, 175, 80, 0.3)",
+    }
   },
   navLinks: {
     display: "flex",
@@ -253,6 +317,7 @@ const styles = {
   userIcon: {
     fontSize: "24px",
     color: "#FFF",
+    transition: "all 0.3s ease",
   },
   userName: {
     color: "#FFF",
