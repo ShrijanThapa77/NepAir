@@ -223,7 +223,7 @@ const styles = {
     alignItems: "center",
     padding: "5px 8px",
     margin: "0",
-    backdropFilter: "blur(10px)",
+    
   },
   logoContainer: {
     display: "grid",

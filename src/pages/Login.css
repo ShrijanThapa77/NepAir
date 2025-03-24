@@ -1,71 +1,274 @@
-/* General styles for the Login page */
-.containerlogin {
+/* Base Styles */
+:root {
+  --primary-color: #4361ee;
+  --secondary-color: #3f37c9;
+  --accent-color: #4895ef;
+  --light-color: #f8f9fa;
+  --dark-color: #212529;
+  --success-color: #4cc9f0;
+  --error-color: #f72585;
+  --border-radius: 12px;
+  --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Auth Page Wrapper */
+.auth-page-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Auth Container */
+.auth-container {
+  position: relative;
+  flex: 1;
+  display: flex;
+  width: 100%;
+  min-height: calc(100vh - 80px); /* Adjust based on navbar height */
+}
+
+.auth-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  z-index: 0;
+}
+
+.auth-background::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.auth-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh; /* Full viewport height */
-  width: 100vw; /* Full viewport width */
-  font-family: Arial, sans-serif;
-  background: url('../assets/BGG.jpg') no-repeat center center/cover; /* Same background as EducationModule */
-  padding-top: 80px; /* Added padding to prevent overlap with navbar */
+  padding: 2rem;
+  margin-top: 80px; /* Adjust based on your navbar height */
 }
 
-.cardwrapper {
-  padding-top: 30vh;
-  padding-bottom: 30vh;
-  height: auto;
+/* Auth Card */
+.auth-card {
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  width: 100%;
+  max-width: 500px;
+  padding: 2.5rem;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.card {
-  background: #ffffff;
-  border-radius: 15px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  padding: 30px 40px;
-  width: 400px;
+.auth-header {
   text-align: center;
+  margin-bottom: 2rem;
 }
 
-h1 {
-  font-size: 2.5rem; /* Larger font size */
-  margin-bottom: 20px;
-  color: #333333;
-  font-weight: bolder; /* Bold font weight */
+.auth-header h2 {
+  color: var(--dark-color);
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.auth-header p {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Auth Form */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-row > * {
+  flex: 1;
+}
+
+.input-group {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.input-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  font-size: 1rem;
 }
 
 input, select {
   width: 100%;
-  padding: 12px 15px;
-  margin: 10px 0;
-  border: 1px solid #dddddd;
-  border-radius: 10px;
-  box-sizing: border-box;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 2px solid #e9ecef;
+  border-radius: var(--border-radius);
   font-size: 1rem;
+  transition: var(--transition);
+  background-color: #f8f9fa;
 }
 
-.submit-btn {
-  width: 100%;
-  background: #007bff; /* Updated button color */
-  color: #ffffff;
-  padding: 12px;
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(72, 149, 239, 0.2);
+}
+
+input.error, select.error {
+  border-color: var(--error-color);
+}
+
+.error-message {
+  color: var(--error-color);
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+/* Auth Button */
+.auth-button {
+  background-color: var(--primary-color);
+  color: white;
   border: none;
-  border-radius: 10px;
+  padding: 1rem;
+  border-radius: var(--border-radius);
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: var(--transition);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 3rem;
 }
 
-.submit-btn:hover {
-  background: #0056b3; /* Darker shade on hover */
+.auth-button:hover {
+  background-color: var(--secondary-color);
+  transform: translateY(-2px);
 }
 
-.toggle-link {
-  margin-top: 15px;
+.auth-button:active {
+  transform: translateY(0);
+}
+
+.auth-button:disabled {
+  background-color: #adb5bd;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Auth Footer */
+.auth-footer {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.text-button {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  padding: 0.25rem;
+  margin-left: 0.25rem;
+}
+
+.text-button:hover {
+  color: var(--secondary-color);
+  text-decoration: underline;
+}
+
+.toggle-text {
+  color: #6c757d;
+  margin-top: 1rem;
+}
+
+.password-requirements {
+  background-color: #f8f9fa;
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.password-requirements p {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--dark-color);
+}
+
+.password-requirements ul {
+  list-style-type: none;
   font-size: 0.9rem;
-  color: #666666;
+  color: #6c757d;
 }
 
-.toggle-link span {
-  color: #007bff; /* Updated link color */
-  cursor: pointer;
-  font-weight: bold;
+.password-requirements li {
+  margin-bottom: 0.25rem;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.password-requirements li::before {
+  content: '•';
+  position: absolute;
+  left: 0.5rem;
+  color: var(--accent-color);
+}
+
+/* Responsive Design */
+@media (max-width: 576px) {
+  .auth-card {
+    padding: 1.5rem;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
 }

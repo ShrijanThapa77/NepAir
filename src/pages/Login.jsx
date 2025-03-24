@@ -3,14 +3,15 @@ import { useNavigate } from "react-router-dom";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-   sendEmailVerification,
+  sendEmailVerification,
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth, db } from "../firebase";
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
-import Navbar from "../components/Navbar"; // Import the shared Navbar
+import Navbar from "../components/Navbar";
 import './Login.css';
-import BG from '../assets/BGG.jpg'; // Import the same background image
+import BG from '../assets/BGG.jpg';
+import { FaUser, FaLock, FaEnvelope, FaVenusMars, FaBirthdayCake, FaShieldAlt } from 'react-icons/fa';
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -22,9 +23,11 @@ const Login = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'user', // Default role is user
+    role: 'user',
   });
+  const [errors, setErrors] = useState({});
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,56 +46,64 @@ const Login = () => {
       confirmPassword: '',
       role: 'user',
     });
+    setErrors({});
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    if (errors[name]) {
+      setErrors({...errors, [name]: ''});
+    }
   };
 
-  // Password validation function
-  const validatePassword = (password) => {
-    const minLength = 8;
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!isLogin) {
+      if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
+      if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
+      if (!formData.age || formData.age < 13) newErrors.age = 'You must be at least 13 years old';
+      if (!formData.gender) newErrors.gender = 'Please select your gender';
+    }
 
-    if (password.length < minLength) {
-      return "Password must be at least 8 characters long.";
+    if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      newErrors.email = 'Please enter a valid email';
     }
-    if (!hasSpecialChar) {
-      return "Password must contain at least one special character.";
+
+    const passwordError = validatePassword(formData.password);
+    if (passwordError) newErrors.password = passwordError;
+
+    if (!isLogin && formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
     }
-    if (!hasUppercase) {
-      return "Password must contain at least one uppercase letter.";
-    }
-    if (!hasNumber) {
-      return "Password must contain at least one number.";
-    }
-    return null; // No error
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validatePassword = (password) => {
+    if (password.length < 8) return "Must be at least 8 characters";
+    if (!/[A-Z]/.test(password)) return "Must contain an uppercase letter";
+    if (!/[0-9]/.test(password)) return "Must contain a number";
+    if (!/[!@#$%^&*]/.test(password)) return "Must contain a special character";
+    return null;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Validate password during signup
-    if (!isLogin) {
-      const passwordError = validatePassword(formData.password);
-      if (passwordError) {
-        alert(passwordError);
-        return;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        alert("Passwords do not match!");
-        return;
-      }
+    setIsLoading(true);
+    
+    if (!validateForm()) {
+      setIsLoading(false);
+      return;
     }
 
-    if (isLogin) {
-      // Handle Login
-      try {
+    try {
+      if (isLogin) {
         const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
         const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
+        
         if (userDoc.exists()) {
           if (userCredential.user.emailVerified) {
             const userData = userDoc.data();
@@ -101,24 +112,13 @@ const Login = () => {
               return;
             }
             setUser({ uid: userCredential.user.uid, fullName: `${userData.firstName} ${userData.lastName}`, role: userData.role });
-            alert("Login successful!");
           } else {
             alert("Please verify your email address.");
           }
-        } else {
-          alert("User data not found.");
         }
-      } catch (error) {
-        console.error("Login Error:", error.message);
-        alert(error.message);
-      }
-    } else {
-      // Handle Signup
-      try {
+      } else {
         const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-        // Send email verification link
         await sendEmailVerification(userCredential.user);
-        // Save user data to Firestore
         await setDoc(doc(db, "users", userCredential.user.uid), {
           firstName: formData.firstName,
           lastName: formData.lastName,
@@ -126,15 +126,17 @@ const Login = () => {
           gender: formData.gender,
           email: formData.email,
           role: formData.role,
-          status: formData.role === 'admin' ? 'pending' : 'approved', // Admins need approval
+          status: formData.role === 'admin' ? 'pending' : 'approved',
           createdAt: new Date(),
         });
-        alert("Account created successfully! Please verify your email.");
-        setIsLogin(true);
-      } catch (error) {
-        console.error("Signup Error:", error.message);
-        alert(error.message);
+        alert("Account created! Please verify your email.");
+        toggleForm();
       }
+    } catch (error) {
+      console.error("Auth Error:", error.message);
+      alert(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -142,17 +144,15 @@ const Login = () => {
     const email = prompt("Please enter your email address:");
     if (email) {
       try {
-        // Query Firestore to find the user document with the matching email
         const usersRef = collection(db, "users");
         const q = query(usersRef, where("email", "==", email));
         const querySnapshot = await getDocs(q);
+        
         if (!querySnapshot.empty) {
-          // Assuming email is unique, we take the first document
           const userDoc = querySnapshot.docs[0];
           const userData = userDoc.data();
-          // Check if the user is approved
+          
           if (userData.status === "approved") {
-            // Send password reset email
             await sendPasswordResetEmail(auth, email);
             alert("Password reset email sent. Please check your inbox.");
           } else {
@@ -169,94 +169,172 @@ const Login = () => {
   };
 
   return (
-    <>
-      <Navbar /> {/* Use the shared Navbar */}
-      <div className="containerlogin" style={{ backgroundImage: `url(${BG})` }}>
-        <div className="cardwrapper">
-          <div className="card">
-            <h1>{isLogin ? 'Login' : 'Sign Up'}</h1>
-            <form onSubmit={handleSubmit}>
+    <div className="auth-page-wrapper">
+      <Navbar />
+      <div className="auth-container">
+        <div className="auth-background" style={{ backgroundImage: `url(${BG})` }}></div>
+        <div className="auth-content">
+          <div className="auth-card">
+            <div className="auth-header">
+              <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
+              <p>{isLogin ? 'Sign in to continue' : 'Join us today'}</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="auth-form">
               {!isLogin && (
-                <>
-                  <input
-                    type="text"
-                    name="firstName"
-                    placeholder="First Name"
-                    value={formData.firstName}
+                <div className="form-row">
+                  <div className="input-group">
+                    <FaUser className="input-icon" />
+                    <input
+                      type="text"
+                      name="firstName"
+                      placeholder="First Name"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      className={errors.firstName ? 'error' : ''}
+                    />
+                    {errors.firstName && <span className="error-message">{errors.firstName}</span>}
+                  </div>
+                  <div className="input-group">
+                    <FaUser className="input-icon" />
+                    <input
+                      type="text"
+                      name="lastName"
+                      placeholder="Last Name"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      className={errors.lastName ? 'error' : ''}
+                    />
+                    {errors.lastName && <span className="error-message">{errors.lastName}</span>}
+                  </div>
+                </div>
+              )}
+
+              {!isLogin && (
+                <div className="form-row">
+                  <div className="input-group">
+                    <FaBirthdayCake className="input-icon" />
+                    <input
+                      type="number"
+                      name="age"
+                      placeholder="Age"
+                      value={formData.age}
+                      onChange={handleChange}
+                      min="13"
+                      className={errors.age ? 'error' : ''}
+                    />
+                    {errors.age && <span className="error-message">{errors.age}</span>}
+                  </div>
+                  <div className="input-group">
+                    <FaVenusMars className="input-icon" />
+                    <select 
+                      name="gender" 
+                      value={formData.gender} 
+                      onChange={handleChange}
+                      className={errors.gender ? 'error' : ''}
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                    {errors.gender && <span className="error-message">{errors.gender}</span>}
+                  </div>
+                </div>
+              )}
+
+              {!isLogin && (
+                <div className="input-group">
+                  <FaShieldAlt className="input-icon" />
+                  <select 
+                    name="role" 
+                    value={formData.role} 
                     onChange={handleChange}
-                    required
-                  />
-                  <input
-                    type="text"
-                    name="lastName"
-                    placeholder="Last Name"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    required
-                  />
-                  <input
-                    type="number"
-                    name="age"
-                    placeholder="Age"
-                    value={formData.age}
-                    onChange={handleChange}
-                    required
-                  />
-                  <select name="gender" value={formData.gender} onChange={handleChange} required>
-                    <option value="">Select Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
-                  <select name="role" value={formData.role} onChange={handleChange}>
+                  >
                     <option value="user">User</option>
                     <option value="admin">Admin</option>
                   </select>
-                </>
+                </div>
               )}
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-              />
-              {!isLogin && (
+
+              <div className="input-group">
+                <FaEnvelope className="input-icon" />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Email Address"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={errors.email ? 'error' : ''}
+                />
+                {errors.email && <span className="error-message">{errors.email}</span>}
+              </div>
+
+              <div className="input-group">
+                <FaLock className="input-icon" />
                 <input
                   type="password"
-                  name="confirmPassword"
-                  placeholder="Confirm Password"
-                  value={formData.confirmPassword}
+                  name="password"
+                  placeholder="Password"
+                  value={formData.password}
                   onChange={handleChange}
-                  required
+                  className={errors.password ? 'error' : ''}
                 />
+                {errors.password && <span className="error-message">{errors.password}</span>}
+              </div>
+
+              {!isLogin && (
+                <div className="input-group">
+                  <FaLock className="input-icon" />
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    placeholder="Confirm Password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className={errors.confirmPassword ? 'error' : ''}
+                  />
+                  {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
+                </div>
               )}
-              <button type="submit" className="submit-btn">
-                {isLogin ? 'Login' : 'Sign Up'}
+
+              <button type="submit" className="auth-button" disabled={isLoading}>
+                {isLoading ? (
+                  <span className="spinner"></span>
+                ) : (
+                  isLogin ? 'Sign In' : 'Create Account'
+                )}
               </button>
             </form>
-            {isLogin && (
-              <button onClick={handleForgotPassword} className="toggle-link">
-                Forgot Password?
-              </button>
-            )}
-            <p className="toggle-link">
-              {isLogin ? "Don't have an account? " : "Already have an account? "}
-              <span onClick={toggleForm}>{isLogin ? 'Sign Up' : 'Login'}</span>
-            </p>
+
+            <div className="auth-footer">
+              {isLogin ? (
+                <button onClick={handleForgotPassword} className="text-button">
+                  Forgot Password?
+                </button>
+              ) : (
+                <div className="password-requirements">
+                  <p>Password must contain:</p>
+                  <ul>
+                    <li>At least 8 characters</li>
+                    <li>One uppercase letter</li>
+                    <li>One number</li>
+                    <li>One special character</li>
+                  </ul>
+                </div>
+              )}
+
+              <p className="toggle-text">
+                {isLogin ? "Don't have an account?" : "Already have an account?"}
+                <button onClick={toggleForm} className="text-button">
+                  {isLogin ? ' Sign Up' : ' Sign In'}
+                </button>
+              </p>
+            </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
