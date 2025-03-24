@@ -1,13 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import CityLayout from '../../components/CityLayout';
+import BG from '../../assets/BGGG.jpg';
+
 function Kathmandu() {
   const navigate = useNavigate();
 
   return (
     <CityLayout title="Kathmandu">
       <div className="city-content">
-        <h1>Kathmandu</h1>
+        <h1>Bhaktapur</h1>
         <p>Capital city of Nepal, rich in cultural heritage and history.</p>
         
         {/* Add your city-specific content here */}
