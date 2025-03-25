@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-
 import { auth, db } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiAlertCircle, FiCheckCircle, FiEdit, FiTrash2, FiPhone, FiMail, FiMapPin, FiHeart } from 'react-icons/fi';
 import './HealthAlert.css';
 import BG from '../assets/BGGG.jpg';
+
 
 function HealthAlert() {
   const [user, setUser] = useState(null);
@@ -16,6 +18,7 @@ function HealthAlert() {
   const [message, setMessage] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   // List of available stations
@@ -32,20 +35,35 @@ function HealthAlert() {
     'Dharan',
   ];
 
-  // List of diseases
-  const diseases = ['Pneumonia', 'Asthma', 'COPD', 'Sarcoidosis', 'Bronchiectasis', 'Other', 'No Diseases'];
+  // List of diseases with icons
+  const diseases = [
+    { name: 'Pneumonia', icon: '🫁' },
+    { name: 'Asthma', icon: '🌬️' },
+    { name: 'COPD', icon: '🚬' },
+    { name: 'Sarcoidosis', icon: '🔍' },
+    { name: 'Bronchiectasis', icon: '🔄' },
+    { name: 'Other', icon: '❓' },
+    { name: 'No Diseases', icon: '❌' },
+  ];
 
   // Check user authentication status
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists() && userDoc.data().healthAlert?.subscribed) {
-          setIsSubscribed(true);
-          setStations(userDoc.data().healthAlert.stations);
-          setSelectedDiseases(userDoc.data().healthAlert.diseases);
-          setPhoneNumber(userDoc.data().healthAlert.phoneNumber || '');
+        setIsLoading(true);
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists() && userDoc.data().healthAlert?.subscribed) {
+            setIsSubscribed(true);
+            setStations(userDoc.data().healthAlert.stations);
+            setSelectedDiseases(userDoc.data().healthAlert.diseases);
+            setPhoneNumber(userDoc.data().healthAlert.phoneNumber || '');
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+        } finally {
+          setIsLoading(false);
         }
       } else {
         setUser(null);
@@ -58,7 +76,6 @@ function HealthAlert() {
   // Handle disease selection logic
   const handleDiseaseChange = (disease) => {
     if (disease === 'No Diseases') {
-      // If "No Diseases" is selected, clear all other selections
       setSelectedDiseases(['No Diseases']);
     } else if (disease === 'Other') {
       setSelectedDiseases((prev) =>
@@ -80,6 +97,8 @@ function HealthAlert() {
       setMessage('Please fill all fields and agree to terms');
       return;
     }
+    
+    setIsLoading(true);
     try {
       await setDoc(
         doc(db, 'users', user.uid),
@@ -98,12 +117,15 @@ function HealthAlert() {
     } catch (error) {
       console.error('Error:', error);
       setMessage('Subscription failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   // Handle unsubscribe confirmation
   const handleUnsubscribe = async () => {
-    if (window.confirm('Are you sure you want to unsubscribe?')) {
+    if (window.confirm('Are you sure you want to unsubscribe from health alerts?')) {
+      setIsLoading(true);
       try {
         await setDoc(
           doc(db, 'users', user.uid),
@@ -113,60 +135,121 @@ function HealthAlert() {
           { merge: true }
         );
         setIsSubscribed(false);
-        navigate('/HealthAlert');
+        setMessage('You have been unsubscribed from health alerts.');
       } catch (error) {
         console.error('Unsubscribe error:', error);
+        setMessage('Failed to unsubscribe. Please try again.');
+      } finally {
+        setIsLoading(false);
       }
     }
   };
 
   return (
-    <div className="health-alert-page" style={{ backgroundImage: `url(${BG})` }}>
-     
-      <div className="health-alert-container">
-        {!user ? (
-          <div className="auth-required">
-            <h2>NepAir - AQI Monitoring Service</h2>
-            <p className="description">
-              Protect your health with our free email and SMS alert service. Get notified about
-              dangerous air quality levels in your area.
-            </p>
-            <button onClick={() => navigate('/login')} className="cta-button">
-              Login to Subscribe
-            </button>
+    <div className="health-alert-page" style={{ backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url(${BG})` }}>
+      <motion.div 
+        className="health-alert-container"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        {isLoading ? (
+          <div className="loading-overlay">
+            <div className="spinner"></div>
+            <p>Processing your request...</p>
           </div>
-        ) : isSubscribed ? (
-          <div className="subscription-success">
-            <div className="success-icon">✓</div>
-            <h2>Subscription Active!</h2>
-            <p className="success-message">
-              Email: {user.email}
-              <br />
-              Phone: {phoneNumber}
-              <br />
-              You'll receive alerts for {stations.join(', ')}.<br />
-              Monitoring diseases: {selectedDiseases.join(', ')}.
+        ) : !user ? (
+          <motion.div 
+            className="auth-required"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <div className="header-icon">
+              <FiAlertCircle size={48} />
+            </div>
+            <h2>NepAir - Air Quality Health Alerts</h2>
+            <p className="description">
+              Protect your respiratory health with our free alert service. Get notified via email and SMS when 
+              air quality reaches dangerous levels in your selected locations.
             </p>
+            <motion.button 
+              onClick={() => navigate('/login')} 
+              className="cta-button primary"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Login to Subscribe
+            </motion.button>
+          </motion.div>
+        ) : isSubscribed ? (
+          <motion.div 
+            className="subscription-success"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <div className="success-icon">
+              <FiCheckCircle size={64} />
+            </div>
+            <h2>Your Health Alert Subscription is Active!</h2>
+            
+            <div className="subscription-details">
+              <div className="detail-item">
+                <FiMail className="detail-icon" />
+                <span>{user.email}</span>
+              </div>
+              <div className="detail-item">
+                <FiPhone className="detail-icon" />
+                <span>{phoneNumber || 'Not provided'}</span>
+              </div>
+              <div className="detail-item">
+                <FiMapPin className="detail-icon" />
+                <span>{stations.join(', ')}</span>
+              </div>
+              <div className="detail-item">
+                <FiHeart className="detail-icon" />
+                <span>{selectedDiseases.join(', ')}</span>
+              </div>
+            </div>
+            
             <div className="action-buttons">
-              <button
+              <motion.button
                 onClick={() => setIsSubscribed(false)}
-                className="cta-button"
+                className="cta-button primary"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                Edit Preferences
-              </button>
-              <button
+                <FiEdit /> Edit Preferences
+              </motion.button>
+              <motion.button
                 onClick={handleUnsubscribe}
                 className="cta-button secondary"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                Unsubscribe
-              </button>
+                <FiTrash2 /> Unsubscribe
+              </motion.button>
             </div>
-          </div>
+          </motion.div>
         ) : (
-          <form onSubmit={handleSubscribe} className="subscription-form">
-            <h2>Health Alert Subscription</h2>
+          <motion.form 
+            onSubmit={handleSubscribe} 
+            className="subscription-form"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <h2>
+              <FiAlertCircle className="form-icon" /> 
+              Health Alert Subscription
+            </h2>
+            
             <div className="form-group">
-              <label>Select Monitoring Stations:</label>
+              <label>
+                <FiMapPin className="label-icon" /> 
+                Select Monitoring Stations:
+              </label>
               <select
                 multiple
                 value={stations}
@@ -182,64 +265,111 @@ function HealthAlert() {
                   </option>
                 ))}
               </select>
-              <small>Hold Ctrl (Windows) or Command (Mac) to select multiple stations.</small>
+              <small className="select-hint">
+                Hold Ctrl (Windows) or Command (Mac) to select multiple stations
+              </small>
             </div>
+            
             <div className="form-group">
-              <label>Select Respiratory Diseases:</label>
+              <label>
+                <FiHeart className="label-icon" /> 
+                Select Respiratory Conditions:
+              </label>
               <div className="disease-grid">
-                {diseases.map((disease) => (
-                  <label key={disease} className="disease-option">
+                {diseases.map(({name, icon}) => (
+                  <motion.label 
+                    key={name} 
+                    className={`disease-option ${selectedDiseases.includes(name) ? 'selected' : ''}`}
+                    whileHover={{ scale: 1.03 }}
+                  >
                     <input
                       type="checkbox"
-                      checked={selectedDiseases.includes(disease)}
-                      onChange={() => handleDiseaseChange(disease)}
+                      checked={selectedDiseases.includes(name)}
+                      onChange={() => handleDiseaseChange(name)}
+                      className="hidden-checkbox"
                     />
-                    {disease}
-                    {disease === 'Other' && selectedDiseases.includes('Other') && (
+                    <span className="custom-checkbox">
+                      {selectedDiseases.includes(name) && (
+                        <span className="checkmark">✓</span>
+                      )}
+                    </span>
+                    <span className="disease-icon">{icon}</span>
+                    <span className="disease-name">{name}</span>
+                    {name === 'Other' && selectedDiseases.includes('Other') && (
                       <input
                         type="text"
                         value={otherDisease}
                         onChange={(e) => setOtherDisease(e.target.value)}
-                        placeholder="Specify other disease"
+                        placeholder="Specify condition"
                         required
                         className="other-input"
                       />
                     )}
-                  </label>
+                  </motion.label>
                 ))}
               </div>
             </div>
+            
             <div className="form-group">
-              <label>Phone Number (Nepal):</label>
-              <input
-                type="text"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="Enter your phone number"
-                required
-                className="phone-input"
-              />
+              <label>
+                <FiPhone className="label-icon" /> 
+                Phone Number for SMS Alerts:
+              </label>
+              <div className="phone-input-container">
+                <span className="country-code">+977</span>
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                  placeholder="98XXXXXXXX"
+                  required
+                  className="phone-input"
+                  pattern="[0-9]{10}"
+                  maxLength="10"
+                />
+              </div>
             </div>
+            
             <label className="agreement">
               <input
                 type="checkbox"
                 checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
                 required
+                className="hidden-checkbox"
               />
+              <span className="custom-checkbox">
+                {agreed && <span className="checkmark">✓</span>}
+              </span>
               I agree to receive email and SMS alerts based on my preferences
             </label>
-            <button type="submit" className="cta-button">
-              Subscribe Now
-            </button>
-          </form>
+            
+            <motion.button 
+              type="submit" 
+              className="cta-button primary"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Processing...' : 'Subscribe Now'}
+            </motion.button>
+          </motion.form>
         )}
-        {message && (
-          <div className={`message ${message.includes('failed') ? 'error' : ''}`}>
-            {message}
-          </div>
-        )}
-      </div>
+        
+        <AnimatePresence>
+          {message && (
+            <motion.div 
+              className={`message ${message.includes('failed') || message.includes('Please') ? 'error' : 'success'}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {message}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }
