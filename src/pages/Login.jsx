@@ -8,7 +8,7 @@ import {
 } from "firebase/auth";
 import { auth, db } from "../firebase";
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
-import Navbar from "../components/Navbar";
+
 import './Login.css';
 import BG from '../assets/BGG.jpg';
 import { FaUser, FaLock, FaEnvelope, FaVenusMars, FaBirthdayCake, FaShieldAlt } from 'react-icons/fa';
@@ -26,13 +26,8 @@ const Login = () => {
     role: 'user',
   });
   const [errors, setErrors] = useState({});
-  const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user) navigate('/');
-  }, [user, navigate]);
 
   const toggleForm = () => {
     setIsLogin(!isLogin);
@@ -111,7 +106,7 @@ const Login = () => {
               alert("Your admin account is pending approval.");
               return;
             }
-            setUser({ uid: userCredential.user.uid, fullName: `${userData.firstName} ${userData.lastName}`, role: userData.role });
+            navigate('/');
           } else {
             alert("Please verify your email address.");
           }
@@ -170,7 +165,7 @@ const Login = () => {
 
   return (
     <div className="auth-page-wrapper">
-      <Navbar />
+     
       <div className="auth-container">
         <div className="auth-background" style={{ backgroundImage: `url(${BG})` }}></div>
         <div className="auth-content">
