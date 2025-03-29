@@ -1,239 +1,329 @@
-// Kathmandu.jsx
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaTemperatureHigh, FaTint, FaWind, FaSun, FaLeaf, FaChartLine, FaSearch, FaLocationArrow } from 'react-icons/fa';
-import { GiModernCity, GiMountainRoad } from 'react-icons/gi';
-import { MdOutlineAttractions, MdAir, MdRefresh } from 'react-icons/md';
-import { IoIosArrowBack } from 'react-icons/io';
-import BG from '../../assets/BGGG.jpg';
-import './CityPage.css';
+import React, { useState, useEffect } from "react";
+import "./Kathmandu.css";
+import BG from "../../assets/BGGG.jpg";
+import { useNavigate } from "react-router-dom";
 
-function Kathmandu() {
+const Bhaktapur = () => {
   const navigate = useNavigate();
-  const currentDate = new Date().toLocaleString('en-US', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
+  const [aqiData, setAqiData] = useState({
+    city: "Bhaktapur",
+    date: new Date().toLocaleDateString(),
+    pm25: 45,
+    pm10: 78,
+    o3: 12,
+    no2: 23,
+    so2: 9,
+    co: 0.8,
+    weather: "Partly Cloudy",
+    temperature: 22,
+    humidity: 65,
+    windSpeed: 8,
+    windDirection: "NE",
+    pressure: 1013,
+    visibility: 8,
   });
 
+  const [hourlyPrediction, setHourlyPrediction] = useState([]);
+  const [tomorrowPrediction, setTomorrowPrediction] = useState([]);
+  const [selectedTab, setSelectedTab] = useState("today");
+  const [loading, setLoading] = useState(true);
+  const [activePollutant, setActivePollutant] = useState(null);
+
+  useEffect(() => {
+    setTimeout(() => {
+      generatePredictions();
+      setLoading(false);
+    }, 1500);
+  }, []);
+
+  const generatePredictions = () => {
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+    const todayPredictions = hours.map((hour) => {
+      const baseValue = 30 + Math.sin(hour / 4) * 20 + Math.random() * 5;
+      return {
+        hour: `${hour}:00`,
+        aqi: Math.round(baseValue),
+        level: getAQILevel(Math.round(baseValue)),
+        dominantPollutant: getRandomPollutant(),
+      };
+    });
+    setHourlyPrediction(todayPredictions);
+
+    const tomorrowPredictions = hours.map((hour) => {
+      const baseValue = 25 + Math.sin(hour / 4) * 25 + Math.random() * 8;
+      return {
+        hour: `${hour}:00`,
+        aqi: Math.round(baseValue),
+        level: getAQILevel(Math.round(baseValue)),
+        dominantPollutant: getRandomPollutant(),
+      };
+    });
+    setTomorrowPrediction(tomorrowPredictions);
+  };
+
+  const getRandomPollutant = () => {
+    const pollutants = ["PM2.5", "PM10", "O3", "NO2", "SO2", "CO"];
+    return pollutants[Math.floor(Math.random() * pollutants.length)];
+  };
+
+  const getAQILevel = (value) => {
+    if (value <= 50) return "Good";
+    if (value <= 100) return "Moderate";
+    if (value <= 150) return "Unhealthy for Sensitive Groups";
+    if (value <= 200) return "Unhealthy";
+    if (value <= 300) return "Very Unhealthy";
+    return "Hazardous";
+  };
+
+  const getAQIColor = (value) => {
+    if (value <= 50) return "#55a84f";
+    if (value <= 100) return "#a3c853";
+    if (value <= 150) return "#fff833";
+    if (value <= 200) return "#f29c32";
+    if (value <= 300) return "#e93f33";
+    return "#af2d24";
+  };
+
+  const handleGoBack = () => {
+    navigate("/");
+  };
+
+  const currentAQI = Math.round((aqiData.pm25 + aqiData.pm10) / 2);
+  const currentAQIColor = getAQIColor(currentAQI);
+  const currentAQILevel = getAQILevel(currentAQI);
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading Bhaktapur AQI Data...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="kathmandu-page">
-      {/* Hero Section */}
-      <div className="kathmandu-hero" style={{ backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), url(${BG})` }}>
-        <div className="hero-content">
-          <h1>Kathmandu</h1>
-          <p>Capital of Nepal - The City of Temples</p>
-          
-          {/* Search Bar */}
-          <div className="search-container">
-            <div className="search-bar">
-              <FaSearch className="search-icon" />
-              <input type="text" placeholder="Search any Location, City, State or Country" />
+    <div className="dashboard-container" style={{ backgroundImage: `url(${BG})` }}>
+      <div className="overlay"></div>
+      <header className="dashboard-header">
+        <h1>Bhaktapur Air Quality Dashboard</h1>
+        <div className="last-updated">
+          <span>{aqiData.city}</span>
+          <span>{new Date().toLocaleString()}</span>
+        </div>
+      </header>
+      <div className="main-dashboard">
+        <div className="current-data-section">
+          <div className="current-aqi-card" style={{ borderColor: currentAQIColor }}>
+            <div className="aqi-value" style={{ color: currentAQIColor }}>
+              {currentAQI}
+              <span className="aqi-level" style={{ backgroundColor: currentAQIColor }}>
+                {currentAQILevel}
+              </span>
             </div>
+            <div className="aqi-label">Air Quality Index</div>
+            <div className="aqi-description">
+              {currentAQI <= 50 && "Air quality is satisfactory"}
+              {currentAQI > 50 && currentAQI <= 100 && "Moderate health concern"}
+              {currentAQI > 100 && currentAQI <= 150 && "Unhealthy for sensitive groups"}
+              {currentAQI > 150 && currentAQI <= 200 && "Unhealthy for all"}
+              {currentAQI > 200 && currentAQI <= 300 && "Very unhealthy"}
+              {currentAQI > 300 && "Hazardous conditions"}
+            </div>
+          </div>
+          <div className="weather-card">
+            <div className="weather-icon">
+              {aqiData.weather.includes("Cloudy") ? "☁️" : aqiData.weather.includes("Rain") ? "🌧️" : "☀️"}
+            </div>
+            <div className="weather-details">
+              <div className="weather-condition">{aqiData.weather}</div>
+              <div className="weather-temp">{aqiData.temperature}°C</div>
+              <div className="weather-meta">
+                <span title="Humidity">💧 {aqiData.humidity}%</span>
+                <span title="Wind Speed">💨 {aqiData.windSpeed} km/h {aqiData.windDirection}</span>
+                <span title="Pressure">📊 {aqiData.pressure} hPa</span>
+                <span title="Visibility">👀 {aqiData.visibility} km</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="pollutants-section">
+          <h2>Pollutant Concentrations (µg/m³)</h2>
+          <div className="pollutants-grid">
+            {[
+              { name: "PM2.5", value: aqiData.pm25, multiplier: 2 },
+              { name: "PM10", value: aqiData.pm10, multiplier: 1.5 },
+              { name: "O₃", value: aqiData.o3, multiplier: 5 },
+              { name: "NO₂", value: aqiData.no2, multiplier: 3 },
+              { name: "SO₂", value: aqiData.so2, multiplier: 5 },
+              { name: "CO", value: aqiData.co, multiplier: 50 },
+            ].map((pollutant, index) => (
+              <div
+                key={index}
+                className={`pollutant-card ${activePollutant === pollutant.name.toLowerCase() ? "active" : ""}`}
+                onClick={() =>
+                  setActivePollutant(activePollutant === pollutant.name.toLowerCase() ? null : pollutant.name.toLowerCase())
+                }
+              >
+                <div className="pollutant-name">{pollutant.name}</div>
+                <div className="pollutant-value">{pollutant.name === "CO" ? pollutant.value.toFixed(1) : pollutant.value}</div>
+                <div className="pollutant-bar">
+                  <div
+                    className="pollutant-bar-fill"
+                    style={{
+                      width: `${Math.min(100, pollutant.value * pollutant.multiplier)}%`,
+                      backgroundColor: getAQIColor(pollutant.value * pollutant.multiplier),
+                    }}
+                  ></div>
+                </div>
+                {activePollutant === pollutant.name.toLowerCase() && (
+                  <div className="pollutant-info">
+                    {pollutant.name === "PM2.5" && "Fine particles that can penetrate lungs"}
+                    {pollutant.name === "PM10" && "Coarse particles that can irritate airways"}
+                    {pollutant.name === "O₃" && "Ground-level ozone that affects respiratory system"}
+                    {pollutant.name === "NO₂" && "Nitrogen dioxide from vehicle emissions"}
+                    {pollutant.name === "SO₂" && "Sulfur dioxide from industrial processes"}
+                    {pollutant.name === "CO" && "Carbon monoxide from incomplete combustion"}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="forecast-section">
+          <div className="forecast-header">
+            <h2>AQI Forecast</h2>
+            <div className="forecast-tabs">
+              <button
+                className={selectedTab === "today" ? "active" : ""}
+                onClick={() => setSelectedTab("today")}
+              >
+                Today
+              </button>
+              <button
+                className={selectedTab === "tomorrow" ? "active" : ""}
+                onClick={() => setSelectedTab("tomorrow")}
+              >
+                Tomorrow
+              </button>
+            </div>
+          </div>
+          <div className="forecast-content">
+            {selectedTab === "today" ? (
+              <>
+                <div className="hourly-forecast">
+                  {hourlyPrediction.map((hour, index) => (
+                    <div key={index} className="hourly-item">
+                      <div className="hour-label">{hour.hour}</div>
+                      <div
+                        className="hour-aqi-bar"
+                        style={{
+                          height: `${Math.min(100, hour.aqi)}%`,
+                          backgroundColor: getAQIColor(hour.aqi),
+                        }}
+                        title={`AQI: ${hour.aqi} (${hour.level})
+Dominant: ${hour.dominantPollutant}`}
+                      >
+                        <span className="hour-aqi-value">{hour.aqi}</span>
+                        <span className="dominant-pollutant">{hour.dominantPollutant}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="forecast-summary">
+                  <h3>Today's Summary</h3>
+                  <p>
+                    Air quality is expected to{" "}
+                    {hourlyPrediction[0].aqi < hourlyPrediction[12].aqi ? "deteriorate" : "improve"} throughout the day with peak pollution around{" "}
+                    {hourlyPrediction.reduce(
+                      (maxIndex, item, i, arr) => (item.aqi > arr[maxIndex].aqi ? i : maxIndex),
+                      0
+                    )}
+                    :00.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="hourly-forecast">
+                  {tomorrowPrediction.map((hour, index) => (
+                    <div key={index} className="hourly-item">
+                      <div className="hour-label">{hour.hour}</div>
+                      <div
+                        className="hour-aqi-bar"
+                        style={{
+                          height: `${Math.min(100, hour.aqi)}%`,
+                          backgroundColor: getAQIColor(hour.aqi),
+                        }}
+                        title={`AQI: ${hour.aqi} (${hour.level})
+Dominant: ${hour.dominantPollutant}`}
+                      >
+                        <span className="hour-aqi-value">{hour.aqi}</span>
+                        <span className="dominant-pollutant">{hour.dominantPollutant}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="forecast-summary">
+                  <h3>Tomorrow's Outlook</h3>
+                  <p>
+                    Air quality is predicted to be{" "}
+                    {tomorrowPrediction.reduce((sum, item) => sum + item.aqi, 0) / tomorrowPrediction.length >
+                    currentAQI
+                      ? "worse"
+                      : "better"}{" "}
+                    than today with dominant pollutants being{" "}
+                    {[...new Set(tomorrowPrediction.map((item) => item.dominantPollutant))].join(", ")}.
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="health-recommendation">
+          <h3>Health Recommendations</h3>
+          <div className="recommendation-content">
+            {currentAQI <= 50 && (
+              <p className="good">Air quality is satisfactory. Enjoy your normal outdoor activities.</p>
+            )}
+            {currentAQI > 50 && currentAQI <= 100 && (
+              <p className="moderate">
+                Unusually sensitive individuals should consider reducing prolonged outdoor exertion.
+              </p>
+            )}
+            {currentAQI > 100 && currentAQI <= 150 && (
+              <p className="unhealthy-sensitive">Sensitive groups should reduce prolonged outdoor exertion.</p>
+            )}
+            {currentAQI > 150 && currentAQI <= 200 && (
+              <p className="unhealthy">
+                Everyone may begin to experience health effects. Sensitive groups should avoid prolonged outdoor
+                exertion.
+              </p>
+            )}
+            {currentAQI > 200 && currentAQI <= 300 && (
+              <p className="very-unhealthy">Health alert: everyone may experience more serious health effects.</p>
+            )}
+            {currentAQI > 300 && (
+              <p className="hazardous blinking">Health warning of emergency conditions: everyone is likely to be affected.</p>
+            )}
+          </div>
+          <div className="recommendation-actions">
+            <button className="action-btn mask-btn">😷 Wear Mask</button>
+            <button className="action-btn indoor-btn">🏠 Stay Indoors</button>
+            <button className="action-btn window-btn">🔒 Close Windows</button>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="kathmandu-content">
-        {/* Air Quality Section */}
-        <section className="aqi-section">
-          <div className="section-header">
-            <h2>
-              <MdAir className="title-icon" />
-              Kathmandu Air Quality Index (AQI)
-            </h2>
-            <div className="last-updated">
-              <MdRefresh className="refresh-icon" />
-              Last Updated: {currentDate}
-            </div>
-          </div>
-
-          <div className="aqi-main">
-            <div className="aqi-value-container">
-              <div className="aqi-value">117</div>
-              <div className="aqi-status poor">Air Quality is Poor</div>
-            </div>
-
-            <div className="aqi-details">
-              <div className="detail-item">
-                <div className="detail-label">PM2.5</div>
-                <div className="detail-value">42 µg/m³</div>
-              </div>
-              <div className="detail-item">
-                <div className="detail-label">PM10</div>
-                <div className="detail-value">61 µg/m³</div>
-              </div>
-            </div>
-
-            <div className="aqi-scale">
-              <div className="scale-labels">
-                <span>Good</span>
-                <span>Moderate</span>
-                <span>Poor</span>
-                <span>Unhealthy</span>
-                <span>Severe</span>
-                <span>Hazardous</span>
-              </div>
-              <div className="scale-bar">
-                <div className="segment excellent"></div>
-                <div className="segment good"></div>
-                <div className="segment poor active"></div>
-                <div className="segment unhealthy"></div>
-                <div className="segment severe"></div>
-                <div className="segment hazardous"></div>
-              </div>
-              <div className="scale-numbers">
-                <span>0</span>
-                <span>50</span>
-                <span>100</span>
-                <span>150</span>
-                <span>200</span>
-                <span>300</span>
-                <span>500</span>
-              </div>
-            </div>
-
-            <div className="ranking-info">
-              Currently, Kathmandu ranks <span className="highlight">531st</span> in the Air Quality ranking
-            </div>
-          </div>
-        </section>
-
-        {/* Weather and Pollution Metrics */}
-        <section className="metrics-section">
-          <div className="weather-metrics">
-            <div className="metric-card">
-              <div className="metric-header">
-                <FaTemperatureHigh className="metric-icon" />
-                <h3>Weather</h3>
-              </div>
-              <div className="metric-values">
-                <div className="weather-item">
-                  <div className="weather-value">28 °C</div>
-                  <div className="weather-label">Temperature</div>
-                </div>
-                <div className="weather-item">
-                  <div className="weather-value">Mist</div>
-                  <div className="weather-label">Conditions</div>
-                </div>
-                <div className="weather-item">
-                  <div className="weather-value">37%</div>
-                  <div className="weather-label">Humidity</div>
-                </div>
-                <div className="weather-item">
-                  <div className="weather-value">12 km/h</div>
-                  <div className="weather-label">Wind Speed</div>
-                </div>
-                <div className="weather-item">
-                  <div className="weather-value">2</div>
-                  <div className="weather-label">UV Index</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="pollution-metrics">
-              <div className="metric-card">
-                <div className="metric-header">
-                  <FaChartLine className="metric-icon" />
-                  <h3>Pollution</h3>
-                </div>
-                <div className="pollution-grid">
-                  <div className="pollution-item">
-                    <div className="pollution-label">PM10</div>
-                    <div className="pollution-value">61 µg/m³</div>
-                  </div>
-                  <div className="pollution-item">
-                    <div className="pollution-label">CO</div>
-                    <div className="pollution-value">0.5 mg/m³</div>
-                  </div>
-                  <div className="pollution-item">
-                    <div className="pollution-label">SO₂</div>
-                    <div className="pollution-value">4 µg/m³</div>
-                  </div>
-                  <div className="pollution-item">
-                    <div className="pollution-label">NO₂</div>
-                    <div className="pollution-value">12 µg/m³</div>
-                  </div>
-                  <div className="pollution-item">
-                    <div className="pollution-label">O₃</div>
-                    <div className="pollution-value">28 µg/m³</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* City Information Section */}
-        <section className="city-info">
-          <div className="section-header">
-            <h2>
-              <GiModernCity className="title-icon" />
-              About Kathmandu
-            </h2>
-          </div>
-
-          <p className="city-description">
-            Kathmandu, the capital city of Nepal, is rich in cultural heritage and history. 
-            Nestled in the Kathmandu Valley at an elevation of 1,400 meters, it serves as the 
-            gateway to the Himalayas with breathtaking mountain views and ancient temples.
-          </p>
-
-          <div className="info-grid">
-            <div className="info-card">
-              <div className="info-card-header">
-                <GiMountainRoad className="info-card-icon" />
-                <h3>Key Information</h3>
-              </div>
-              <ul className="info-list">
-                <li>
-                  <span className="info-label">Population:</span>
-                  <span className="info-value">1.5 million</span>
-                </li>
-                <li>
-                  <span className="info-label">Elevation:</span>
-                  <span className="info-value">1,400m</span>
-                </li>
-                <li>
-                  <span className="info-label">Language:</span>
-                  <span className="info-value">Nepali, Newari</span>
-                </li>
-                <li>
-                  <span className="info-label">Best Time to Visit:</span>
-                  <span className="info-value">Oct-Dec</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="info-card">
-              <div className="info-card-header">
-                <MdOutlineAttractions className="info-card-icon" />
-                <h3>Major Attractions</h3>
-              </div>
-              <ul className="info-list">
-                <li>Swayambhunath Stupa (Monkey Temple)</li>
-                <li>Pashupatinath Temple</li>
-                <li>Kathmandu Durbar Square</li>
-                <li>Boudhanath Stupa</li>
-                <li>Thamel District</li>
-                <li>Garden of Dreams</li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        {/* Back Button */}
-        <button className="back-button" onClick={() => navigate(-1)}>
-          <IoIosArrowBack className="back-icon" />
-          Back to Map
-        </button>
-      </div>
+      <footer className="dashboard-footer">
+        <p>Data Source: Nepal Environmental Monitoring Network | Last refreshed: {new Date().toLocaleTimeString()}</p>
+        <p>© {new Date().getFullYear()} Bhaktapur Air Quality Monitoring | All rights reserved</p>
+        <button className="go-back-button" onClick={handleGoBack}>Go Back to Map</button>
+      </footer>
     </div>
   );
-}
+};
 
-export default Kathmandu;
+export default Bhaktapur;
