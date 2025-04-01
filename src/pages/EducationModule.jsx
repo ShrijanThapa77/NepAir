@@ -1,18 +1,21 @@
 import React, { useState } from "react";
-import "./EducationModule.css"; // Import the CSS file for styling
+import "./EducationModule.css";
 import Footer from "../components/Footer";
 import BG from '../assets/BGG.jpg';
+import { FiArrowLeft, FiArrowRight, FiExternalLink } from 'react-icons/fi';
+import { motion } from 'framer-motion';
 
 const EducationModule = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [hoveredCard, setHoveredCard] = useState(null);
 
-  // Sample educational resources (you can replace this with dynamic data)
+  // Sample educational resources
   const News = [
-    { url: "https://www.icimod.org/wp-content/uploads/302042345_451246337032785_4783566089841697782_n.jpg", title: "" },
-    { url: "https://idsb.tmgrup.com.tr/ly/uploads/images/2021/03/30/103883.jpg", title: "" },
-    { url: "https://assets-cdn.kathmandupost.com/uploads/source/news/2020/news/DTezpgIVMAAXM-1603301636.jpg", title: "" },
-    { url: "https://assets-cdn.kathmandupost.com/uploads/source/news/2023/news/polutionphoto-1699320782.jpg", title: "" },
-    { url: "https://assets-cdn.kathmandupost.com/uploads/source/news/2023/opinion/downPostFilePhotoHemantaShrestha-1693965360.jpg", title: "" },
+    { url: "https://www.icimod.org/wp-content/uploads/302042345_451246337032785_4783566089841697782_n.jpg", title: "Himalayan Air Pollution" },
+    { url: "https://idsb.tmgrup.com.tr/ly/uploads/images/2021/03/30/103883.jpg", title: "Urban Air Quality Challenges" },
+    { url: "https://assets-cdn.kathmandupost.com/uploads/source/news/2020/news/DTezpgIVMAAXM-1603301636.jpg", title: "Kathmandu Valley Pollution" },
+    { url: "https://assets-cdn.kathmandupost.com/uploads/source/news/2023/news/polutionphoto-1699320782.jpg", title: "Winter Pollution Crisis" },
+    { url: "https://assets-cdn.kathmandupost.com/uploads/source/news/2023/opinion/downPostFilePhotoHemantaShrestha-1693965360.jpg", title: "Vehicle Emissions Impact" },
   ];
 
   const news = [
@@ -66,47 +69,26 @@ const EducationModule = () => {
     },
   ];
 
-  const containerStyle = {
-    width: '1200px',
-    height: '580px',
-    margin: '0 auto',
-  };
-
-  const sliderStyle = {
-    height: '100%',
-    position: 'relative',
-  };
-
-  const slideStyle = {
-    width: '100%',
-    height: '100%',
-    backgroundPosition: 'center',
-    borderRadius: '10px',
-    backgroundSize: 'cover',
-    backgroundImage: `url(${News[currentIndex].url})`,
-  };
-
-  const leftArrowStyle = {
-    position: 'absolute',
-    top: '50%',
-    left: '32px',
-    transform: 'translateY(-50%)',
-    fontSize: '24px',
-    cursor: 'pointer',
-    color: '#fff',
-    zIndex: 1,
-  };
-
-  const rightArrowStyle = {
-    position: 'absolute',
-    top: '50%',
-    right: '32px',
-    transform: 'translateY(-50%)',
-    fontSize: '24px',
-    cursor: 'pointer',
-    color: '#fff',
-    zIndex: 1,
-  };
+  const resources = [
+    {
+      id: 1,
+      title: "Understanding Air Quality Index (AQI)",
+      description: "Learn about what AQI is, how it is calculated, and its significance in monitoring air pollution levels and their health impacts.",
+      link: "https://www.epa.gov/air-quality-index",
+    },
+    {
+      id: 2,
+      title: "Effects of Air Pollution on Health",
+      description: "Explore the wide-ranging health impacts of poor air quality and discover effective strategies to protect yourself and your loved ones.",
+      link: "https://www.who.int/health-topics/air-pollution",
+    },
+    {
+      id: 3,
+      title: "Air Quality Monitoring in Nepal",
+      description: "Discover how air quality is monitored in Nepal, the challenges faced, and initiatives to improve environmental monitoring systems.",
+      link: "https://nepalairquality.com",
+    },
+  ];
 
   const goToPrevious = () => {
     setCurrentIndex((prevIndex) =>
@@ -120,74 +102,180 @@ const EducationModule = () => {
     );
   };
 
-  const resources = [
-    {
-      id: 1,
-      title: "Understanding Air Quality Index (AQI)",
-      description: "Learn about what AQI is, how it is calculated, and its significance.",
-      link: "https://www.epa.gov/air-quality-index",
-    },
-    {
-      id: 2,
-      title: "Effects of Air Pollution on Health",
-      description: "Explore the health impacts of poor air quality and how to protect yourself.",
-      link: "https://www.who.int/health-topics/air-pollution",
-    },
-    {
-      id: 3,
-      title: "Air Quality Monitoring in Nepal",
-      description: "Discover how air quality is monitored in Nepal and the challenges faced.",
-      link: "https://nepalairquality.com",
-    },
-  ];
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.5
+      }
+    }
+  };
 
   return (
     <div className="education-module" style={{ backgroundImage: `url(${BG})` }}>
-      <div style={containerStyle}>
-        <div style={sliderStyle}>
-          <div style={leftArrowStyle} onClick={goToPrevious}>⮜</div>
-          <div style={rightArrowStyle} onClick={goToNext}>⮞</div>
-          <div style={slideStyle}></div>
-        </div>
-      </div>
-      <div className="news-content">
-        <h1 className="newshead">News Regarding Air Quality</h1>
-        <div className="news-list">
-          {news.map((newz) => (
-            <div key={newz.id} className="news-card">
-              <img src={newz.img} alt={newz.title} />
-              <h2>{newz.title}</h2>
-              <a href={newz.link} target="_blank" rel="noopener noreferrer">
-                Read More
-              </a>
+      {/* Hero Slider Section */}
+      <section className="hero-slider">
+        <div className="slider-container">
+          <div className="slider-wrapper">
+            <button className="slider-arrow left" onClick={goToPrevious}>
+              <FiArrowLeft size={32} />
+            </button>
+            <div 
+              className="slide"
+              style={{ backgroundImage: `url(${News[currentIndex].url})` }}
+            >
+              <div className="slide-overlay">
+                <motion.h1 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="slide-title"
+                >
+                  {News[currentIndex].title}
+                </motion.h1>
+                <motion.p 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="slide-subtitle"
+                >
+                  Stay informed about air quality issues in Nepal
+                </motion.p>
+              </div>
             </div>
-          ))}
+            <button className="slider-arrow right" onClick={goToNext}>
+              <FiArrowRight size={32} />
+            </button>
+          </div>
+          <div className="slider-dots">
+            {News.map((_, index) => (
+              <button
+                key={index}
+                className={`dot ${index === currentIndex ? 'active' : ''}`}
+                onClick={() => setCurrentIndex(index)}
+              />
+            ))}
+          </div>
         </div>
-      </div>
-      <div className="education-content">
-        <h1>Educational Resources on Air Quality</h1>
-        <p>
-          Explore educational materials and resources to learn more about air quality and its impact
-          on health and the environment.
-        </p>
+      </section>
 
-        <div className="resource-list">
-          {resources.map((resource) => (
-            <div key={resource.id} className="resource-card">
-              <h2>{resource.title}</h2>
-              <p>{resource.description}</p>
-              <a
-                href={resource.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="resource-link"
+      {/* News Section */}
+      <section className="news-section">
+        <div className="section-container">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+            className="section-header"
+          >
+            <h2 className="section-title">Latest News on Air Quality</h2>
+            <p className="section-description">
+              Stay updated with the most recent news articles about air pollution in Nepal and its impacts.
+            </p>
+          </motion.div>
+
+          <motion.div 
+            className="news-grid"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            {news.map((item) => (
+              <motion.div 
+                key={item.id}
+                className="news-card"
+                variants={itemVariants}
+                whileHover={{ y: -5 }}
+                onMouseEnter={() => setHoveredCard(item.id)}
+                onMouseLeave={() => setHoveredCard(null)}
               >
-                Learn More
-              </a>
-            </div>
-          ))}
+                <div className="news-image-container">
+                  <img 
+                    src={item.img} 
+                    alt={item.title} 
+                    className="news-image"
+                  />
+                  <div className={`news-overlay ${hoveredCard === item.id ? 'active' : ''}`}>
+                    <a 
+                      href={item.link} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="news-link"
+                    >
+                      Read Article <FiExternalLink />
+                    </a>
+                  </div>
+                </div>
+                <h3 className="news-title">{item.title}</h3>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
-      </div>
+      </section>
+
+      {/* Resources Section */}
+      <section className="resources-section">
+        <div className="section-container">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+            className="section-header"
+          >
+            <h2 className="section-title">Educational Resources</h2>
+            <p className="section-description">
+              Explore comprehensive materials to deepen your understanding of air quality and its environmental impact.
+            </p>
+          </motion.div>
+
+          <motion.div 
+            className="resources-grid"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            {resources.map((resource) => (
+              <motion.div 
+                key={resource.id}
+                className="resource-card"
+                variants={itemVariants}
+                whileHover={{ y: -5 }}
+              >
+                <div className="resource-content">
+                  <h3 className="resource-title">{resource.title}</h3>
+                  <p className="resource-description">{resource.description}</p>
+                </div>
+                <a
+                  href={resource.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="resource-link"
+                >
+                  Learn More <FiExternalLink />
+                </a>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
       <Footer />
     </div>
   );
