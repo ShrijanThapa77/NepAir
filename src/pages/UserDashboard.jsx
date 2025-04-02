@@ -1,602 +1,464 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import * as d3 from 'd3';
-import { 
-  Bar, 
-  Line, 
-  Pie, 
-  Scatter,
-  Bubble,
-  Radar 
-} from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  RadialLinearScale,
-  TimeScale,
-  Filler
-} from 'chart.js';
-import 'chartjs-adapter-date-fns';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+
 import Papa from 'papaparse';
-import BG from '../assets/BGGG.jpg';
 import './UserDashboard.css';
-// Register ChartJS components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  RadialLinearScale,
-  TimeScale,
-  Filler
-);
-
+import { 
+  LineChart, Line, BarChart, Bar, PieChart, Pie, AreaChart, Area,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  Cell, ScatterChart, Scatter, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
+} from 'recharts';
 const UserDashboard = () => {
-  const [rawData, setRawData] = useState([]);
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCity, setSelectedCity] = useState('All Cities');
-  const [timeRange, setTimeRange] = useState('year');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCity, setSelectedCity] = useState('All');
+  const [timeRange, setTimeRange] = useState('all');
+  const [pollutant, setPollutant] = useState('pm25');
+  
+  const cities = [
+    'Kathmandu', 'Janakpur', 'Pokhara', 'Butwal', 
+    'Bharatpur', 'Nepalgunj', 'Mahendranagar', 
+    'Biratnagar', 'Birgunj', 'Dharan'
+  ];
 
-  // Fetch and parse CSV data
+  const pollutants = [
+    { value: 'pm25', label: 'PM2.5' },
+    { value: 'pm10', label: 'PM10' },
+    { value: 'o3', label: 'Ozone (O₃)' },
+    { value: 'no2', label: 'Nitrogen Dioxide (NO₂)' },
+    { value: 'so2', label: 'Sulfur Dioxide (SO₂)' },
+    { value: 'co', label: 'Carbon Monoxide (CO)' }
+  ];
+
+  const cityColors = {
+    'Kathmandu': '#FFD700',
+    'Janakpur': '#800020',
+    'Pokhara': '#A0522D',
+    'Butwal': '#FF4500',
+    'Bharatpur': '#B22222',
+    'Nepalgunj': '#FF8C00',
+    'Mahendranagar': '#FFD700',
+    'Biratnagar': '#32CD32',
+    'Birgunj': '#FFD700',
+    'Dharan': '#DAA520'
+  };
+
+  const RADIAN = Math.PI / 180;
+  
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('.C:\Users\Dell\Desktop\NepAirrrs\NepAir\public\Historicaldataofcities.csv');
-        const csvText = await response.text();
+        const response = await fetch('/Historicaldataofcities.csv');
+        const reader = response.body.getReader();
+        const result = await reader.read();
+        const decoder = new TextDecoder('utf-8');
+        const csvData = decoder.decode(result.value);
         
-        Papa.parse(csvText, {
+        Papa.parse(csvData, {
           header: true,
           complete: (results) => {
-            const processed = results.data
-              .filter(item => item.City && item.Date)
-              .map(item => ({
-                ...item,
-                Date: new Date(item.Date),
-                pm25: parseFloat(item.pm25) || 0,
-                pm10: parseFloat(item.pm10) || 0,
-                o3: parseFloat(item.o3) || 0,
-                no2: parseFloat(item.no2) || 0,
-                so2: parseFloat(item.so2) || 0,
-                co: parseFloat(item.co) || 0,
-              }))
-              .filter(item => !isNaN(item.Date.getTime()));
+            // Convert string values to numbers for pollutant data
+            const parsedData = results.data.map(row => {
+              return {
+                ...row,
+                pm25: parseFloat(row.pm25),
+                pm10: parseFloat(row.pm10),
+                o3: parseFloat(row.o3),
+                no2: parseFloat(row.no2),
+                so2: parseFloat(row.so2),
+                co: parseFloat(row.co),
+                Date: new Date(row.Date)
+              };
+            }).filter(row => !isNaN(row.pm25)); // Filter out incomplete rows
             
-            setRawData(processed);
-            setLoading(false);
-          },
-          error: (error) => {
-            console.error('Error parsing CSV:', error);
+            setData(parsedData);
             setLoading(false);
           }
         });
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error fetching data:', error);
         setLoading(false);
       }
     };
-
+    
     fetchData();
   }, []);
 
-  // Filter data based on selections
-  const filteredData = useMemo(() => {
-    let filtered = [...rawData];
+  const filteredData = data.filter(item => {
+    if (selectedCity !== 'All' && item.City !== selectedCity) return false;
     
-    // Filter by city
-    if (selectedCity !== 'All Cities') {
-      filtered = filtered.filter(item => 
-        item.City.toLowerCase().includes(selectedCity.toLowerCase())
-      );
-    }
-    
-    // Filter by search query
-    if (searchQuery) {
-      filtered = filtered.filter(item => 
-        item.City.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    
-    // Filter by time range
-    const now = new Date();
-    if (timeRange === 'month') {
-      const oneMonthAgo = new Date(now.setMonth(now.getMonth() - 1));
-      filtered = filtered.filter(item => item.Date >= oneMonthAgo);
-    } else if (timeRange === 'week') {
-      const oneWeekAgo = new Date(now.setDate(now.getDate() - 7));
-      filtered = filtered.filter(item => item.Date >= oneWeekAgo);
-    } else if (timeRange === 'day') {
-      const oneDayAgo = new Date(now.setDate(now.getDate() - 1));
-      filtered = filtered.filter(item => item.Date >= oneDayAgo);
-    }
-    
-    return filtered;
-  }, [rawData, selectedCity, searchQuery, timeRange]);
-
-  // Get unique cities for dropdown
-  const cities = useMemo(() => {
-    const uniqueCities = [...new Set(rawData.map(item => item.City))];
-    return ['All Cities', ...uniqueCities];
-  }, [rawData]);
-
-  // Calculate AQI based on PM2.5 (simplified)
-  const calculateAQI = (pm25) => {
-    if (pm25 <= 12) return Math.round((50/12) * pm25);
-    if (pm25 <= 35.4) return Math.round(((100-51)/(35.4-12.1)) * (pm25-12.1) + 51);
-    if (pm25 <= 55.4) return Math.round(((150-101)/(55.4-35.5)) * (pm25-35.5) + 101);
-    if (pm25 <= 150.4) return Math.round(((200-151)/(150.4-55.5)) * (pm25-55.5) + 151);
-    if (pm25 <= 250.4) return Math.round(((300-201)/(250.4-150.5)) * (pm25-150.5) + 201);
-    if (pm25 <= 350.4) return Math.round(((400-301)/(350.4-250.5)) * (pm25-250.5) + 301);
-    if (pm25 <= 500.4) return Math.round(((500-401)/(500.4-350.5)) * (pm25-350.5) + 401);
-    return 500;
-  };
-
-  // Get AQI category and color
-  const getAQICategory = (aqi) => {
-    if (aqi <= 50) return { label: 'Good', color: '#55a84f' };
-    if (aqi <= 100) return { label: 'Satisfactory', color: '#a3c853' };
-    if (aqi <= 200) return { label: 'Moderate', color: '#fff833' };
-    if (aqi <= 300) return { label: 'Poor', color: '#f29c33' };
-    if (aqi <= 400) return { label: 'Very Poor', color: '#e93f33' };
-    return { label: 'Severe', color: '#af2d24' };
-  };
-
-  // Prepare time series data
-  const timeSeriesData = useMemo(() => {
-    const grouped = filteredData.reduce((acc, item) => {
-      let key;
-      const date = item.Date;
+    if (timeRange !== 'all') {
+      const itemDate = new Date(item.Date);
+      const today = new Date();
       
-      if (timeRange === 'year') key = date.getFullYear();
-      else if (timeRange === 'month') key = `${date.getFullYear()}-${date.getMonth()}`;
-      else if (timeRange === 'week') key = `${date.getFullYear()}-${Math.floor(date.getDate() / 7)}`;
-      else key = date.toISOString().split('T')[0];
+      if (timeRange === 'month') {
+        const monthAgo = new Date();
+        monthAgo.setMonth(today.getMonth() - 1);
+        return itemDate >= monthAgo;
+      } else if (timeRange === '3months') {
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(today.getMonth() - 3);
+        return itemDate >= threeMonthsAgo;
+      } else if (timeRange === 'year') {
+        const yearAgo = new Date();
+        yearAgo.setFullYear(today.getFullYear() - 1);
+        return itemDate >= yearAgo;
+      }
+    }
+    
+    return true;
+  });
+
+  // Calculate average pollutant values by city
+  const averagesByCity = cities.map(city => {
+    const cityData = data.filter(item => item.City === city);
+    
+    if (cityData.length === 0) return { City: city, pm25: 0, pm10: 0, o3: 0, no2: 0, so2: 0, co: 0 };
+    
+    const sumValues = cityData.reduce((acc, item) => {
+      return {
+        pm25: acc.pm25 + item.pm25,
+        pm10: acc.pm10 + item.pm10,
+        o3: acc.o3 + item.o3,
+        no2: acc.no2 + item.no2,
+        so2: acc.so2 + item.so2,
+        co: acc.co + item.co
+      };
+    }, { pm25: 0, pm10: 0, o3: 0, no2: 0, so2: 0, co: 0 });
+    
+    return {
+      City: city,
+      pm25: sumValues.pm25 / cityData.length,
+      pm10: sumValues.pm10 / cityData.length,
+      o3: sumValues.o3 / cityData.length,
+      no2: sumValues.no2 / cityData.length,
+      so2: sumValues.so2 / cityData.length,
+      co: sumValues.co / cityData.length
+    };
+  });
+
+  // Group data by month for trend analysis
+  const monthlyData = () => {
+    const months = {};
+    
+    filteredData.forEach(item => {
+      const date = new Date(item.Date);
+      const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
       
-      if (!acc[key]) {
-        acc[key] = {
-          dates: [],
-          pm25: [],
-          pm10: [],
-          o3: [],
-          no2: [],
-          so2: [],
-          co: []
+      if (!months[monthYear]) {
+        months[monthYear] = {
+          month: monthYear,
+          pm25: 0,
+          pm10: 0,
+          o3: 0,
+          no2: 0,
+          so2: 0,
+          co: 0,
+          count: 0
         };
       }
       
-      acc[key].dates.push(date);
-      acc[key].pm25.push(item.pm25);
-      acc[key].pm10.push(item.pm10);
-      acc[key].o3.push(item.o3);
-      acc[key].no2.push(item.no2);
-      acc[key].so2.push(item.so2);
-      acc[key].co.push(item.co);
-      
-      return acc;
-    }, {});
+      months[monthYear].pm25 += item.pm25;
+      months[monthYear].pm10 += item.pm10;
+      months[monthYear].o3 += item.o3;
+      months[monthYear].no2 += item.no2;
+      months[monthYear].so2 += item.so2;
+      months[monthYear].co += item.co;
+      months[monthYear].count += 1;
+    });
     
-    return Object.entries(grouped).map(([key, values]) => {
-      const avgPm25 = values.pm25.reduce((a, b) => a + b, 0) / values.pm25.length;
-      const avgPm10 = values.pm10.reduce((a, b) => a + b, 0) / values.pm10.length;
-      const avgO3 = values.o3.reduce((a, b) => a + b, 0) / values.o3.length;
-      const avgNo2 = values.no2.reduce((a, b) => a + b, 0) / values.no2.length;
-      
-      return {
-        date: key,
-        pm25: avgPm25,
-        pm10: avgPm10,
-        o3: avgO3,
-        no2: avgNo2,
-        aqi: calculateAQI(avgPm25)
-      };
-    }).sort((a, b) => a.date.localeCompare(b.date));
-  }, [filteredData, timeRange]);
+    return Object.values(months)
+      .map(month => ({
+        month: month.month,
+        pm25: month.pm25 / month.count,
+        pm10: month.pm10 / month.count,
+        o3: month.o3 / month.count,
+        no2: month.no2 / month.count,
+        so2: month.so2 / month.count,
+        co: month.co / month.count
+      }))
+      .sort((a, b) => {
+        const [aMonth, aYear] = a.month.split('/');
+        const [bMonth, bYear] = b.month.split('/');
+        return new Date(aYear, aMonth - 1) - new Date(bYear, bMonth - 1);
+      });
+  };
 
-  // Latest data point
-  const latestData = filteredData.length > 0 
-    ? filteredData[filteredData.length - 1] 
-    : null;
+  // Calculate correlation between pollutants
+  const correlationData = () => {
+    if (filteredData.length === 0) return [];
+    
+    return filteredData.map(item => ({
+      pm25: item.pm25,
+      pm10: item.pm10,
+      City: item.City
+    }));
+  };
+
+  // Calculate AQI categories based on PM2.5
+  const getAQICategory = (pm25) => {
+    if (pm25 <= 12) return 'Good';
+    if (pm25 <= 35.4) return 'Moderate';
+    if (pm25 <= 55.4) return 'Unhealthy for Sensitive Groups';
+    if (pm25 <= 150.4) return 'Unhealthy';
+    if (pm25 <= 250.4) return 'Very Unhealthy';
+    return 'Hazardous';
+  };
+
+  const calculateAQIDistribution = () => {
+    const categories = {
+      'Good': 0,
+      'Moderate': 0,
+      'Unhealthy for Sensitive Groups': 0,
+      'Unhealthy': 0,
+      'Very Unhealthy': 0,
+      'Hazardous': 0
+    };
+    
+    filteredData.forEach(item => {
+      const category = getAQICategory(item.pm25);
+      categories[category] += 1;
+    });
+    
+    return Object.entries(categories).map(([name, value]) => ({ name, value }));
+  };
+
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
   
-  const currentAQI = latestData ? calculateAQI(latestData.pm25) : 0;
-  const aqiCategory = getAQICategory(currentAQI);
-
-  // Chart data configurations
-  const pollutantDistributionData = {
-    labels: ['PM2.5', 'PM10', 'O3', 'NO2', 'SO2', 'CO'],
-    datasets: [{
-      data: [
-        d3.mean(filteredData, d => d.pm25) || 0,
-        d3.mean(filteredData, d => d.pm10) || 0,
-        d3.mean(filteredData, d => d.o3) || 0,
-        d3.mean(filteredData, d => d.no2) || 0,
-        d3.mean(filteredData, d => d.so2) || 0,
-        d3.mean(filteredData, d => d.co) || 0
-      ],
-      backgroundColor: [
-        'rgba(255, 99, 132, 0.7)',
-        'rgba(54, 162, 235, 0.7)',
-        'rgba(255, 206, 86, 0.7)',
-        'rgba(75, 192, 192, 0.7)',
-        'rgba(153, 102, 255, 0.7)',
-        'rgba(255, 159, 64, 0.7)'
-      ],
-      borderWidth: 1,
-      hoverOffset: 20
-    }]
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill="white" 
+        textAnchor={x > cx ? 'start' : 'end'} 
+        dominantBaseline="central"
+      >
+        {`${name} ${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
   };
 
-  const cityComparisonData = {
-    labels: [...new Set(rawData.map(item => item.City))],
-    datasets: [
-      {
-        label: 'Average PM2.5',
-        data: [...new Set(rawData.map(item => item.City))].map(city => {
-          const cityData = rawData.filter(d => d.City === city);
-          return d3.mean(cityData, d => d.pm25) || 0;
-        }),
-        backgroundColor: 'rgba(255, 99, 132, 0.7)'
-      },
-      {
-        label: 'Average PM10',
-        data: [...new Set(rawData.map(item => item.City))].map(city => {
-          const cityData = rawData.filter(d => d.City === city);
-          return d3.mean(cityData, d => d.pm10) || 0;
-        }),
-        backgroundColor: 'rgba(54, 162, 235, 0.7)'
-      }
-    ]
-  };
-
-  const aqiTrendData = {
-    labels: timeSeriesData.map(d => d.date),
-    datasets: [{
-      label: 'AQI',
-      data: timeSeriesData.map(d => d.aqi),
-      borderColor: 'rgba(75, 192, 192, 1)',
-      backgroundColor: 'rgba(75, 192, 192, 0.1)',
-      tension: 0.4,
-      fill: true
-    }]
-  };
-
-  const pollutantCorrelationData = {
-    labels: timeSeriesData.map(d => d.date),
-    datasets: [
-      {
-        label: 'PM2.5 vs PM10',
-        data: timeSeriesData.map(d => ({
-          x: d.pm25,
-          y: d.pm10
-        })),
-        backgroundColor: 'rgba(255, 99, 132, 0.7)'
-      }
-    ]
-  };
-
-  const pollutantRadarData = {
-    labels: ['PM2.5', 'PM10', 'O3', 'NO2', 'SO2', 'CO'],
-    datasets: filteredData.slice(0, 3).map((item, i) => ({
-      label: `${item.City} - ${item.Date.toLocaleDateString()}`,
-      data: [item.pm25, item.pm10, item.o3, item.no2, item.so2, item.co],
-      backgroundColor: `rgba(${100 + i * 50}, ${200 - i * 50}, ${150 + i * 30}, 0.2)`,
-      borderColor: `rgba(${100 + i * 50}, ${200 - i * 50}, ${150 + i * 30}, 1)`,
-      borderWidth: 2
-    }))
-  };
+  if (loading) {
+    return <div className="loading">Loading data...</div>;
+  }
 
   return (
-    <div className="dashboard" style={{ backgroundImage: `url(${BG})` }}>
-      <div className="dashboard-overlay"></div>
-      
-      <motion.div 
-        className="dashboard-content"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
+    <div className="dashboard" style={{ backgroundImage: `url('/BGGG.jpg')` }}>
+      <div className="overlay">
         <header className="dashboard-header">
-          <motion.h1 
-            initial={{ y: -20 }}
-            animate={{ y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            NepAir Quality Dashboard
-          </motion.h1>
-          
-          <div className="search-controls">
-            <motion.div 
-              className="search-box"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <input
-                type="text"
-                placeholder="Search Location, City, State or Country"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <i className="fas fa-search"></i>
-            </motion.div>
-          </div>
-          
+          <h1>Nepal Air Quality Dashboard</h1>
           <div className="filters">
-            <motion.div 
-              className="filter-group"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
+            <div className="filter-group">
               <label>City:</label>
-              <select
-                value={selectedCity}
+              <select 
+                value={selectedCity} 
                 onChange={(e) => setSelectedCity(e.target.value)}
+                className="select-filter"
               >
+                <option value="All">All Cities</option>
                 {cities.map(city => (
                   <option key={city} value={city}>{city}</option>
                 ))}
               </select>
-            </motion.div>
+            </div>
             
-            <motion.div 
-              className="filter-group"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
+            <div className="filter-group">
               <label>Time Range:</label>
-              <select
-                value={timeRange}
+              <select 
+                value={timeRange} 
                 onChange={(e) => setTimeRange(e.target.value)}
+                className="select-filter"
               >
-                <option value="year">Year</option>
-                <option value="month">Month</option>
-                <option value="week">Week</option>
-                <option value="day">Day</option>
+                <option value="all">All Time</option>
+                <option value="month">Last Month</option>
+                <option value="3months">Last 3 Months</option>
+                <option value="year">Last Year</option>
               </select>
-            </motion.div>
+            </div>
+            
+            <div className="filter-group">
+              <label>Pollutant:</label>
+              <select 
+                value={pollutant} 
+                onChange={(e) => setPollutant(e.target.value)}
+                className="select-filter"
+              >
+                {pollutants.map(p => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </header>
-
-        {loading ? (
-          <div className="loading-spinner">
-            <div className="spinner"></div>
-            <p>Loading air quality data...</p>
-          </div>
-        ) : filteredData.length === 0 ? (
-          <motion.div 
-            className="no-data"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
-            <p>No data available for the selected filters</p>
-          </motion.div>
-        ) : (
-          <>
-            <div className="summary-cards">
-              <motion.div 
-                className="summary-card aqi-card"
-                initial={{ x: -50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                style={{ backgroundColor: aqiCategory.color }}
-                whileHover={{ scale: 1.02 }}
-              >
-                <h3>Current AQI</h3>
-                <div className="aqi-value">{currentAQI}</div>
-                <div className="aqi-category">{aqiCategory.label}</div>
-                {latestData && (
-                  <div className="aqi-location">
-                    {latestData.City}, {latestData.Date.toLocaleDateString()}
-                  </div>
-                )}
-              </motion.div>
-              
-              <motion.div 
-                className="summary-card"
-                initial={{ y: 50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                whileHover={{ scale: 1.02 }}
-              >
-                <h3>Primary Pollutant</h3>
-                <div className="pollutant-value">
-                  <span className="pollutant-name">PM2.5</span>
-                  <span className="pollutant-level">
-                    {latestData ? latestData.pm25.toFixed(1) : '0.0'} µg/m³
-                  </span>
-                </div>
-                <div className="pollutant-description">
-                  Fine particulate matter, can penetrate deep into lungs
-                </div>
-              </motion.div>
-              
-              <motion.div 
-                className="summary-card"
-                initial={{ x: 50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                whileHover={{ scale: 1.02 }}
-              >
-                <h3>Health Implications</h3>
-                <div className="health-implication">
-                  {aqiCategory.label === 'Good' && 'Air quality is considered satisfactory.'}
-                  {aqiCategory.label === 'Satisfactory' && 'Acceptable air quality.'}
-                  {aqiCategory.label === 'Moderate' && 'Sensitive groups may experience health effects.'}
-                  {aqiCategory.label === 'Poor' && 'Everyone may begin to experience health effects.'}
-                  {aqiCategory.label === 'Very Poor' && 'Health alert: everyone may experience more serious health effects.'}
-                  {aqiCategory.label === 'Severe' && 'Health warnings of emergency conditions.'}
-                </div>
-              </motion.div>
+        
+        <div className="dashboard-content">
+          <section className="chart-section">
+            <div className="chart-container">
+              <h2>Average Air Quality by City</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={averagesByCity}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="City" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => value.toFixed(2)} />
+                  <Legend />
+                  <Bar 
+                    dataKey={pollutant} 
+                    fill="#8884d8" 
+                    name={pollutants.find(p => p.value === pollutant)?.label}
+                  >
+                    {averagesByCity.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={cityColors[entry.City] || '#8884d8'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
             
-            <div className="chart-grid">
-              <motion.div 
-                className="chart-container"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                whileHover={{ scale: 1.01 }}
-              >
-                <h3>AQI Trend Over Time</h3>
-                <div className="chart-wrapper">
+            <div className="chart-container">
+              <h2>Pollutant Trend Over Time</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={monthlyData()}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => value.toFixed(2)} />
+                  <Legend />
                   <Line 
-                    data={aqiTrendData}
-                    options={{
-                      responsive: true,
-                      plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                          callbacks: {
-                            label: (context) => `AQI: ${context.raw} (${getAQICategory(context.raw).label})`
-                          }
-                        }
-                      },
-                      scales: {
-                        y: { beginAtZero: true }
-                      }
-                    }}
+                    type="monotone" 
+                    dataKey={pollutant} 
+                    stroke="#8884d8" 
+                    activeDot={{ r: 8 }}
+                    name={pollutants.find(p => p.value === pollutant)?.label}
                   />
-                </div>
-              </motion.div>
-              
-              <motion.div 
-                className="chart-container"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                whileHover={{ scale: 1.01 }}
-              >
-                <h3>Pollutant Distribution</h3>
-                <div className="chart-wrapper">
-                  <Pie 
-                    data={pollutantDistributionData}
-                    options={{
-                      responsive: true,
-                      plugins: {
-                        tooltip: {
-                          callbacks: {
-                            label: (context) => `${context.label}: ${context.raw.toFixed(2)} µg/m³`
-                          }
-                        }
-                      }
-                    }}
-                  />
-                </div>
-              </motion.div>
-              
-              <motion.div 
-                className="chart-container"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.7 }}
-                whileHover={{ scale: 1.01 }}
-              >
-                <h3>City Comparison</h3>
-                <div className="chart-wrapper">
-                  <Bar 
-                    data={cityComparisonData}
-                    options={{
-                      responsive: true,
-                      scales: {
-                        y: { beginAtZero: true }
-                      }
-                    }}
-                  />
-                </div>
-              </motion.div>
-              
-              <motion.div 
-                className="chart-container"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.8 }}
-                whileHover={{ scale: 1.01 }}
-              >
-                <h3>Pollutant Correlation</h3>
-                <div className="chart-wrapper">
-                  <Scatter 
-                    data={pollutantCorrelationData}
-                    options={{
-                      responsive: true,
-                      scales: {
-                        x: { title: { display: true, text: 'PM2.5 (µg/m³)' } },
-                        y: { title: { display: true, text: 'PM10 (µg/m³)' } }
-                      }
-                    }}
-                  />
-                </div>
-              </motion.div>
-              
-              <motion.div 
-                className="chart-container"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.9 }}
-                whileHover={{ scale: 1.01 }}
-              >
-                <h3>Pollutant Radar</h3>
-                <div className="chart-wrapper">
-                  <Radar 
-                    data={pollutantRadarData}
-                    options={{
-                      responsive: true,
-                      scales: {
-                        r: { beginAtZero: true }
-                      }
-                    }}
-                  />
-                </div>
-              </motion.div>
-              
-              <motion.div 
-                className="chart-container"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 1.0 }}
-                whileHover={{ scale: 1.01 }}
-              >
-                <h3>Pollutant Bubble Chart</h3>
-                <div className="chart-wrapper">
-                  <Bubble 
-                    data={{
-                      datasets: filteredData.slice(0, 10).map(item => ({
-                        label: `${item.City} - ${item.Date.toLocaleDateString()}`,
-                        data: [{
-                          x: item.pm25,
-                          y: item.pm10,
-                          r: Math.sqrt(item.o3) * 2
-                        }],
-                        backgroundColor: `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.7)`
-                      }))
-                    }}
-                    options={{
-                      responsive: true,
-                      scales: {
-                        x: { title: { display: true, text: 'PM2.5 (µg/m³)' } },
-                        y: { title: { display: true, text: 'PM10 (µg/m³)' } }
-                      }
-                    }}
-                  />
-                </div>
-              </motion.div>
+                </LineChart>
+              </ResponsiveContainer>
             </div>
-          </>
-        )}
-      </motion.div>
+          </section>
+          
+          <section className="chart-section">
+            <div className="chart-container">
+              <h2>PM2.5 vs PM10 Correlation</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <ScatterChart>
+                  <CartesianGrid />
+                  <XAxis 
+                    type="number" 
+                    dataKey="pm25" 
+                    name="PM2.5" 
+                    unit="μg/m³" 
+                  />
+                  <YAxis 
+                    type="number" 
+                    dataKey="pm10" 
+                    name="PM10" 
+                    unit="μg/m³" 
+                  />
+                  <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                  <Legend />
+                  <Scatter 
+                    name="Pollutant Correlation" 
+                    data={correlationData()} 
+                    fill="#8884d8"
+                  >
+                    {correlationData().map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={cityColors[entry.City] || '#8884d8'} 
+                      />
+                    ))}
+                  </Scatter>
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
+            
+            <div className="chart-container">
+              <h2>Air Quality Index Distribution</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={calculateAQIDistribution()}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={renderCustomizedLabel}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {calculateAQIDistribution().map((entry, index) => {
+                      const colors = ['#00E400', '#FFFF00', '#FF7E00', '#FF0000', '#8F3F97', '#7E0023'];
+                      return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                    })}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+          
+          {selectedCity !== 'All' && (
+            <section className="city-details">
+              <h2>{selectedCity} Air Quality Details</h2>
+              
+              <div className="chart-section">
+                <div className="chart-container">
+                  <h3>Pollutant Comparison</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <RadarChart 
+                      outerRadius={90} 
+                      data={[averagesByCity.find(city => city.City === selectedCity)]}
+                    >
+                      <PolarGrid />
+                      <PolarAngleAxis dataKey="name" />
+                      <PolarRadiusAxis angle={30} domain={[0, 'auto']} />
+                      <Radar 
+                        name={selectedCity} 
+                        dataKey="value" 
+                        stroke={cityColors[selectedCity]} 
+                        fill={cityColors[selectedCity]} 
+                        fillOpacity={0.6} 
+                      />
+                      <Legend />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                <div className="chart-container">
+                  <h3>Monthly Trend</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <AreaChart
+                      data={monthlyData()}
+                      margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Area 
+                        type="monotone" 
+                        dataKey={pollutant} 
+                        stroke={cityColors[selectedCity]} 
+                        fill={cityColors[selectedCity]} 
+                        fillOpacity={0.3}
+                        name={pollutants.find(p => p.value === pollutant)?.label}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
+        
+        <footer className="dashboard-footer">
+          <p>© {new Date().getFullYear()} Nepal Air Quality Monitoring System</p>
+        </footer>
+      </div>
     </div>
   );
 };
