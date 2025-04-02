@@ -11,13 +11,13 @@
 :root {
   --primary-color: #3498db;
   --secondary-color: #2c3e50;
-  --background-color: #f8f9fa;
-  --card-bg-color: #ffffff;
-  --border-color: #e1e5eb;
+  --background-color: rgba(248, 249, 250, 0.9);
+  --card-bg-color: rgba(255, 255, 255, 0.95);
+  --border-color: rgba(225, 229, 235, 0.7);
   --text-color: #333;
   --text-light: #7f8c8d;
-  --shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-  --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.12);
+  --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
   --aqi-good: #55a84f;
   --aqi-moderate: #a3c853;
   --aqi-sensitive: #f99049;
@@ -32,7 +32,6 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--text-color);
   line-height: 1.6;
-  background-color: var(--background-color);
   font-size: 16px;
 }
 
@@ -41,7 +40,20 @@ body {
   position: relative;
   min-height: 100vh;
   padding: 20px;
-  background-image: linear-gradient(to bottom, #f0f2f5, #e6eaee);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.dashboard-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.85);
+  z-index: -1;
 }
 
 .dashboard-overlay {
@@ -64,27 +76,12 @@ body {
   animation: fadeDownIn 0.8s ease-out;
 }
 
-.breadcrumb {
+.header-info {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 5px;
-  margin-bottom: 10px;
-  font-size: 14px;
   color: var(--text-light);
-}
-
-.breadcrumb span {
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.breadcrumb span:hover:not(.current-location) {
-  color: var(--primary-color);
-}
-
-.current-location {
-  color: var(--secondary-color);
-  font-weight: 500;
+  font-size: 15px;
 }
 
 .dashboard-header h1 {
@@ -92,14 +89,7 @@ body {
   margin: 0 0 5px 0;
   color: var(--secondary-color);
   font-weight: 700;
-}
-
-.header-info {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  color: var(--text-light);
-  font-size: 15px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
 }
 
 .header-stats {
@@ -114,53 +104,8 @@ body {
   gap: 6px;
 }
 
-.station-info {
-  max-width: 1200px;
-  margin: 0 auto 20px;
-  background-color: var(--card-bg-color);
-  border-radius: 10px;
-  padding: 15px 20px;
-  display: flex;
-  align-items: center;
-  box-shadow: var(--shadow);
-  animation: fadeIn 0.8s ease-out;
-  transition: var(--transition);
-}
-
-.station-info:hover {
-  box-shadow: var(--shadow-hover);
-}
-
-.station-icon {
-  background-color: rgba(52, 152, 219, 0.1);
+.header-stats i {
   color: var(--primary-color);
-  height: 36px;
-  width: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 15px;
-  font-size: 14px;
-}
-
-.station-info span {
-  flex-grow: 1;
-  color: var(--secondary-color);
-  font-weight: 500;
-}
-
-.station-details-btn {
-  background-color: transparent;
-  border: none;
-  color: var(--primary-color);
-  cursor: pointer;
-  font-size: 16px;
-  transition: var(--transition);
-}
-
-.station-details-btn:hover {
-  transform: translateX(3px);
 }
 
 /* Main Dashboard Layout */
@@ -235,6 +180,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  backdrop-filter: blur(5px);
 }
 
 .current-aqi-card:hover {
@@ -300,6 +246,7 @@ body {
   padding: 25px;
   box-shadow: var(--shadow);
   transition: var(--transition);
+  backdrop-filter: blur(5px);
 }
 
 .weather-card:hover {
@@ -348,6 +295,7 @@ body {
   border-radius: 12px;
   padding: 20px;
   box-shadow: var(--shadow);
+  backdrop-filter: blur(5px);
 }
 
 .stations-section h2 {
@@ -370,6 +318,7 @@ body {
   transition: var(--transition);
   border: 1px solid var(--border-color);
   border-top: 4px solid;
+  cursor: pointer;
 }
 
 .station-card:hover {
@@ -435,6 +384,7 @@ body {
   transition: var(--transition);
   cursor: pointer;
   position: relative;
+  backdrop-filter: blur(5px);
 }
 
 .pollutant-card:hover {
@@ -499,6 +449,7 @@ body {
   border-radius: 12px;
   padding: 20px;
   box-shadow: var(--shadow);
+  backdrop-filter: blur(5px);
 }
 
 .forecast-header {
@@ -655,6 +606,7 @@ body {
   border-radius: 12px;
   padding: 20px;
   box-shadow: var(--shadow);
+  backdrop-filter: blur(5px);
 }
 
 .health-recommendation h3 {
@@ -678,289 +630,370 @@ body {
 
 .health-card.unhealthy {
   background-color: rgba(246, 94, 95, 0.1);
-  border-left-color: var(--aqi-unhealthy);
 }
-
-.health-icon {
-  color: var(--aqi-unhealthy);
-  font-size: 24px;
-}
-
-.health-text h4 {
-  margin-bottom: 10px;
-  font-size: 18px;
-  color: var(--secondary-color);
-}
-
-.health-text p {
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--text-color);
-}
-
-.recommendation-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.action-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background-color: var(--card-bg-color);
-  border: 1px solid var(--border-color);
-  padding: 10px 15px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: var(--transition);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--secondary-color);
-}
-
-.action-btn:hover {
-  background-color: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
-}
-
-.action-btn i {
-  color: var(--primary-color);
-  transition: var(--transition);
-}
-
-.action-btn:hover i {
-  color: white;
-}
-
-/* Dashboard Footer */
-.dashboard-footer {
-  max-width: 1200px;
-  margin: 40px auto 0;
-  padding: 30px 0;
-  border-top: 1px solid var(--border-color);
-}
-
-.footer-content {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 40px;
-}
-
-.footer-section {
-  flex: 1;
-  min-width: 200px;
-}
-
-.footer-section h4 {
-  margin-bottom: 15px;
-  font-size: 16px;
-  color: var(--secondary-color);
-}
-
-.footer-section p {
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: var(--text-light);
-}
-
-.go-back-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background-color: var(--secondary-color);
-  color: white;
-  padding: 10px 15px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  transition: var(--transition);
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.go-back-button:hover {
-  background-color: var(--primary-color);
-}
-
-.footer-copyright {
-  margin-top: 30px;
-  text-align: center;
-  font-size: 14px;
-  color: var(--text-light);
-}
-
-/* Loading Screen */
-.loading-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background-color: var(--background-color);
-  z-index: 1000;
-}
-
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 3px solid rgba(52, 152, 219, 0.2);
-  border-radius: 50%;
-  border-top-color: var(--primary-color);
-  animation: spin 1s ease-in-out infinite;
-  margin-bottom: 20px;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.loading-progress {
-  width: 200px;
-  height: 4px;
-  background-color: rgba(52, 152, 219, 0.2);
-  border-radius: 2px;
-  overflow: hidden;
-  margin-top: 20px;
-}
-
-.loading-progress-bar {
-  height: 100%;
-  background-color: var(--primary-color);
-  border-radius: 2px;
-  animation: progress 1.2s ease-in-out infinite;
-}
-
-@keyframes progress {
-  0% {
-    width: 0%;
-  }
-  50% {
-    width: 100%;
-  }
-  100% {
-    width: 0%;
-  }
-}
-
-/* Media Queries */
-@media (max-width: 1024px) {
-  .dashboard-header h1 {
-    font-size: 28px;
-  }
-  
-  .aqi-value {
-    font-size: 50px;
-  }
-  
-  .forecast-content {
-    flex-direction: column;
-  }
-}
-
-@media (max-width: 768px) {
-  .dashboard-container {
-    padding: 15px;
-  }
-  
-  .current-aqi-card, .weather-card {
-    min-width: 100%;
-  }
-  
-  .pollutants-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  }
-  
-  .forecast-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
-  .hourly-forecast {
-    height: 200px;
-  }
-  
-  .footer-content {
-    gap: 20px;
-  }
-}
-
-@media (max-width: 480px) {
-  .dashboard-header h1 {
+  .health-icon {
+    color: var(--aqi-unhealthy);
     font-size: 24px;
   }
   
-  .stations-grid {
-    grid-template-columns: 1fr;
+  .health-text h4 {
+    margin-bottom: 10px;
+    font-size: 18px;
+    color: var(--secondary-color);
   }
   
-  .pollutants-grid {
-    grid-template-columns: 1fr 1fr;
+  .health-text p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-color);
   }
   
   .recommendation-actions {
-    gap: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
   }
   
   .action-btn {
-    font-size: 12px;
-    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--secondary-color);
   }
-}
-
-/* AQI Color Variations */
-.aqi-good-bg {
-  border-color: var(--aqi-good);
-}
-
-.aqi-moderate-bg {
-  border-color: var(--aqi-moderate);
-}
-
-.aqi-sensitive-bg {
-  border-color: var(--aqi-sensitive);
-}
-
-.aqi-unhealthy-bg {
-  border-color: var(--aqi-unhealthy);
-}
-
-.aqi-very-unhealthy-bg {
-  border-color: var(--aqi-very-unhealthy);
-}
-
-.aqi-hazardous-bg {
-  border-color: var(--aqi-hazardous);
-}
-
-.status-good {
-  background-color: var(--aqi-good);
-}
-
-.status-moderate {
-  background-color: var(--aqi-moderate);
-}
-
-.status-sensitive {
-  background-color: var(--aqi-sensitive);
-}
-
-.status-unhealthy {
-  background-color: var(--aqi-unhealthy);
-}
-
-.status-very-unhealthy {
-  background-color: var(--aqi-very-unhealthy);
-}
-
-.status-hazardous {
-  background-color: var(--aqi-hazardous);
-}
+  
+  .action-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+  }
+  
+  .action-btn i {
+    color: var(--primary-color);
+    transition: var(--transition);
+  }
+  
+  .action-btn:hover i {
+    color: white;
+  }
+  
+  /* Dashboard Footer */
+  .dashboard-footer {
+    max-width: 1200px;
+    margin: 40px auto 0;
+    padding: 30px 0;
+    border-top: 1px solid var(--border-color);
+  }
+  
+  .footer-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+  }
+  
+  .footer-section {
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  .footer-section h4 {
+    margin-bottom: 15px;
+    font-size: 16px;
+    color: var(--secondary-color);
+  }
+  
+  .footer-section p {
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--text-light);
+  }
+  
+  .go-back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+  .go-back-button:hover {
+    background-color: var(--primary-color);
+  }
+  
+  .footer-copyright {
+    margin-top: 30px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-light);
+  }
+  
+  /* Loading Screen */
+  .loading-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--background-color);
+    z-index: 1000;
+  }
+  
+  .loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(52, 152, 219, 0.2);
+    border-radius: 50%;
+    border-top-color: var(--primary-color);
+    animation: spin 1s ease-in-out infinite;
+    margin-bottom: 20px;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .loading-progress {
+    width: 200px;
+    height: 4px;
+    background-color: rgba(52, 152, 219, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 20px;
+  }
+  
+  .loading-progress-bar {
+    height: 100%;
+    background-color: var(--primary-color);
+    border-radius: 2px;
+    animation: progress 1.2s ease-in-out infinite;
+  }
+  
+  @keyframes progress {
+    0% {
+      width: 0%;
+    }
+    50% {
+      width: 100%;
+    }
+    100% {
+      width: 0%;
+    }
+  }
+  
+  /* Media Queries */
+  @media (max-width: 1024px) {
+    .dashboard-header h1 {
+      font-size: 28px;
+    }
+    
+    .aqi-value {
+      font-size: 50px;
+    }
+    
+    .forecast-content {
+      flex-direction: column;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .dashboard-container {
+      padding: 15px;
+    }
+    
+    .current-aqi-card, .weather-card {
+      min-width: 100%;
+    }
+    
+    .pollutants-grid {
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
+    
+    .forecast-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    
+    .hourly-forecast {
+      height: 200px;
+    }
+    
+    .footer-content {
+      gap: 20px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .dashboard-header h1 {
+      font-size: 24px;
+    }
+    
+    .stations-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .pollutants-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    
+    .recommendation-actions {
+      gap: 8px;
+    }
+    
+    .action-btn {
+      font-size: 12px;
+      padding: 8px 12px;
+    }
+  }
+  
+  /* AQI Color Variations */
+  .aqi-good-bg {
+    border-color: var(--aqi-good);
+  }
+  
+  .aqi-moderate-bg {
+    border-color: var(--aqi-moderate);
+  }
+  
+  .aqi-sensitive-bg {
+    border-color: var(--aqi-sensitive);
+  }
+  
+  .aqi-unhealthy-bg {
+    border-color: var(--aqi-unhealthy);
+  }
+  
+  .aqi-very-unhealthy-bg {
+    border-color: var(--aqi-very-unhealthy);
+  }
+  
+  .aqi-hazardous-bg {
+    border-color: var(--aqi-hazardous);
+  }
+  
+  .status-good {
+    background-color: var(--aqi-good);
+  }
+  
+  .status-moderate {
+    background-color: var(--aqi-moderate);
+  }
+  
+  .status-sensitive {
+    background-color: var(--aqi-sensitive);
+  }
+  
+  .status-unhealthy {
+    background-color: var(--aqi-unhealthy);
+  }
+  
+  .status-very-unhealthy {
+    background-color: var(--aqi-very-unhealthy);
+  }
+  
+  .status-hazardous {
+    background-color: var(--aqi-hazardous);
+  }
+  
+  /* Tooltip styles */
+  [data-tooltip] {
+    position: relative;
+  }
+  
+  [data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 100;
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Pulse animation for important elements */
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.4);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(52, 152, 219, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+    }
+  }
+  
+  .pulse {
+    animation: pulse 2s infinite;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 400px) {
+    .header-stats {
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .weather-row {
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .weather-item {
+      justify-content: center;
+    }
+    
+    .forecast-tabs {
+      width: 100%;
+    }
+    
+    .forecast-tabs button {
+      flex: 1;
+      text-align: center;
+    }
+  }

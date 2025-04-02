@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import "./Kathmandu.css";
 import { useNavigate } from "react-router-dom";
 import BG from '../../assets/BGGG.jpg';
-const KathmanduAQI = () => {
+
+const Kathmandu = () => {
   const navigate = useNavigate();
   const [aqiData, setAqiData] = useState({
     city: "Kathmandu",
@@ -30,6 +31,19 @@ const KathmanduAQI = () => {
   const [activePollutant, setActivePollutant] = useState(null);
   const [stationData, setStationData] = useState([]);
 
+  const cities = [
+    { name: "Kathmandu", path: "/kathmandu" },
+    { name: "Pokhara", path: "/pokhara" },
+    { name: "Janakpur", path: "/janakpur" },
+    { name: "Butwal", path: "/butwal" },
+    { name: "Bhaktapur", path: "/bhaktapur" },
+    { name: "Nepalgunj", path: "/nepalgunj" },
+    { name: "Mahendranagar", path: "/mahendranagar" },
+    { name: "Biratnagar", path: "/biratnagar" },
+    { name: "Birgunj", path: "/birgunj" },
+    { name: "Dharan", path: "/dharan" }
+  ];
+
   useEffect(() => {
     setTimeout(() => {
       generatePredictions();
@@ -42,26 +56,19 @@ const KathmanduAQI = () => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
     const currentHour = new Date().getHours();
     
-    // Generate more realistic data with a morning and evening peak pattern
     const todayPredictions = hours.map((hour) => {
-      // Morning peak around 8-10 AM and evening peak around 6-8 PM
       let baseValue = 120;
       
       if (hour >= 7 && hour <= 10) {
-        // Morning rush hour peak
         baseValue = 175 - Math.abs(hour - 8.5) * 15;
       } else if (hour >= 17 && hour <= 20) {
-        // Evening rush hour peak
         baseValue = 180 - Math.abs(hour - 18.5) * 15;
       } else if (hour >= 1 && hour <= 5) {
-        // Early morning low
         baseValue = 90;
       } else {
-        // Rest of the day
         baseValue = 130;
       }
       
-      // Add some randomness
       baseValue += (Math.random() - 0.5) * 20;
       
       return {
@@ -73,7 +80,6 @@ const KathmanduAQI = () => {
     });
     setHourlyPrediction(todayPredictions);
 
-    // Tomorrow's data with slightly better conditions
     const tomorrowPredictions = hours.map((hour) => {
       let baseValue = todayPredictions[hour].aqi * (0.9 + Math.random() * 0.2);
       return {
@@ -87,22 +93,14 @@ const KathmanduAQI = () => {
   };
 
   const generateStationData = () => {
-    const stations = [
-      { name: "Victoria Memorial", aqi: 157, pm25: 64.1, dominantPollutant: "PM2.5" },
-      { name: "Fort William", aqi: 175, pm25: 78.3, dominantPollutant: "PM2.5" },
-      { name: "Rabindra Sarobar", aqi: 162, pm25: 69.7, dominantPollutant: "PM2.5" },
-      { name: "Salt Lake", aqi: 183, pm25: 82.5, dominantPollutant: "PM2.5" },
-      { name: "Jadavpur", aqi: 144, pm25: 58.9, dominantPollutant: "PM2.5" },
-      { name: "Ballygunge", aqi: 169, pm25: 72.6, dominantPollutant: "PM2.5" },
-      { name: "Howrah Bridge", aqi: 198, pm25: 86.2, dominantPollutant: "PM10" },
-      { name: "New Town", aqi: 139, pm25: 56.4, dominantPollutant: "PM2.5" }
-    ];
+    const stations = cities.map(city => ({
+      name: city.name,
+      aqi: Math.floor(120 + Math.random() * 80),
+      pm25: (40 + Math.random() * 60).toFixed(1),
+      dominantPollutant: ["PM2.5", "PM10", "O₃", "NO₂"][Math.floor(Math.random() * 4)],
+      path: city.path
+    }));
     setStationData(stations);
-  };
-
-  const getRandomPollutant = () => {
-    const pollutants = ["PM2.5", "PM10", "O₃", "NO₂", "SO₂", "CO"];
-    return pollutants[Math.floor(Math.random() * pollutants.length)];
   };
 
   const getAQILevel = (value) => {
@@ -123,8 +121,8 @@ const KathmanduAQI = () => {
     return "#a06a7b";
   };
 
-  const handleGoBack = () => {
-    navigate("/");
+  const handleCityClick = (path) => {
+    navigate(path);
   };
 
   const currentAQI = 157;
@@ -144,22 +142,13 @@ const KathmanduAQI = () => {
   }
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container" style={{ backgroundImage: `url(${BG})` }}>
       <div className="dashboard-overlay"></div>
       <header className="dashboard-header">
-        <div className="breadcrumb">
-         
-         
+        <div className="header-info">
+          
         </div>
       </header>
-
-      <div className="station-info">
-        <div className="station-icon">
-          <i className="fas fa-broadcast-tower"></i>
-        </div>
-        <span>8 Stations operated by 2 Contributors</span>
-        <button className="station-details-btn"><i className="fas fa-chevron-right"></i></button>
-      </div>
 
       <div className="main-dashboard">
         <div className="dashboard-row">
@@ -201,6 +190,20 @@ const KathmanduAQI = () => {
                     <span>{aqiData.humidity}%</span>
                   </div>
                 </div>
+                <div className="weather-row">
+                  <div className="weather-item">
+                    <i className="fas fa-cloud"></i>
+                    <span>{aqiData.weather}</span>
+                  </div>
+                  <div className="weather-item">
+                    <i className="fas fa-compass"></i>
+                    <span>{aqiData.windDirection}</span>
+                  </div>
+                  <div className="weather-item">
+                    <i className="fas fa-tachometer-alt"></i>
+                    <span>{aqiData.pressure} hPa</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -215,6 +218,7 @@ const KathmanduAQI = () => {
                   key={index} 
                   className="station-card"
                   style={{ borderColor: getAQIColor(station.aqi) }}
+                  onClick={() => handleCityClick(station.path)}
                 >
                   <div className="station-header" style={{ backgroundColor: getAQIColor(station.aqi) }}>
                     <span className="station-aqi">{station.aqi}</span>
@@ -413,7 +417,7 @@ Dominant: ${hour.dominantPollutant}`}
         <div className="footer-content">
           <div className="footer-section">
             <h4>Data Sources</h4>
-            <p>West Bengal State Pollution Control Board</p>
+            <p>Nepal State Pollution Control Board</p>
             <p>Central Pollution Control Board</p>
             <p>Last updated: {new Date().toLocaleTimeString()}</p>
           </div>
@@ -423,8 +427,8 @@ Dominant: ${hour.dominantPollutant}`}
             <p>*AQI stands for Air Quality Index</p>
           </div>
           <div className="footer-section">
-            <button className="go-back-button" onClick={handleGoBack}>
-              <i className="fas fa-arrow-left"></i> Back to India Map
+            <button className="go-back-button" onClick={() => navigate("/")}>
+              <i className="fas fa-arrow-left"></i> Back to Nepal Map
             </button>
           </div>
         </div>
@@ -436,4 +440,4 @@ Dominant: ${hour.dominantPollutant}`}
   );
 };
 
-export default KathmanduAQI;
+export default Kathmandu;
