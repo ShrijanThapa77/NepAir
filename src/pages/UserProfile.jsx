@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-
+import BG from '../assets/BGG.jpg';
+import { FiUser, FiInfo, FiAlertTriangle, FiEdit, FiSave, FiX, FiPlus, FiBell } from 'react-icons/fi';
 import './UserProfile.css';
 
 const UserProfile = () => {
@@ -20,7 +21,7 @@ const UserProfile = () => {
     },
   });
   const [isEditing, setIsEditing] = useState(false);
-
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -49,6 +50,8 @@ const UserProfile = () => {
         }
       } catch (error) {
         console.error("Error fetching user data:", error.message);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchUserData();
@@ -79,6 +82,16 @@ const UserProfile = () => {
     setFormData({ ...formData, healthAlert: updatedHealthAlert });
   };
 
+  const handleRemoveField = (field, index) => {
+    const updatedHealthAlert = { ...formData.healthAlert };
+    if (field === 'diseases') {
+      updatedHealthAlert.diseases.splice(index, 1);
+    } else if (field === 'stations') {
+      updatedHealthAlert.stations.splice(index, 1);
+    }
+    setFormData({ ...formData, healthAlert: updatedHealthAlert });
+  };
+
   const handleSaveChanges = async () => {
     try {
       const currentUser = auth.currentUser;
@@ -91,147 +104,216 @@ const UserProfile = () => {
           email: formData.email,
           healthAlert: formData.healthAlert,
         });
-        alert("Profile updated successfully!");
         setIsEditing(false);
       }
     } catch (error) {
       console.error("Error updating profile:", error.message);
-      alert("Failed to update profile.");
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="profile-loading" style={{ backgroundImage: `url(${BG})` }}>
+        <div className="loading-spinner"></div>
+      </div>
+    );
+  }
+
   return (
-    <>
-     
-      <div className="profile-container">
+    <div className="profile-page">
+      <div className="profile-background" style={{ backgroundImage: `url(${BG})` }}></div>
+      <div className="profile-glass-container">
         <div className="profile-card">
-          <h1>User Profile</h1>
-          {user ? (
-            <>
-              <div className="profile-section">
-                <h2>Personal Information</h2>
-                <div className="profile-field">
-                  <label>First Name:</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleChange}
-                    />
-                  ) : (
-                    <span>{formData.firstName}</span>
-                  )}
-                </div>
-                <div className="profile-field">
-                  <label>Last Name:</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleChange}
-                    />
-                  ) : (
-                    <span>{formData.lastName}</span>
-                  )}
-                </div>
-                <div className="profile-field">
-                  <label>Age:</label>
-                  {isEditing ? (
-                    <input
-                      type="number"
-                      name="age"
-                      value={formData.age}
-                      onChange={handleChange}
-                    />
-                  ) : (
-                    <span>{formData.age}</span>
-                  )}
-                </div>
-                <div className="profile-field">
-                  <label>Gender:</label>
-                  {isEditing ? (
-                    <select
-                      name="gender"
-                      value={formData.gender}
-                      onChange={handleChange}
-                    >
-                      <option value="">Select Gender</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                    </select>
-                  ) : (
-                    <span>{formData.gender}</span>
-                  )}
-                </div>
-                <div className="profile-field">
-                  <label>Email:</label>
-                  {isEditing ? (
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                    />
-                  ) : (
-                    <span>{formData.email}</span>
-                  )}
-                </div>
+          <div className="profile-header">
+            <h1>
+              <FiUser className="profile-icon" />
+              User Profile
+            </h1>
+            {!isEditing ? (
+              <button 
+                className="edit-btn"
+                onClick={() => setIsEditing(true)}
+              >
+                <FiEdit /> Edit Profile
+              </button>
+            ) : null}
+          </div>
+
+          <div className="profile-sections">
+            <div className="profile-section personal-info">
+              <h2>
+                <FiInfo className="section-icon" />
+                Personal Information
+              </h2>
+              
+              <div className="profile-field">
+                <label>First Name</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    className="profile-input"
+                  />
+                ) : (
+                  <div className="profile-value">{formData.firstName || '-'}</div>
+                )}
               </div>
 
-              <div className="profile-section">
-                <h2>Health Alerts</h2>
-                <div className="profile-field">
-                  <label>Diseases:</label>
-                  {formData.healthAlert.diseases.map((disease, index) => (
-                    <div key={index}>
+              <div className="profile-field">
+                <label>Last Name</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    className="profile-input"
+                  />
+                ) : (
+                  <div className="profile-value">{formData.lastName || '-'}</div>
+                )}
+              </div>
+
+              <div className="profile-field">
+                <label>Age</label>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    name="age"
+                    value={formData.age}
+                    onChange={handleChange}
+                    className="profile-input"
+                  />
+                ) : (
+                  <div className="profile-value">{formData.age || '-'}</div>
+                )}
+              </div>
+
+              <div className="profile-field">
+                <label>Gender</label>
+                {isEditing ? (
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    className="profile-select"
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                ) : (
+                  <div className="profile-value">
+                    {formData.gender ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1) : '-'}
+                  </div>
+                )}
+              </div>
+
+              <div className="profile-field">
+                <label>Email</label>
+                {isEditing ? (
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="profile-input"
+                  />
+                ) : (
+                  <div className="profile-value">{formData.email || '-'}</div>
+                )}
+              </div>
+            </div>
+
+            <div className="profile-section health-alerts">
+              <h2>
+                <FiAlertTriangle className="section-icon" />
+                Health Alerts
+              </h2>
+              
+              <div className="profile-field">
+                <label>Diseases</label>
+                {formData.healthAlert.diseases.length > 0 ? (
+                  formData.healthAlert.diseases.map((disease, index) => (
+                    <div key={index} className="multi-field-item">
                       {isEditing ? (
-                        <input
-                          type="text"
-                          value={disease}
-                          onChange={(e) =>
-                            handleHealthAlertChange('diseases', index, e.target.value)
-                          }
-                        />
+                        <>
+                          <input
+                            type="text"
+                            value={disease}
+                            onChange={(e) => handleHealthAlertChange('diseases', index, e.target.value)}
+                            className="profile-input"
+                          />
+                          <button 
+                            className="remove-item-btn"
+                            onClick={() => handleRemoveField('diseases', index)}
+                          >
+                            <FiX />
+                          </button>
+                        </>
                       ) : (
-                        <span>{disease}</span>
+                        <div className="profile-value">{disease}</div>
                       )}
                     </div>
-                  ))}
-                  {isEditing && (
-                    <button onClick={() => handleAddField('diseases')}>
-                      Add Disease
-                    </button>
-                  )}
-                </div>
-                <div className="profile-field">
-                  <label>Stations:</label>
-                  {formData.healthAlert.stations.map((station, index) => (
-                    <div key={index}>
+                  ))
+                ) : (
+                  <div className="profile-value">No diseases specified</div>
+                )}
+                {isEditing && (
+                  <button 
+                    className="add-item-btn"
+                    onClick={() => handleAddField('diseases')}
+                  >
+                    <FiPlus /> Add Disease
+                  </button>
+                )}
+              </div>
+
+              <div className="profile-field">
+                <label>Monitoring Stations</label>
+                {formData.healthAlert.stations.length > 0 ? (
+                  formData.healthAlert.stations.map((station, index) => (
+                    <div key={index} className="multi-field-item">
                       {isEditing ? (
-                        <input
-                          type="text"
-                          value={station}
-                          onChange={(e) =>
-                            handleHealthAlertChange('stations', index, e.target.value)
-                          }
-                        />
+                        <>
+                          <input
+                            type="text"
+                            value={station}
+                            onChange={(e) => handleHealthAlertChange('stations', index, e.target.value)}
+                            className="profile-input"
+                          />
+                          <button 
+                            className="remove-item-btn"
+                            onClick={() => handleRemoveField('stations', index)}
+                          >
+                            <FiX />
+                          </button>
+                        </>
                       ) : (
-                        <span>{station}</span>
+                        <div className="profile-value">{station}</div>
                       )}
                     </div>
-                  ))}
-                  {isEditing && (
-                    <button onClick={() => handleAddField('stations')}>
-                      Add Station
-                    </button>
-                  )}
-                </div>
-                <div className="profile-field">
-                  <label>Subscribed:</label>
-                  {isEditing ? (
+                  ))
+                ) : (
+                  <div className="profile-value">No stations specified</div>
+                )}
+                {isEditing && (
+                  <button 
+                    className="add-item-btn"
+                    onClick={() => handleAddField('stations')}
+                  >
+                    <FiPlus /> Add Station
+                  </button>
+                )}
+              </div>
+
+              <div className="profile-field">
+                <label>Alert Subscription</label>
+                {isEditing ? (
+                  <label className="toggle-switch">
                     <input
                       type="checkbox"
                       checked={formData.healthAlert.subscribed}
@@ -245,26 +327,47 @@ const UserProfile = () => {
                         })
                       }
                     />
-                  ) : (
-                    <span>{formData.healthAlert.subscribed ? 'Yes' : 'No'}</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="profile-actions">
-                {isEditing ? (
-                  <button onClick={handleSaveChanges}>Save Changes</button>
+                    <span className="slider round"></span>
+                    <span className="toggle-label">
+                      {formData.healthAlert.subscribed ? (
+                        <><FiBell /> Subscribed</>
+                      ) : (
+                        "Not Subscribed"
+                      )}
+                    </span>
+                  </label>
                 ) : (
-                  <button onClick={() => setIsEditing(true)}>Edit Profile</button>
+                  <div className="profile-value">
+                    {formData.healthAlert.subscribed ? (
+                      <span className="subscribed"><FiBell /> Subscribed</span>
+                    ) : (
+                      <span className="not-subscribed">Not Subscribed</span>
+                    )}
+                  </div>
                 )}
               </div>
-            </>
-          ) : (
-            <p>Loading...</p>
+            </div>
+          </div>
+
+          {isEditing && (
+            <div className="profile-actions">
+              <button 
+                className="save-btn"
+                onClick={handleSaveChanges}
+              >
+                <FiSave /> Save Changes
+              </button>
+              <button 
+                className="cancel-btn"
+                onClick={() => setIsEditing(false)}
+              >
+                <FiX /> Cancel
+              </button>
+            </div>
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
