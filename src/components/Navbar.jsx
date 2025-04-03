@@ -182,6 +182,9 @@ function Navbar() {
           <button className="navButtons" onClick={() => navigate("/healthalert")}>
             HealthAlert
           </button>
+          <button className="navButtons" onClick={() => navigate("/report")}>
+            Report
+          </button>
         </div>
 
         <div style={styles.authSection}>

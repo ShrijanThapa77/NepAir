@@ -7,6 +7,7 @@ import HealthAlert from "./pages/HealthAlert";
 import EducationModule from "./pages/EducationModule";
 import UserProfile from "./pages/UserProfile";
 import UserDashboard from "./pages/UserDashboard";
+import ReportPollutionPage from "./pages/ReportPollutionPage"; // Corrected import name
 import Navbar from "./components/Navbar";
 import "./App.css";
 import AOS from "aos";
@@ -26,7 +27,11 @@ import Dharan from "./pages/cities/Dharan";
 
 function App() {
   // Initialize AOS (Animate On Scroll)
-  AOS.init();
+  AOS.init({
+    duration: 800,
+    easing: 'ease-in-out',
+    once: true
+  });
 
   return (
     <BrowserRouter>
@@ -40,6 +45,7 @@ function App() {
         <Route path="/education" element={<EducationModule />} />
         <Route path="/userprofile" element={<UserProfile />} />
         <Route path="/userdashboard" element={<UserDashboard />} />
+        <Route path="/report" element={<ReportPollutionPage />} />
 
         {/* Admin Routes */}
         <Route path="/admindash" element={<AdminDash />} />
