@@ -4,6 +4,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import emailjs from '@emailjs/browser';
 import { FaBiohazard, FaSkull, FaExclamationTriangle } from "react-icons/fa";
 import { MdDangerous, MdHealthAndSafety } from "react-icons/md";
+import { useNavigate } from 'react-router-dom';
 
 // ✅ FIXED: Correct API base URL depending on environment
 const API_BASE_URL = process.env.NODE_ENV === 'development' 
@@ -13,6 +14,7 @@ const API_BASE_URL = process.env.NODE_ENV === 'development'
 function OldData({ setShowInfo }) {
   const [khumaltarPM25, setKhumaltarPM25] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const getCategory = (value) => {
     if (value === '-') return '';
@@ -168,6 +170,10 @@ function OldData({ setShowInfo }) {
     checkAQIAndNotify();
   }, [data]);
 
+  const handleStationClick = (stationName) => {
+    navigate(`/${stationName.toLowerCase()}`);
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -183,11 +189,12 @@ function OldData({ setShowInfo }) {
         </thead>
         <tbody>
           {data.map((entry, index) => (
-            <tr key={index} onMouseEnter={() => setShowInfo(true)}>
+            <tr key={index}>
               <td 
                 id='category' 
                 className={entry.category}
-                style={{ color: entry.color, fontWeight: 'bold' }}
+                style={{ color: entry.color, fontWeight: 'bold', cursor: 'pointer' }}
+                onClick={() => handleStationClick(entry.station)}
               >
                 {entry.station} {entry.icon}
               </td>
