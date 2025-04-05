@@ -9,7 +9,6 @@ import "./navbar.css";
 function Navbar() {
   const [userName, setUserName] = useState(null);
   const [userRole, setUserRole] = useState(null);
-  const [scrolled, setScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -51,14 +50,6 @@ function Navbar() {
     setShowSuggestions(false);
     navigate(cityPath);
   };
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -110,29 +101,15 @@ function Navbar() {
   };
 
   return (
-    <div className="containNav">
-      <nav
-        style={{
-          ...styles.navbar,
-          backgroundColor: scrolled ? "rgba(0, 0, 0, 0.5)" : "transparent",
-          transition: "background 0.3s ease-in-out",
-        }}
-      >
-        <div style={styles.logoContainer}>
-          <img src="/images/clouds.png" alt="Nepal Logo" style={styles.logoImage} />
-          <p style={styles.logoText}>NepAir</p>
+    <div className="navbar-container">
+      <nav className="navbar">
+        <div className="logo-section" onClick={() => navigate("/")}>
+          <span className="logo-text">NepAir</span>
         </div>
 
-        <div style={styles.searchContainer}>
-          <div 
-            style={{ 
-              ...styles.searchWrapper,
-              borderColor: isSearchFocused ? "#4CAF50" : "rgba(255, 255, 255, 0.3)",
-              boxShadow: isSearchFocused ? "0 0 0 2px rgba(76, 175, 80, 0.2)" : "none"
-            }}
-            ref={searchRef}
-          >
-            <FaSearch style={styles.searchIcon} />
+        <div className="search-section" ref={searchRef}>
+          <div className={`search-bar ${isSearchFocused ? 'focused' : ''}`}>
+            <FaSearch className="search-icon" />
             <input
               type="text"
               placeholder="Search any Location, City, State or Country"
@@ -142,7 +119,7 @@ function Navbar() {
                 setShowSuggestions(e.target.value.length > 0);
               }}
               onKeyDown={handleKeyDown}
-              style={styles.searchInput}
+              className="search-input"
               onFocus={() => {
                 setIsSearchFocused(true);
                 setShowSuggestions(searchQuery.length > 0);
@@ -153,11 +130,11 @@ function Navbar() {
               }}
             />
             {showSuggestions && filteredCities.length > 0 && (
-              <div style={styles.suggestionsContainer}>
+              <div className="suggestions-dropdown">
                 {filteredCities.map((city) => (
                   <div
                     key={city.name}
-                    style={styles.suggestionItem}
+                    className="suggestion-item"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handleSearch(city.path)}
                   >
@@ -169,46 +146,42 @@ function Navbar() {
           </div>
         </div>
 
-        <div style={styles.navLinks}>
-          <button className="navButtons" onClick={() => navigate("/")}>
+        <div className="nav-links">
+          <button className="nav-link" onClick={() => navigate("/")}>
             Home
           </button>
-          <button className="navButtons" onClick={handleDashboardClick}>
+          <button className="nav-link" onClick={handleDashboardClick}>
             Dashboard
           </button>
-          <button className="navButtons" onClick={() => navigate("/education")}>
+          <button className="nav-link" onClick={() => navigate("/education")}>
             Education
           </button>
-          <button className="navButtons" onClick={() => navigate("/healthalert")}>
+          <button className="nav-link" onClick={() => navigate("/healthalert")}>
             HealthAlert
           </button>
-          <button className="navButtons" onClick={() => navigate("/report")}>
+          <button className="nav-link" onClick={() => navigate("/report")}>
             Report
           </button>
         </div>
 
-        <div style={styles.authSection}>
+        <div className="auth-section">
           {isLoggedIn ? (
-            <div style={styles.userSection}>
-              <button className="navButtons" onClick={handleProfileClick}>
-                <FaUserCircle style={styles.userIcon} className="userface" />
+            <div className="user-profile">
+              <button className="profile-button" onClick={handleProfileClick}>
+                <FaUserCircle className="user-icon" />
               </button>
               {userName && userRole && (
-                <div className="userInfo">
-                  <div>
-                    <span style={styles.userName}>{userName}</span>
-                  </div>
-                  <div>
-                    <span style={styles.userRole}>{userRole}</span>
-                  </div>
+                <div className="user-details">
+                  <span className="user-name">{userName}</span>
+                  <span className="user-role">{userRole}</span>
                 </div>
               )}
-              <button className="authButton" onClick={handleLogout}>
+              <button className="auth-button logout" onClick={handleLogout}>
                 Logout
               </button>
             </div>
           ) : (
-            <button className="authButton" onClick={() => navigate("/login")}>
+            <button className="auth-button login" onClick={() => navigate("/login")}>
               Login
             </button>
           )}
@@ -217,122 +190,5 @@ function Navbar() {
     </div>
   );
 }
-
-const styles = {
-  navbar: {
-    position: "sticky",
-    top: 0,
-    zIndex: "1000",
-    width: "100%",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "5px 8px",
-    margin: "0",
-  },
-  logoContainer: {
-    display: "grid",
-  },
-  logoImage: {
-    width: "70px",
-    height: "70px",
-    transition: "transform 0.3s ease",
-  },
-  logoText: {
-    fontSize: "18px",
-    fontWeight: "bold",
-    color: "#F4F4F4",
-    paddingLeft: "10px",
-    transition: "all 0.3s ease",
-  },
-  searchContainer: {
-    flex: 1,
-    maxWidth: "500px",
-    margin: "0 20px",
-    position: "relative",
-  },
-  searchWrapper: {
-    position: "relative",
-    width: "100%",
-    borderRadius: "25px",
-    border: "1px solid",
-    transition: "all 0.3s ease",
-  },
-  searchIcon: {
-    position: "absolute",
-    left: "15px",
-    top: "50%",
-    transform: "translateY(-50%)",
-    color: "#FFF",
-    fontSize: "16px",
-    transition: "all 0.3s ease",
-  },
-  searchInput: {
-    width: "100%",
-    padding: "12px 20px 12px 40px",
-    borderRadius: "25px",
-    border: "none",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    color: "#FFF",
-    fontSize: "14px",
-    outline: "none",
-    transition: "all 0.3s ease",
-  },
-  suggestionsContainer: {
-    position: "absolute",
-    top: "calc(100% + 5px)",
-    left: 0,
-    right: 0,
-    backgroundColor: "rgba(13, 27, 42, 0.95)",
-    borderRadius: "10px",
-    zIndex: "1001",
-    maxHeight: "300px",
-    overflowY: "auto",
-    border: "1px solid rgba(255, 255, 255, 0.1)",
-    boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
-    padding: "5px 0",
-  },
-  suggestionItem: {
-    padding: "12px 20px",
-    color: "#FFF",
-    cursor: "pointer",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    transition: "background 0.2s ease",
-    "&:hover": {
-      backgroundColor: "rgba(76, 175, 80, 0.3)",
-    }
-  },
-  navLinks: {
-    display: "flex",
-    gap: "15px",
-    alignItems: "center",
-  },
-  authSection: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-  },
-  userSection: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-  },
-  userIcon: {
-    fontSize: "24px",
-    color: "#FFF",
-    transition: "all 0.3s ease",
-  },
-  userName: {
-    color: "#FFF",
-    fontSize: "16px",
-  },
-  userRole: {
-    color: "#FFF",
-    fontSize: "14px",
-    marginLeft: "5px",
-  },
-};
 
 export default Navbar;

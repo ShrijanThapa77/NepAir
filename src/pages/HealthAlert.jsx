@@ -8,7 +8,6 @@ import { FiAlertCircle, FiCheckCircle, FiEdit, FiTrash2, FiPhone, FiMail, FiMapP
 import './HealthAlert.css';
 import BG from '../assets/BGGG.jpg';
 
-
 function HealthAlert() {
   const [user, setUser] = useState(null);
   const [stations, setStations] = useState([]);
@@ -21,7 +20,6 @@ function HealthAlert() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // List of available stations
   const stationOptions = [
     'Kathmandu',
     'Janakpur',
@@ -35,7 +33,6 @@ function HealthAlert() {
     'Dharan',
   ];
 
-  // List of diseases with icons
   const diseases = [
     { name: 'Pneumonia', icon: '🫁' },
     { name: 'Asthma', icon: '🌬️' },
@@ -46,7 +43,6 @@ function HealthAlert() {
     { name: 'No Diseases', icon: '❌' },
   ];
 
-  // Check user authentication status
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -56,12 +52,16 @@ function HealthAlert() {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists() && userDoc.data().healthAlert?.subscribed) {
             setIsSubscribed(true);
-            setStations(userDoc.data().healthAlert.stations);
-            setSelectedDiseases(userDoc.data().healthAlert.diseases);
+            setStations(userDoc.data().healthAlert.stations || []);
+            setSelectedDiseases(userDoc.data().healthAlert.diseases || []);
             setPhoneNumber(userDoc.data().healthAlert.phoneNumber || '');
+            setOtherDisease(
+              userDoc.data().healthAlert.diseases.find(d => !diseases.some(disease => disease.name === d)) || ''
+            );
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
+          setMessage('Failed to load subscription data');
         } finally {
           setIsLoading(false);
         }
@@ -73,56 +73,74 @@ function HealthAlert() {
     return () => unsubscribe();
   }, []);
 
-  // Handle disease selection logic
   const handleDiseaseChange = (disease) => {
     if (disease === 'No Diseases') {
       setSelectedDiseases(['No Diseases']);
+      setOtherDisease('');
     } else if (disease === 'Other') {
-      setSelectedDiseases((prev) =>
-        prev.includes('Other') ? prev.filter((d) => d !== 'Other') : [...prev, 'Other']
+      setSelectedDiseases(prev =>
+        prev.includes('Other') ? prev.filter(d => d !== 'Other') : [...prev.filter(d => d !== 'No Diseases'), 'Other']
       );
     } else {
-      setSelectedDiseases((prev) =>
+      setSelectedDiseases(prev =>
         prev.includes(disease)
-          ? prev.filter((d) => d !== disease)
-          : [...prev.filter((d) => d !== 'No Diseases'), disease]
+          ? prev.filter(d => d !== disease)
+          : [...prev.filter(d => d !== 'No Diseases'), disease]
       );
     }
   };
 
-  // Handle subscription form submission
   const handleSubscribe = async (e) => {
     e.preventDefault();
-    if (!stations.length || selectedDiseases.length === 0 || !agreed || !phoneNumber) {
-      setMessage('Please fill all fields and agree to terms');
+    if (!stations.length) {
+      setMessage('Please select at least one monitoring station');
+      return;
+    }
+    if (selectedDiseases.length === 0) {
+      setMessage('Please select at least one health condition');
+      return;
+    }
+    if (!phoneNumber || phoneNumber.length !== 10) {
+      setMessage('Please enter a valid 10-digit phone number');
+      return;
+    }
+    if (!agreed) {
+      setMessage('Please agree to receive alerts');
       return;
     }
     
     setIsLoading(true);
+    setMessage('');
+    
     try {
+      const diseasesToSave = selectedDiseases.map(d => 
+        d === 'Other' ? otherDisease : d
+      );
+      
       await setDoc(
         doc(db, 'users', user.uid),
         {
           healthAlert: {
             stations,
-            diseases: selectedDiseases.map((d) => (d === 'Other' ? otherDisease : d)),
+            diseases: diseasesToSave,
             subscribed: true,
             phoneNumber,
+            updatedAt: new Date(),
           },
         },
         { merge: true }
       );
+      
       setIsSubscribed(true);
-      setMessage('Subscription successful!');
+      setMessage('Subscription updated successfully!');
     } catch (error) {
-      console.error('Error:', error);
-      setMessage('Subscription failed. Please try again.');
+      console.error('Error saving subscription:', error);
+      setMessage('Failed to save subscription. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle unsubscribe confirmation
   const handleUnsubscribe = async () => {
     if (window.confirm('Are you sure you want to unsubscribe from health alerts?')) {
       setIsLoading(true);
@@ -130,11 +148,17 @@ function HealthAlert() {
         await setDoc(
           doc(db, 'users', user.uid),
           {
-            healthAlert: { subscribed: false },
+            healthAlert: { 
+              subscribed: false,
+              updatedAt: new Date()
+            },
           },
           { merge: true }
         );
         setIsSubscribed(false);
+        setStations([]);
+        setSelectedDiseases([]);
+        setPhoneNumber('');
         setMessage('You have been unsubscribed from health alerts.');
       } catch (error) {
         console.error('Unsubscribe error:', error);
@@ -146,7 +170,7 @@ function HealthAlert() {
   };
 
   return (
-    <div className="health-alert-page" style={{ backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url(${BG})` }}>
+    <div className="health-alert-page" style={{ backgroundImage: `url(${BG})` }}>
       <motion.div 
         className="health-alert-container"
         initial={{ opacity: 0, y: 20 }}
@@ -170,8 +194,8 @@ function HealthAlert() {
             </div>
             <h2>NepAir - Air Quality Health Alerts</h2>
             <p className="description">
-              Protect your respiratory health with our free alert service. Get notified via email and SMS when 
-              air quality reaches dangerous levels in your selected locations.
+              Get notified when air quality reaches dangerous levels in your selected locations.
+              Protect your respiratory health with our free alert service.
             </p>
             <motion.button 
               onClick={() => navigate('/login')} 
@@ -205,11 +229,16 @@ function HealthAlert() {
               </div>
               <div className="detail-item">
                 <FiMapPin className="detail-icon" />
-                <span>{stations.join(', ')}</span>
+                <span>{stations.join(', ') || 'No stations selected'}</span>
               </div>
               <div className="detail-item">
                 <FiHeart className="detail-icon" />
-                <span>{selectedDiseases.join(', ')}</span>
+                <span>
+                  {selectedDiseases
+                    .map(d => d === 'Other' ? otherDisease : d)
+                    .filter(d => d !== '')
+                    .join(', ') || 'No conditions selected'}
+                </span>
               </div>
             </div>
             
@@ -253,13 +282,14 @@ function HealthAlert() {
               <select
                 multiple
                 value={stations}
-                onChange={(e) =>
-                  setStations(Array.from(e.target.selectedOptions, (option) => option.value))
-                }
+                onChange={(e) => {
+                  const selected = Array.from(e.target.selectedOptions, option => option.value);
+                  setStations(selected);
+                }}
                 className="station-select"
                 required
               >
-                {stationOptions.map((station) => (
+                {stationOptions.map(station => (
                   <option key={station} value={station}>
                     {station}
                   </option>
@@ -301,8 +331,8 @@ function HealthAlert() {
                         value={otherDisease}
                         onChange={(e) => setOtherDisease(e.target.value)}
                         placeholder="Specify condition"
-                        required
                         className="other-input"
+                        required
                       />
                     )}
                   </motion.label>
@@ -320,7 +350,12 @@ function HealthAlert() {
                 <input
                   type="tel"
                   value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    if (value.length <= 10) {
+                      setPhoneNumber(value);
+                    }
+                  }}
                   placeholder="98XXXXXXXX"
                   required
                   className="phone-input"
@@ -359,11 +394,12 @@ function HealthAlert() {
         <AnimatePresence>
           {message && (
             <motion.div 
-              className={`message ${message.includes('failed') || message.includes('Please') ? 'error' : 'success'}`}
+              className={`message ${message.includes('success') ? 'success' : 'error'}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
+              onClick={() => setMessage('')}
             >
               {message}
             </motion.div>
