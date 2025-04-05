@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiAlertCircle, FiCheckCircle, FiEdit, FiTrash2, FiPhone, FiMail, FiMapPin, FiHeart } from 'react-icons/fi';
 import './HealthAlert.css';
-import BG from '../assets/BGGG.jpg';
+
 
 function HealthAlert() {
   const [user, setUser] = useState(null);
@@ -21,16 +21,8 @@ function HealthAlert() {
   const navigate = useNavigate();
 
   const stationOptions = [
-    'Kathmandu',
-    'Janakpur',
-    'Pokhara',
-    'Butwal',
-    'Bharatpur',
-    'Nepalgunj',
-    'Mahendranagar',
-    'Biratnagar',
-    'Birgunj',
-    'Dharan',
+    'Kathmandu', 'Janakpur', 'Pokhara', 'Butwal', 'Bharatpur',
+    'Nepalgunj', 'Mahendranagar', 'Biratnagar', 'Birgunj', 'Dharan'
   ];
 
   const diseases = [
@@ -170,242 +162,245 @@ function HealthAlert() {
   };
 
   return (
-    <div className="health-alert-page" style={{ backgroundImage: `url(${BG})` }}>
-      <motion.div 
-        className="health-alert-container"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        {isLoading ? (
-          <div className="loading-overlay">
-            <div className="spinner"></div>
-            <p>Processing your request...</p>
-          </div>
-        ) : !user ? (
-          <motion.div 
-            className="auth-required"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <div className="header-icon">
-              <FiAlertCircle size={48} />
+    <div className="health-alert-wrapper">
+      
+      <div className="health-alert-content">
+        <motion.div 
+          className="health-alert-container"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          {isLoading ? (
+            <div className="loading-overlay">
+              <div className="spinner"></div>
+              <p>Processing your request...</p>
             </div>
-            <h2>NepAir - Air Quality Health Alerts</h2>
-            <p className="description">
-              Get notified when air quality reaches dangerous levels in your selected locations.
-              Protect your respiratory health with our free alert service.
-            </p>
-            <motion.button 
-              onClick={() => navigate('/login')} 
-              className="cta-button primary"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+          ) : !user ? (
+            <motion.div 
+              className="auth-required"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
             >
-              Login to Subscribe
-            </motion.button>
-          </motion.div>
-        ) : isSubscribed ? (
-          <motion.div 
-            className="subscription-success"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <div className="success-icon">
-              <FiCheckCircle size={64} />
-            </div>
-            <h2>Your Health Alert Subscription is Active!</h2>
-            
-            <div className="subscription-details">
-              <div className="detail-item">
-                <FiMail className="detail-icon" />
-                <span>{user.email}</span>
+              <div className="header-icon">
+                <FiAlertCircle size={48} />
               </div>
-              <div className="detail-item">
-                <FiPhone className="detail-icon" />
-                <span>{phoneNumber || 'Not provided'}</span>
-              </div>
-              <div className="detail-item">
-                <FiMapPin className="detail-icon" />
-                <span>{stations.join(', ') || 'No stations selected'}</span>
-              </div>
-              <div className="detail-item">
-                <FiHeart className="detail-icon" />
-                <span>
-                  {selectedDiseases
-                    .map(d => d === 'Other' ? otherDisease : d)
-                    .filter(d => d !== '')
-                    .join(', ') || 'No conditions selected'}
-                </span>
-              </div>
-            </div>
-            
-            <div className="action-buttons">
-              <motion.button
-                onClick={() => setIsSubscribed(false)}
+              <h2>NepAir - Air Quality Health Alerts</h2>
+              <p className="description">
+                Get notified when air quality reaches dangerous levels in your selected locations.
+                Protect your respiratory health with our free alert service.
+              </p>
+              <motion.button 
+                onClick={() => navigate('/login')} 
                 className="cta-button primary"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <FiEdit /> Edit Preferences
+                Login to Subscribe
               </motion.button>
-              <motion.button
-                onClick={handleUnsubscribe}
-                className="cta-button secondary"
+            </motion.div>
+          ) : isSubscribed ? (
+            <motion.div 
+              className="subscription-success"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="success-icon">
+                <FiCheckCircle size={64} />
+              </div>
+              <h2>Your Health Alert Subscription is Active!</h2>
+              
+              <div className="subscription-details">
+                <div className="detail-item">
+                  <FiMail className="detail-icon" />
+                  <span>{user.email}</span>
+                </div>
+                <div className="detail-item">
+                  <FiPhone className="detail-icon" />
+                  <span>{phoneNumber || 'Not provided'}</span>
+                </div>
+                <div className="detail-item">
+                  <FiMapPin className="detail-icon" />
+                  <span>{stations.join(', ') || 'No stations selected'}</span>
+                </div>
+                <div className="detail-item">
+                  <FiHeart className="detail-icon" />
+                  <span>
+                    {selectedDiseases
+                      .map(d => d === 'Other' ? otherDisease : d)
+                      .filter(d => d !== '')
+                      .join(', ') || 'No conditions selected'}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="action-buttons">
+                <motion.button
+                  onClick={() => setIsSubscribed(false)}
+                  className="cta-button primary"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <FiEdit /> Edit Preferences
+                </motion.button>
+                <motion.button
+                  onClick={handleUnsubscribe}
+                  className="cta-button secondary"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <FiTrash2 /> Unsubscribe
+                </motion.button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.form 
+              onSubmit={handleSubscribe} 
+              className="subscription-form"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <h2>
+                <FiAlertCircle className="form-icon" /> 
+                Health Alert Subscription
+              </h2>
+              
+              <div className="form-group">
+                <label>
+                  <FiMapPin className="label-icon" /> 
+                  Select Monitoring Stations:
+                </label>
+                <select
+                  multiple
+                  value={stations}
+                  onChange={(e) => {
+                    const selected = Array.from(e.target.selectedOptions, option => option.value);
+                    setStations(selected);
+                  }}
+                  className="station-select"
+                  required
+                >
+                  {stationOptions.map(station => (
+                    <option key={station} value={station}>
+                      {station}
+                    </option>
+                  ))}
+                </select>
+                <small className="select-hint">
+                  Hold Ctrl (Windows) or Command (Mac) to select multiple stations
+                </small>
+              </div>
+              
+              <div className="form-group">
+                <label>
+                  <FiHeart className="label-icon" /> 
+                  Select Respiratory Conditions:
+                </label>
+                <div className="disease-grid">
+                  {diseases.map(({name, icon}) => (
+                    <motion.label 
+                      key={name} 
+                      className={`disease-option ${selectedDiseases.includes(name) ? 'selected' : ''}`}
+                      whileHover={{ scale: 1.03 }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedDiseases.includes(name)}
+                        onChange={() => handleDiseaseChange(name)}
+                        className="hidden-checkbox"
+                      />
+                      <span className="custom-checkbox">
+                        {selectedDiseases.includes(name) && (
+                          <span className="checkmark">✓</span>
+                        )}
+                      </span>
+                      <span className="disease-icon">{icon}</span>
+                      <span className="disease-name">{name}</span>
+                      {name === 'Other' && selectedDiseases.includes('Other') && (
+                        <input
+                          type="text"
+                          value={otherDisease}
+                          onChange={(e) => setOtherDisease(e.target.value)}
+                          placeholder="Specify condition"
+                          className="other-input"
+                          required
+                        />
+                      )}
+                    </motion.label>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="form-group">
+                <label>
+                  <FiPhone className="label-icon" /> 
+                  Phone Number for SMS Alerts:
+                </label>
+                <div className="phone-input-container">
+                  <span className="country-code">+977</span>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      if (value.length <= 10) {
+                        setPhoneNumber(value);
+                      }
+                    }}
+                    placeholder="98XXXXXXXX"
+                    required
+                    className="phone-input"
+                    pattern="[0-9]{10}"
+                    maxLength="10"
+                  />
+                </div>
+              </div>
+              
+              <label className="agreement">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  required
+                  className="hidden-checkbox"
+                />
+                <span className="custom-checkbox">
+                  {agreed && <span className="checkmark">✓</span>}
+                </span>
+                I agree to receive email and SMS alerts based on my preferences
+              </label>
+              
+              <motion.button 
+                type="submit" 
+                className="cta-button primary"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                disabled={isLoading}
               >
-                <FiTrash2 /> Unsubscribe
+                {isLoading ? 'Processing...' : 'Subscribe Now'}
               </motion.button>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.form 
-            onSubmit={handleSubscribe} 
-            className="subscription-form"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <h2>
-              <FiAlertCircle className="form-icon" /> 
-              Health Alert Subscription
-            </h2>
-            
-            <div className="form-group">
-              <label>
-                <FiMapPin className="label-icon" /> 
-                Select Monitoring Stations:
-              </label>
-              <select
-                multiple
-                value={stations}
-                onChange={(e) => {
-                  const selected = Array.from(e.target.selectedOptions, option => option.value);
-                  setStations(selected);
-                }}
-                className="station-select"
-                required
-              >
-                {stationOptions.map(station => (
-                  <option key={station} value={station}>
-                    {station}
-                  </option>
-                ))}
-              </select>
-              <small className="select-hint">
-                Hold Ctrl (Windows) or Command (Mac) to select multiple stations
-              </small>
-            </div>
-            
-            <div className="form-group">
-              <label>
-                <FiHeart className="label-icon" /> 
-                Select Respiratory Conditions:
-              </label>
-              <div className="disease-grid">
-                {diseases.map(({name, icon}) => (
-                  <motion.label 
-                    key={name} 
-                    className={`disease-option ${selectedDiseases.includes(name) ? 'selected' : ''}`}
-                    whileHover={{ scale: 1.03 }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedDiseases.includes(name)}
-                      onChange={() => handleDiseaseChange(name)}
-                      className="hidden-checkbox"
-                    />
-                    <span className="custom-checkbox">
-                      {selectedDiseases.includes(name) && (
-                        <span className="checkmark">✓</span>
-                      )}
-                    </span>
-                    <span className="disease-icon">{icon}</span>
-                    <span className="disease-name">{name}</span>
-                    {name === 'Other' && selectedDiseases.includes('Other') && (
-                      <input
-                        type="text"
-                        value={otherDisease}
-                        onChange={(e) => setOtherDisease(e.target.value)}
-                        placeholder="Specify condition"
-                        className="other-input"
-                        required
-                      />
-                    )}
-                  </motion.label>
-                ))}
-              </div>
-            </div>
-            
-            <div className="form-group">
-              <label>
-                <FiPhone className="label-icon" /> 
-                Phone Number for SMS Alerts:
-              </label>
-              <div className="phone-input-container">
-                <span className="country-code">+977</span>
-                <input
-                  type="tel"
-                  value={phoneNumber}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '');
-                    if (value.length <= 10) {
-                      setPhoneNumber(value);
-                    }
-                  }}
-                  placeholder="98XXXXXXXX"
-                  required
-                  className="phone-input"
-                  pattern="[0-9]{10}"
-                  maxLength="10"
-                />
-              </div>
-            </div>
-            
-            <label className="agreement">
-              <input
-                type="checkbox"
-                checked={agreed}
-                onChange={(e) => setAgreed(e.target.checked)}
-                required
-                className="hidden-checkbox"
-              />
-              <span className="custom-checkbox">
-                {agreed && <span className="checkmark">✓</span>}
-              </span>
-              I agree to receive email and SMS alerts based on my preferences
-            </label>
-            
-            <motion.button 
-              type="submit" 
-              className="cta-button primary"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Processing...' : 'Subscribe Now'}
-            </motion.button>
-          </motion.form>
-        )}
-        
-        <AnimatePresence>
-          {message && (
-            <motion.div 
-              className={`message ${message.includes('success') ? 'success' : 'error'}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              onClick={() => setMessage('')}
-            >
-              {message}
-            </motion.div>
+            </motion.form>
           )}
-        </AnimatePresence>
-      </motion.div>
+          
+          <AnimatePresence>
+            {message && (
+              <motion.div 
+                className={`message ${message.includes('success') ? 'success' : 'error'}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                onClick={() => setMessage('')}
+              >
+                {message}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </div>
     </div>
   );
 }

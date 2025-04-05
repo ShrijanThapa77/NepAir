@@ -1,15 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { db } from '../firebase'; // Import Firestore database
-import { collection, getDocs, query, where } from 'firebase/firestore'; // Firestore utilities
+import { db } from '../firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import emailjs from '@emailjs/browser';
 import { FaBiohazard, FaSkull, FaExclamationTriangle } from "react-icons/fa";
 import { MdDangerous, MdHealthAndSafety } from "react-icons/md";
+
+// ✅ FIXED: Correct API base URL depending on environment
+const API_BASE_URL = process.env.NODE_ENV === 'development' 
+  ? 'http://localhost:5001' 
+  : 'https://your-production-api-url.com';
 
 function OldData({ setShowInfo }) {
   const [khumaltarPM25, setKhumaltarPM25] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Helper function to determine AQI category based on PM2.5 value
   const getCategory = (value) => {
     if (value === '-') return '';
     if (value > 200) return 'Hazardous';
@@ -19,7 +23,6 @@ function OldData({ setShowInfo }) {
     return 'Good';
   };
 
-  // Mapping of categories to icons
   const categoryIcons = {
     Hazardous: <FaBiohazard />,
     Sensitive: <FaSkull />,
@@ -28,125 +31,143 @@ function OldData({ setShowInfo }) {
     Good: <MdHealthAndSafety />,
   };
 
-  // Function to fetch real-time PM2.5 data for Khumaltar
+  const categoryColors = {
+    Hazardous: '#8b0000',
+    Sensitive: '#ff4500',
+    Unhealthy: '#ff8c00',
+    Moderate: '#ffd700',
+    Good: '#2e8b57',
+  };
+
   const fetchRealTimePM25 = async () => {
     try {
       const response = await fetch(
         'https://api.waqi.info/feed/@10124/?token=ec4f4e7dd3eab970a6daa16025d4d2d696ad4b28'
       );
-      if (!response.ok) {
-        throw new Error('Failed to fetch AQI data');
-      }
+      if (!response.ok) throw new Error('Failed to fetch AQI data');
       const data = await response.json();
-      if (data.status === 'ok') {
-        const pm25Value = data.data.iaqi.pm25?.v || '-'; // Extract PM2.5 value or fallback to '-'
-        setKhumaltarPM25(pm25Value);
-      } else {
-        console.error('API returned an error:', data.message);
-        setKhumaltarPM25('-'); // Fallback value
-      }
+      setKhumaltarPM25(data.status === 'ok' ? data.data.iaqi.pm25?.v || '-' : '-');
     } catch (error) {
-      console.error('Error fetching real-time PM2.5 data:', error.message);
-      setKhumaltarPM25('-'); // Fallback value
+      console.error('Error fetching PM2.5 data:', error);
+      setKhumaltarPM25('-');
     } finally {
-      setLoading(false); // Stop loading after fetching
+      setLoading(false);
     }
   };
 
-  // Fetch real-time PM2.5 data on component mount
-  useEffect(() => {
-    fetchRealTimePM25();
+  const sendSMS = async (toPhone, message) => {
+    try {
+      console.log('Attempting to send SMS to:', toPhone);
+      
+      const response = await fetch(`${API_BASE_URL}/send-sms`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          toPhone: `+977${toPhone}`,
+          message 
+        })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text(); // helpful for debugging
+        console.error('Raw error response:', errorText);
+        throw new Error('Failed to send SMS');
+      }
+      
+      const result = await response.json();
+      console.log('SMS sent successfully:', result.sid);
+      return true;
+    } catch (error) {
+      console.error('SMS sending failed:', error.message);
+      return false;
+    }
+  };
+
+  useEffect(() => { 
+    fetchRealTimePM25(); 
   }, []);
 
-  // Memoize the `data` array with dynamic PM2.5 value for Khumaltar
-  const data = useMemo(() => {
-    return [
-      { station: 'Kathmandu', value: khumaltarPM25, category: getCategory(khumaltarPM25) },
-      { station: 'Janakpur', value: 100, category: 'Hazardous' },
-      { station: 'Pokhara', value: '100', category: 'Hazardous' },
-      { station: 'Butwal', value: 100, category: 'Unhealthy' },
-      { station: 'Bharatpur', value: 100, category: 'Unhealthy' },
-      { station: 'Nepalgunj', value: 100, category: 'Sensitive' },
-      { station: 'Mahendranagar', value: 80, category: 'Moderate' },
-      { station: 'Biratnagar', value: 40, category: 'Good' },
-      { station: 'Birgunj', value: 90, category: 'Moderate' },
-      { station: 'Dharan', value: 80, category: 'Moderate' },
-    ].map((entry) => ({
-      ...entry,
-      icon: categoryIcons[entry.category] || null, // Assign the icon based on the category
-    }));
-  }, [khumaltarPM25, categoryIcons]); // Added categoryIcons to the dependency array
+  const data = useMemo(() => [
+    { station: 'Kathmandu', value: khumaltarPM25, category: getCategory(khumaltarPM25) },
+    { station: 'Janakpur', value: 100, category: 'Hazardous' },
+    { station: 'Pokhara', value: '100', category: 'Hazardous' },
+    { station: 'Butwal', value: 100, category: 'Unhealthy' },
+    { station: 'Bharatpur', value: 100, category: 'Unhealthy' },
+    { station: 'Nepalgunj', value: 100, category: 'Sensitive' },
+    { station: 'Mahendranagar', value: 80, category: 'Moderate' },
+    { station: 'Biratnagar', value: 40, category: 'Good' },
+    { station: 'Birgunj', value: 90, category: 'Moderate' },
+    { station: 'Dharan', value: 80, category: 'Moderate' },
+  ].map(entry => ({
+    ...entry,
+    icon: categoryIcons[entry.category] || null,
+    color: categoryColors[entry.category] || '#000',
+  })), [khumaltarPM25]);
 
-  // Effect to check AQI and notify users
   useEffect(() => {
     const checkAQIAndNotify = async () => {
-      // Filter stations with high AQI values
-      const highAQIStations = data.filter((entry) => entry.value !== '-' && entry.value > 200);
-      console.log('High AQI stations:', highAQIStations);
-
+      const highAQIStations = data.filter(entry => 
+        entry.value !== '-' && entry.value > 100
+      );
+      
       if (highAQIStations.length === 0) {
         console.log('No high AQI stations detected.');
         return;
       }
 
       try {
-        // Fetch user emails from Firestore
-        const usersRef = collection(db, 'users'); // Assuming 'users' is the collection name
-        const q = query(usersRef, where('healthAlert.subscribed', '==', true)); // Only notify subscribed users
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('healthAlert.subscribed', '==', true));
         const querySnapshot = await getDocs(q);
 
-        if (querySnapshot.empty) {
-          console.warn('No subscribed users found in Firestore.');
-          return;
-        }
-
-        // Process each user document
-        querySnapshot.forEach((doc) => {
-          const userData = doc.data();
-          const userEmail = userData.email;
-          const userStations = userData.healthAlert.stations; // Array of stations selected by the user
-
-          // Find high AQI stations that match the user's selected stations
-          const relevantStations = highAQIStations.filter((station) =>
+        for (const doc of querySnapshot.docs) {
+          const user = doc.data();
+          const userStations = user.healthAlert?.stations || [];
+          const userPhone = user.healthAlert?.phoneNumber;
+          
+          const relevantStations = highAQIStations.filter(station => 
             userStations.includes(station.station)
           );
 
           if (relevantStations.length > 0) {
-            // Prepare email content
-            const stationsText = relevantStations
-              .map((station) => `${station.station}: ${station.value}`)
-              .join('\n');
+            const alertMessage = `⚠️ Air Quality Alert!\n${
+              relevantStations.map(s => 
+                `${s.station}: ${s.value} (${s.category})`
+              ).join('\n')
+            }\nTake precautions!`;
 
-            // Send email using EmailJS
-            emailjs
-              .send(
-                'service_thkeu45', // Your Service ID
-                'template_kk30yhg', // Your Template ID
+            if (userPhone && userPhone.length === 10) {
+              console.log(`Preparing to notify ${user.email} via SMS`);
+              await sendSMS(userPhone, alertMessage);
+            }
+
+            if (user.email) {
+              emailjs.send(
+                'service_thkeu45',
+                'template_kk30yhg',
                 {
-                  to_email: userEmail,
-                  stations: stationsText,
+                  to_email: user.email,
+                  stations: relevantStations.map(s => 
+                    `${s.station}: ${s.value}`
+                  ).join('\n')
                 },
-                'v6pNvmbYK2iyUdR2Z' // Your Public Key
-              )
-              .then(
-                (result) => {
-                  console.log('Email sent successfully to:', userEmail, result.text);
-                },
-                (error) => {
-                  console.error('Error sending email to:', userEmail, error.text);
-                }
+                'v6pNvmbYK2iyUdR2Z'
+              ).catch(emailError => 
+                console.error('Email failed:', emailError)
               );
+            }
           }
-        });
+        }
       } catch (error) {
-        console.error('Error fetching Firestore data:', error.message);
+        console.error('Notification error:', error);
       }
     };
 
     checkAQIAndNotify();
   }, [data]);
 
-  // Render loading state while fetching real-time data
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -163,8 +184,16 @@ function OldData({ setShowInfo }) {
         <tbody>
           {data.map((entry, index) => (
             <tr key={index} onMouseEnter={() => setShowInfo(true)}>
-              <td id='category' className={entry.category}>{entry.station}{entry.icon}</td>
-              <td className='tdata'>{entry.value}</td>
+              <td 
+                id='category' 
+                className={entry.category}
+                style={{ color: entry.color, fontWeight: 'bold' }}
+              >
+                {entry.station} {entry.icon}
+              </td>
+              <td className='tdata' style={{ color: entry.color }}>
+                {entry.value}
+              </td>
             </tr>
           ))}
         </tbody>

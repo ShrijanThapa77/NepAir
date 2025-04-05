@@ -1,18 +1,22 @@
-/* Base Styles */
-.health-alert-page {
-  position: relative;
+/* Wrapper Styles */
+.health-alert-wrapper {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
+}
+
+.health-alert-content {
+  flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
   padding: 2rem;
-  color: white;
+  padding-top: 80px; /* Space for navbar */
+  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+              url('../assets/BGGG.jpg') center/cover no-repeat fixed;
 }
 
+/* Container Styles */
 .health-alert-container {
   position: relative;
   width: 100%;
@@ -27,6 +31,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Loading Styles */
 .loading-overlay {
   position: absolute;
   top: 0;
@@ -289,7 +294,7 @@ label {
   border: none;
   font-size: 1rem;
   background: transparent;
-  color: rgb(17, 11, 125);
+  color: rgb(30, 25, 136);
 }
 
 .phone-input:focus {
@@ -378,6 +383,11 @@ label {
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
+  .health-alert-content {
+    padding: 1rem;
+    padding-top: 70px;
+  }
+
   .health-alert-container {
     padding: 1.5rem;
   }
@@ -396,10 +406,11 @@ label {
 }
 
 @media (max-width: 480px) {
-  .health-alert-page {
-    padding: 1rem;
+  .health-alert-content {
+    padding: 0.5rem;
+    padding-top: 60px;
   }
-  
+
   .disease-grid {
     grid-template-columns: 1fr;
   }
