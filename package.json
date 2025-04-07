@@ -15,6 +15,7 @@
     "express": "^5.1.0",
     "firebase": "^11.2.0",
     "framer-motion": "^12.6.2",
+    "git-filter-repo": "^0.0.30",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.486.0",
     "papaparse": "^5.5.2",
