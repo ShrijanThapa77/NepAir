@@ -1,7 +1,7 @@
 import React from 'react'
 import './hero.css'
 import Navbar from '../components/Navbar';
-import BG from '../assets/BGGG.jpg';
+import BG from '../assets/sky.jpg';
 import Heroimg from '../assets/heroimg.png';
 
 const Hero = () => {

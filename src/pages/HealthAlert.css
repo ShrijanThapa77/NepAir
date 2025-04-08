@@ -12,8 +12,8 @@
   align-items: center;
   padding: 2rem;
   padding-top: 80px; /* Space for navbar */
-  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
-              url('../assets/BGGG.jpg') center/cover no-repeat fixed;
+  background: linear-gradient(rgba(253, 251, 251, 0.7), rgba(0, 0, 0, 0.7)), 
+              url('../assets/sky.jpg') center/cover no-repeat fixed;
 }
 
 /* Container Styles */

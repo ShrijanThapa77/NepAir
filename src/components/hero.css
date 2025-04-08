@@ -6,6 +6,9 @@
     background-repeat: no-repeat;
     height: 100vh;
 }
+.hero-container {
+    background-image: url('../assets/sky.jpg');
+  }
 
 .herowrapper{
     position: absolute;

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { FaUserCircle, FaSearch } from "react-icons/fa";
+import { FaUserCircle, FaSearch, FaLeaf, FaBars, FaTimes } from "react-icons/fa";
 import "./navbar.css";
 
 function Navbar() {
@@ -13,8 +13,10 @@ function Navbar() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
   const searchRef = useRef(null);
+  const navRef = useRef(null);
 
   const cities = [
     { name: "Kathmandu", path: "/kathmandu" },
@@ -33,6 +35,14 @@ function Navbar() {
     city.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const toggleMenu = () => {
+    setMenuOpen(!menuOpen);
+  };
+
+  const closeMenu = () => {
+    setMenuOpen(false);
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       if (filteredCities.length > 0) {
@@ -49,12 +59,16 @@ function Navbar() {
     setSearchQuery("");
     setShowSuggestions(false);
     navigate(cityPath);
+    closeMenu();
   };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         setShowSuggestions(false);
+      }
+      if (navRef.current && !navRef.current.contains(event.target)) {
+        closeMenu();
       }
     };
 
@@ -88,22 +102,31 @@ function Navbar() {
     setUserName(null);
     setUserRole(null);
     setIsLoggedIn(false);
+    closeMenu();
     alert("You have been logged out successfully.");
     navigate("/");
   };
 
   const handleProfileClick = () => {
+    closeMenu();
     navigate(userRole === "admin" ? "/admindash" : "/userprofile");
   };
 
   const handleDashboardClick = () => {
+    closeMenu();
     navigate(userRole === "admin" ? "/admindash" : "/userdashboard");
+  };
+
+  const handleNavLinkClick = (path) => {
+    closeMenu();
+    navigate(path);
   };
 
   return (
     <div className="navbar-container">
-      <nav className="navbar">
+      <nav className="navbar" ref={navRef}>
         <div className="logo-section" onClick={() => navigate("/")}>
+          <FaLeaf className="logo-icon" />
           <span className="logo-text">NepAir</span>
         </div>
 
@@ -146,42 +169,65 @@ function Navbar() {
           </div>
         </div>
 
-        <div className="nav-links">
-          <button className="nav-link" onClick={() => navigate("/")}>
+        <button 
+          className={`hamburger ${menuOpen ? 'active' : ''}`} 
+          onClick={toggleMenu}
+          aria-label="Toggle menu"
+        >
+          {menuOpen ? <FaTimes className="hamburger-icon" /> : <FaBars className="hamburger-icon" />}
+        </button>
+
+        <div className={`nav-links ${menuOpen ? 'active' : ''}`}>
+          <button className="nav-link" onClick={() => handleNavLinkClick("/")}>
             Home
           </button>
           <button className="nav-link" onClick={handleDashboardClick}>
             Dashboard
           </button>
-          <button className="nav-link" onClick={() => navigate("/education")}>
+          <button className="nav-link" onClick={() => handleNavLinkClick("/education")}>
             Education
           </button>
-          <button className="nav-link" onClick={() => navigate("/healthalert")}>
+          <button className="nav-link" onClick={() => handleNavLinkClick("/healthalert")}>
             HealthAlert
           </button>
-          <button className="nav-link" onClick={() => navigate("/report")}>
+          <button className="nav-link" onClick={() => handleNavLinkClick("/report")}>
             Report
           </button>
         </div>
 
-        <div className="auth-section">
+        <div className={`auth-section ${menuOpen ? 'active' : ''}`}>
           {isLoggedIn ? (
             <div className="user-profile">
-              <button className="profile-button" onClick={handleProfileClick}>
+              <button 
+                className="profile-button" 
+                onClick={handleProfileClick}
+                aria-label="User profile"
+              >
                 <FaUserCircle className="user-icon" />
+                {userName && userRole && (
+                  <div className="user-details">
+                    <span className="user-name">{userName}</span>
+                    <span className="user-role">{userRole}</span>
+                  </div>
+                )}
               </button>
-              {userName && userRole && (
-                <div className="user-details">
-                  <span className="user-name">{userName}</span>
-                  <span className="user-role">{userRole}</span>
-                </div>
-              )}
-              <button className="auth-button logout" onClick={handleLogout}>
+              <button 
+                className="auth-button logout" 
+                onClick={handleLogout}
+                aria-label="Logout"
+              >
                 Logout
               </button>
             </div>
           ) : (
-            <button className="auth-button login" onClick={() => navigate("/login")}>
+            <button 
+              className="auth-button login" 
+              onClick={() => {
+                closeMenu();
+                navigate("/login");
+              }}
+              aria-label="Login"
+            >
               Login
             </button>
           )}

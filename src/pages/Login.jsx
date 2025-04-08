@@ -10,7 +10,7 @@ import { auth, db } from "../firebase";
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 
 import './Login.css';
-import BG from '../assets/BGG.jpg';
+import BG from '../assets/sky.jpg';
 import { FaUser, FaLock, FaEnvelope, FaVenusMars, FaBirthdayCake, FaShieldAlt } from 'react-icons/fa';
 
 const Login = () => {

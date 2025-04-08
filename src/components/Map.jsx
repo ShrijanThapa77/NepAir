@@ -79,12 +79,7 @@ function Map({ showInfo, setShowInfo }) {
       path: "/dharan",
       description: "A hill station and educational hub in eastern Nepal."
     },
-    { 
-      name: "Mount Everest Base Camp", 
-      coords: [27.9881, 86.925], 
-      path: "/everest",
-      description: "The starting point for climbers aiming to summit Mount Everest."
-    },
+ 
     { 
       name: "Chitwan National Park", 
       coords: [27.5833, 84.4167], 
