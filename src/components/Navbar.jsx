@@ -98,13 +98,17 @@ function Navbar() {
   }, []);
 
   const handleLogout = async () => {
-    await signOut(auth);
-    setUserName(null);
-    setUserRole(null);
-    setIsLoggedIn(false);
-    closeMenu();
-    alert("You have been logged out successfully.");
-    navigate("/");
+    try {
+      await signOut(auth);
+      setUserName(null);
+      setUserRole(null);
+      setIsLoggedIn(false);
+      closeMenu();
+      alert("You have been logged out successfully.");
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   const handleProfileClick = () => {
@@ -123,117 +127,185 @@ function Navbar() {
   };
 
   return (
-    <div className="navbar-container">
-      <nav className="navbar" ref={navRef}>
-        <div className="logo-section" onClick={() => navigate("/")}>
-          <FaLeaf className="logo-icon" />
-          <span className="logo-text">NepAir</span>
-        </div>
+    <header className="navbar-container" ref={navRef}>
+      <nav className="navbar">
+        <div className="navbar-left">
+          <div className="logo-section" onClick={() => navigate("/")}>
+            <FaLeaf className="logo-icon" />
+            <span className="logo-text">NepAir</span>
+          </div>
 
-        <div className="search-section" ref={searchRef}>
-          <div className={`search-bar ${isSearchFocused ? 'focused' : ''}`}>
-            <FaSearch className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search any Location, City, State or Country"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setShowSuggestions(e.target.value.length > 0);
-              }}
-              onKeyDown={handleKeyDown}
-              className="search-input"
-              onFocus={() => {
-                setIsSearchFocused(true);
-                setShowSuggestions(searchQuery.length > 0);
-              }}
-              onBlur={() => {
-                setIsSearchFocused(false);
-                setTimeout(() => setShowSuggestions(false), 200);
-              }}
-            />
-            {showSuggestions && filteredCities.length > 0 && (
-              <div className="suggestions-dropdown">
-                {filteredCities.map((city) => (
-                  <div
-                    key={city.name}
-                    className="suggestion-item"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleSearch(city.path)}
-                  >
-                    {city.name}
-                  </div>
-                ))}
-              </div>
-            )}
+          <div className="search-section" ref={searchRef}>
+            <div className={`search-bar ${isSearchFocused ? 'focused' : ''}`}>
+              <FaSearch className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search location or city"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowSuggestions(e.target.value.length > 0);
+                }}
+                onKeyDown={handleKeyDown}
+                className="search-input"
+                onFocus={() => {
+                  setIsSearchFocused(true);
+                  setShowSuggestions(searchQuery.length > 0);
+                }}
+                onBlur={() => {
+                  setIsSearchFocused(false);
+                  // Small delay to allow click on suggestion
+                  setTimeout(() => setShowSuggestions(false), 200);
+                }}
+              />
+              {showSuggestions && filteredCities.length > 0 && (
+                <div className="suggestions-dropdown">
+                  {filteredCities.map((city) => (
+                    <div
+                      key={city.name}
+                      className="suggestion-item"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => handleSearch(city.path)}
+                    >
+                      {city.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        <button 
-          className={`hamburger ${menuOpen ? 'active' : ''}`} 
-          onClick={toggleMenu}
-          aria-label="Toggle menu"
-        >
-          {menuOpen ? <FaTimes className="hamburger-icon" /> : <FaBars className="hamburger-icon" />}
-        </button>
-
-        <div className={`nav-links ${menuOpen ? 'active' : ''}`}>
-          <button className="nav-link" onClick={() => handleNavLinkClick("/")}>
-            Home
-          </button>
-          <button className="nav-link" onClick={handleDashboardClick}>
-            Dashboard
-          </button>
-          <button className="nav-link" onClick={() => handleNavLinkClick("/education")}>
-            Education
-          </button>
-          <button className="nav-link" onClick={() => handleNavLinkClick("/healthalert")}>
-            HealthAlert
-          </button>
-          <button className="nav-link" onClick={() => handleNavLinkClick("/report")}>
-            Report
-          </button>
-        </div>
-
-        <div className={`auth-section ${menuOpen ? 'active' : ''}`}>
-          {isLoggedIn ? (
-            <div className="user-profile">
-              <button 
-                className="profile-button" 
-                onClick={handleProfileClick}
-                aria-label="User profile"
-              >
-                <FaUserCircle className="user-icon" />
-                {userName && userRole && (
-                  <div className="user-details">
-                    <span className="user-name">{userName}</span>
-                    <span className="user-role">{userRole}</span>
-                  </div>
-                )}
+        <div className="navbar-right">
+          <div className="desktop-nav">
+            <div className="nav-links">
+              <button className="nav-link" onClick={() => handleNavLinkClick("/")}>
+                Home
               </button>
-              <button 
-                className="auth-button logout" 
-                onClick={handleLogout}
-                aria-label="Logout"
-              >
-                Logout
+              <button className="nav-link" onClick={handleDashboardClick}>
+                Dashboard
+              </button>
+              <button className="nav-link" onClick={() => handleNavLinkClick("/education")}>
+                Education
+              </button>
+              <button className="nav-link" onClick={() => handleNavLinkClick("/healthalert")}>
+                HealthAlert
+              </button>
+              <button className="nav-link" onClick={() => handleNavLinkClick("/report")}>
+                Report
               </button>
             </div>
-          ) : (
-            <button 
-              className="auth-button login" 
-              onClick={() => {
-                closeMenu();
-                navigate("/login");
-              }}
-              aria-label="Login"
-            >
-              Login
-            </button>
-          )}
+
+            <div className="auth-section">
+              {isLoggedIn ? (
+                <div className="user-profile">
+                  <button 
+                    className="profile-button" 
+                    onClick={handleProfileClick}
+                    aria-label="User profile"
+                  >
+                    <FaUserCircle className="user-icon" />
+                    {userName && userRole && (
+                      <div className="user-details">
+                        <span className="user-name">{userName}</span>
+                        <span className="user-role">{userRole}</span>
+                      </div>
+                    )}
+                  </button>
+                  <button 
+                    className="auth-button logout" 
+                    onClick={handleLogout}
+                    aria-label="Logout"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  className="auth-button login" 
+                  onClick={() => {
+                    closeMenu();
+                    navigate("/login");
+                  }}
+                  aria-label="Login"
+                >
+                  Login
+                </button>
+              )}
+            </div>
+          </div>
+
+          <button 
+            className={`hamburger ${menuOpen ? 'active' : ''}`} 
+            onClick={toggleMenu}
+            aria-label="Toggle menu"
+          >
+            {menuOpen ? <FaTimes className="hamburger-icon" /> : <FaBars className="hamburger-icon" />}
+          </button>
+        </div>
+
+        {/* Mobile Navigation */}
+        <div className={`mobile-nav ${menuOpen ? 'active' : ''}`}>
+          <div className="mobile-nav-content">
+            <div className="mobile-nav-links">
+              <button className="nav-link" onClick={() => handleNavLinkClick("/")}>
+                Home
+              </button>
+              <button className="nav-link" onClick={handleDashboardClick}>
+                Dashboard
+              </button>
+              <button className="nav-link" onClick={() => handleNavLinkClick("/education")}>
+                Education
+              </button>
+              <button className="nav-link" onClick={() => handleNavLinkClick("/healthalert")}>
+                HealthAlert
+              </button>
+              <button className="nav-link" onClick={() => handleNavLinkClick("/report")}>
+                Report
+              </button>
+            </div>
+
+            <div className="mobile-auth-section">
+              {isLoggedIn ? (
+                <>
+                  <div className="mobile-user-info">
+                    <FaUserCircle className="mobile-user-icon" />
+                    <div className="mobile-user-details">
+                      <span className="mobile-user-name">{userName || "User"}</span>
+                      <span className="mobile-user-role">{userRole || "User"}</span>
+                    </div>
+                  </div>
+                  <div className="mobile-buttons">
+                    <button 
+                      className="mobile-button profile" 
+                      onClick={handleProfileClick}
+                    >
+                      Profile
+                    </button>
+                    <button 
+                      className="mobile-button logout" 
+                      onClick={handleLogout}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <button 
+                  className="mobile-button login" 
+                  onClick={() => {
+                    closeMenu();
+                    navigate("/login");
+                  }}
+                >
+                  Login
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </nav>
-    </div>
+    </header>
   );
 }
 
