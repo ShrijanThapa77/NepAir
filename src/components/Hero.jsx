@@ -1,13 +1,13 @@
 import React from 'react'
 import './hero.css'
-import Navbar from '../components/Navbar';
+
 import BG from '../assets/sky.jpg';
 import Heroimg from '../assets/heroimg.png';
 
 const Hero = () => {
   return (
     <>
-    <Navbar/>
+ 
     <div className='hero-container' style={{ backgroundImage: `url(${BG})` }}>
       <div className='herowrapper'>
       <div>

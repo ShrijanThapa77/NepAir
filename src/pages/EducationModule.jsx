@@ -1,325 +1,281 @@
 import React, { useState } from "react";
 import "./EducationModule.css";
 import Footer from "../components/Footer";
-import BG from '../assets/sky.jpg';
 import { FiFeather } from 'react-icons/fi';
+import BG from '../assets/sky.jpg';
 
-import { 
-  FiArrowLeft, 
-  FiArrowRight, 
-  FiExternalLink,
-  FiInfo,
-  FiAlertTriangle,
-  FiHeart,
-  FiShield,
-  FiWind,
-  FiDroplet,
-  FiSun,
-  FiCloud,
-  FiActivity,
-  FiCalendar,
-  FiUsers,
-  FiHome,
- 
-} from 'react-icons/fi';
 import { motion } from 'framer-motion';
 
 const EducationModule = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hoveredCard, setHoveredCard] = useState(null);
-  const [activeTab, setActiveTab] = useState('aqi');
+  const [activeTab, setActiveTab] = useState('intro');
 
-  // Sample educational resources
+  // Hero slider images
   const News = [
     { url: "https://www.icimod.org/wp-content/uploads/302042345_451246337032785_4783566089841697782_n.jpg", title: "Himalayan Air Pollution" },
     { url: "https://idsb.tmgrup.com.tr/ly/uploads/images/2021/03/30/103883.jpg", title: "Urban Air Quality Challenges" },
     { url: "https://assets-cdn.kathmandupost.com/uploads/source/news/2020/news/DTezpgIVMAAXM-1603301636.jpg", title: "Kathmandu Valley Pollution" },
     { url: "https://assets-cdn.kathmandupost.com/uploads/source/news/2023/news/polutionphoto-1699320782.jpg", title: "Winter Pollution Crisis" },
-    { url: "https://assets-cdn.kathmandupost.com/uploads/source/news/2023/opinion/downPostFilePhotoHemantaShrestha-1693965360.jpg", title: "Vehicle Emissions Impact" },
   ];
 
+  // News articles
   const news = [
     {
       id: 1,
-      title: "Dirty and Dangerous",
-      link: "https://kathmandupost.com/editorial/2025/01/20/dirty-and-dangerous",
-      img: "https://assets-api.kathmandupost.com/thumb.php?src=https://assets-cdn.kathmandupost.com/uploads/source/news/2025/opinion/POLLUTIONCHANDRAGIRIROAD01302019MG5019-1737382832.jpg&w=900&height=601",
+      title: "Kathmandu's Air Quality Crisis",
+      link: "https://kathmandupost.com",
+      img: "https://assets-cdn.kathmandupost.com/uploads/source/news/2023/news/polutionphoto-1699320782.jpg"
     },
     {
       id: 2,
-      title: "Bad Air and Polluted Politics",
-      link: "https://nepalitimes.com/here-now/bad-air-and-polluted-politics",
-      img: "https://publisher-publish.s3.eu-central-1.amazonaws.com/pb-nepalitimes/swp/asv65r/media/2024082916088_402651a446551098b08eac91d3aabc16b8562b17e18ea3c40953d272e0c54436.webp",
+      title: "Wildfires Worsen Air Pollution",
+      link: "https://nepalitimes.com",
+      img: "https://www.icimod.org/wp-content/uploads/302042345_451246337032785_4783566089841697782_n.jpg"
     },
     {
       id: 3,
-      title: "Air Pollution Increasing in Kathmandu",
-      link: "https://thehimalayantimes.com/kathmandu/air-pollution-increasing-in-kathmandu-valley",
-      img: "https://cdn4.premiumread.com/?url=https://thehimalayantimes.com/thehimalayantimes/uploads/images/2025/01/06/37187.jpeg&w=800&q=100&f=jpg",
-    },
-    {
-      id: 4,
-      title: "Wild Fires Worsening Air Pollution",
-      link: "https://risingnepaldaily.com/news/57350",
-      img: "https://risingnepaldaily.com/storage/media/71472/Untitled-1.jpg",
-    },
-    {
-      id: 5,
-      title: "Pollution Level Rises As Winter Sets In",
-      link: "https://www.aninews.in/news/world/asia/pollution-level-in-nepal-rises-as-winter-sets-in-concerns-mount-over-health-risks20241017135455/",
-      img: "https://aniportalimages.s3.amazonaws.com/media/details/ANI-20241017075628.jpg",
-    },
-    {
-      id: 6,
-      title: "Pokhara Records Highest Air Pollution",
-      link: "https://english.onlinekhabar.com/pokhara-records-highest-air-pollution-in-nepal-today.html",
-      img: "https://english.onlinekhabar.com/wp-content/uploads/2025/01/Pokhara-pumdikot-Himalayas-7.jpg",
-    },
-    {
-      id: 7,
-      title: "Kathmandu Valley Air Quality Drops",
-      link: "http://kathmandupost.com/climate-environment/2024/11/15/kathmandu-valley-s-air-quality-drops-as-stubble-burning-starts-in-india-and-nepal",
-      img: "https://assets-api.kathmandupost.com/thumb.php?src=https://assets-cdn.kathmandupost.com/uploads/source/news/2024/health/Untitled4-1731634559.jpg&w=900&height=601",
-    },
-    {
-      id: 8,
-      title: "Air pollution in Shankha Park worst",
-      link: "https://myrepublica.nagariknetwork.com/news/air-pollution-in-shankha-park-worst-82-77.html",
-      img: "https://republicaimg.nagariknewscdn.com/shared/web/uploads/media/pollution_20191115080506.jpg",
+      title: "Vehicle Emissions Impact",
+      link: "https://thehimalayantimes.com",
+      img: "https://assets-cdn.kathmandupost.com/uploads/source/news/2020/news/DTezpgIVMAAXM-1603301636.jpg"
     },
   ];
 
+  // Educational resources
   const resources = [
     {
       id: 1,
-      title: "Understanding Air Quality Index (AQI)",
-      description: "Learn about what AQI is, how it is calculated, and its significance in monitoring air pollution levels and their health impacts.",
-      link: "https://www.epa.gov/air-quality-index",
+      title: "Understanding AQI",
+      description: "Learn how the Air Quality Index works and how to interpret the readings.",
+      link: "https://www.epa.gov/air-quality-index"
     },
     {
       id: 2,
-      title: "Effects of Air Pollution on Health",
-      description: "Explore the wide-ranging health impacts of poor air quality and discover effective strategies to protect yourself and your loved ones.",
-      link: "https://www.who.int/health-topics/air-pollution",
+      title: "Health Impacts Guide",
+      description: "Comprehensive information on how air pollution affects different age groups.",
+      link: "https://www.who.int/health-topics/air-pollution"
     },
     {
       id: 3,
-      title: "Air Quality Monitoring in Nepal",
-      description: "Discover how air quality is monitored in Nepal, the challenges faced, and initiatives to improve environmental monitoring systems.",
-      link: "https://nepalairquality.com",
+      title: "Nepal Air Quality Data",
+      description: "Real-time and historical air quality data for Nepal.",
+      link: "https://nepalairquality.com"
     },
   ];
 
+  // AQI Scale data
   const aqiScale = [
-    { range: "0-50", level: "Good", color: "#00E400", description: "Air quality is satisfactory, and air pollution poses little or no risk." },
-    { range: "51-100", level: "Moderate", color: "#FFFF00", description: "Air quality is acceptable. However, there may be a risk for some people, particularly those who are unusually sensitive to air pollution." },
-    { range: "101-150", level: "Unhealthy for Sensitive Groups", color: "#FF7E00", description: "Members of sensitive groups may experience health effects. The general public is less likely to be affected." },
-    { range: "151-200", level: "Unhealthy", color: "#FF0000", description: "Some members of the general public may experience health effects; members of sensitive groups may experience more serious health effects." },
-    { range: "201-300", level: "Very Unhealthy", color: "#8F3F97", description: "Health alert: The risk of health effects is increased for everyone." },
-    { range: "301-500", level: "Hazardous", color: "#7E0023", description: "Health warning of emergency conditions: everyone is more likely to be affected." }
+    { range: "0-50", level: "Good", color: "#00E400", description: "Air quality is satisfactory with minimal health risk." },
+    { range: "51-100", level: "Moderate", color: "#FFFF00", description: "Acceptable quality, but some pollutants may affect sensitive individuals." },
+    { range: "101-150", level: "Unhealthy for Sensitive", color: "#FF7E00", description: "General public not likely affected but sensitive groups may experience symptoms." },
+    { range: "151-200", level: "Unhealthy", color: "#FF0000", description: "Everyone may begin to experience health effects." },
+    { range: "201-300", level: "Very Unhealthy", color: "#8F3F97", description: "Health warnings of emergency conditions." },
+    { range: "301-500", level: "Hazardous", color: "#7E0023", description: "Health alert: everyone may experience serious health effects." }
   ];
 
+  // Pollutant information
   const pollutants = [
     {
       name: "PM2.5",
-      icon: <FiWind size={24} />,
-      sources: "Vehicle emissions, industrial processes, wildfires, power plants",
+      
+      sources: "Vehicle emissions, industrial processes, wildfires",
       health: "Respiratory issues, cardiovascular disease, premature death",
-      safeLevel: "Annual mean: ≤ 10 μg/m³, 24-hour mean: ≤ 25 μg/m³ (WHO)"
+      safeLevel: "≤ 10 μg/m³ (annual mean)"
     },
     {
       name: "PM10",
-      icon: <FiCloud size={24} />,
-      sources: "Dust from roads, construction sites, agriculture, industrial emissions",
-      health: "Aggravated asthma, decreased lung function, respiratory symptoms",
-      safeLevel: "Annual mean: ≤ 20 μg/m³, 24-hour mean: ≤ 50 μg/m³ (WHO)"
+   
+      sources: "Dust from roads, construction sites, agriculture",
+      health: "Aggravated asthma, decreased lung function",
+      safeLevel: "≤ 20 μg/m³ (annual mean)"
     },
     {
-      name: "Ozone (O₃)",
-      icon: <FiSun size={24} />,
-      sources: "Chemical reactions between oxides of nitrogen (NOx) and volatile organic compounds (VOCs)",
-      health: "Coughing, throat irritation, worsening of asthma, reduced lung function",
-      safeLevel: "8-hour mean: ≤ 100 μg/m³ (WHO)"
+      name: "O₃",
+      
+      sources: "Chemical reactions between NOx and VOCs in sunlight",
+      health: "Coughing, throat irritation, worsened asthma",
+      safeLevel: "≤ 100 μg/m³ (8-hour mean)"
     },
     {
-      name: "Nitrogen Dioxide (NO₂)",
-      icon: <FiActivity size={24} />,
+      name: "NO₂",
+     
       sources: "Vehicle emissions, power plants, industrial combustion",
-      health: "Respiratory infections, reduced lung function, increased asthma symptoms",
-      safeLevel: "Annual mean: ≤ 10 μg/m³, 1-hour mean: ≤ 200 μg/m³ (WHO)"
+      health: "Respiratory infections, increased asthma symptoms",
+      safeLevel: "≤ 10 μg/m³ (annual mean)"
     },
     {
-      name: "Sulfur Dioxide (SO₂)",
-      icon: <FiDroplet size={24} />,
-      sources: "Burning of fossil fuels (coal and oil), industrial processes",
-      health: "Respiratory symptoms, aggravation of asthma, chronic bronchitis",
-      safeLevel: "24-hour mean: ≤ 20 μg/m³, 10-minute mean: ≤ 500 μg/m³ (WHO)"
+      name: "SO₂",
+      
+      sources: "Burning of fossil fuels, industrial processes",
+      health: "Respiratory symptoms, chronic bronchitis",
+      safeLevel: "≤ 20 μg/m³ (24-hour mean)"
     },
     {
-      name: "Carbon Monoxide (CO)",
-      icon: <FiAlertTriangle size={24} />,
-      sources: "Vehicle exhaust, incomplete combustion of fuels",
-      health: "Reduced oxygen delivery to organs, cardiovascular effects, headaches",
-      safeLevel: "24-hour mean: ≤ 4 mg/m³, 15-minute mean: ≤ 100 mg/m³ (WHO)"
+      name: "CO",
+      
+      sources: "Vehicle exhaust, incomplete combustion",
+      health: "Reduced oxygen delivery, cardiovascular effects",
+      safeLevel: "≤ 4 mg/m³ (24-hour mean)"
     }
   ];
 
+  // Health effects by group
   const healthEffects = [
     {
       group: "Children",
-      icon: <FiUsers size={24} />,
+      
       effects: [
         "Impaired lung development",
         "Increased respiratory infections",
-        "Higher risk of developing asthma",
-        "Reduced lung function that may persist into adulthood"
+        "Higher asthma risk",
+        "Reduced lung function"
       ]
     },
     {
       group: "Elderly",
-      icon: <FiHeart size={24} />,
+      
       effects: [
-        "Increased risk of heart attacks",
-        "Worsening of existing heart or lung disease",
-        "Higher susceptibility to respiratory infections",
-        "Increased mortality from cardiovascular and respiratory causes"
+        "Increased heart attack risk",
+        "Worsening heart/lung disease",
+        "Higher susceptibility to infections",
+        "Increased mortality"
       ]
     },
     {
-      group: "Pregnant Individuals",
-      icon: <FiUsers size={24} />,
+      group: "Pregnant Women",
+     
       effects: [
-        "Increased risk of preterm birth",
+        "Preterm birth risk",
         "Low birth weight",
-        "Potential impacts on fetal brain development",
-        "Higher risk of pregnancy complications"
+        "Fetal brain impacts",
+        "Pregnancy complications"
       ]
     },
     {
-      group: "People with Asthma/Heart Conditions",
-      icon: <FiActivity size={24} />,
+      group: "Asthma/Heart Patients",
+      
       effects: [
-        "Increased frequency and severity of asthma attacks",
-        "Worsening of chronic obstructive pulmonary disease (COPD)",
-        "Increased hospital admissions",
-        "Higher risk of heart attacks and strokes"
+        "More severe asthma attacks",
+        "Worsened COPD",
+        "Increased hospitalizations",
+        "Higher heart attack risk"
       ]
     }
   ];
 
+  // Protection tips
   const protectionTips = [
     {
-      title: "During High AQI Days",
-      icon: <FiAlertTriangle size={24} />,
+      title: "High AQI Days",
+      
       tips: [
-        "Limit outdoor activities, especially strenuous exercise",
-        "Keep windows and doors closed",
-        "Use air purifiers with HEPA filters",
-        "Stay hydrated to help your body flush out toxins"
+        "Limit outdoor activities",
+        "Keep windows closed",
+        "Use air purifiers",
+        "Stay hydrated"
       ]
     },
     {
-      title: "Proper Mask Usage",
-      icon: <FiShield size={24} />,
+      title: "Mask Usage",
+     
       tips: [
-        "Use N95 or KN95 masks for proper filtration",
-        "Ensure proper fit with no gaps around edges",
-        "Replace masks regularly (every 40 hours or when soiled)",
-        "Avoid masks with valves as they don't filter exhaled air"
+        "Use N95/KN95 masks",
+        "Ensure proper fit",
+        "Replace regularly",
+        "Avoid valved masks"
       ]
     },
     {
-      title: "Indoor Air Quality",
-      icon: <FiHome size={24} />,
+      title: "Indoor Air",
+    
       tips: [
-        "Use indoor plants like spider plants or peace lilies",
-        "Avoid burning candles or incense indoors",
-        "Use exhaust fans when cooking",
-        "Regularly clean to reduce dust accumulation"
+        "Add air-purifying plants",
+        "Avoid indoor burning",
+        "Use exhaust fans",
+        "Regular cleaning"
       ]
     },
     {
       title: "Smart Planning",
-      icon: <FiCalendar size={24} />,
+      
       tips: [
-        "Check AQI forecasts before planning outdoor activities",
-        "Schedule outdoor activities for early morning when pollution is lower",
-        "Avoid high-traffic areas when possible",
-        "Consider indoor alternatives for exercise on bad air days"
+        "Check AQI forecasts",
+        "Morning outdoor activities",
+        "Avoid high-traffic areas",
+        "Indoor exercise options"
       ]
     }
   ];
 
+  // Pollution sources in Nepal
   const pollutionSources = [
     {
       source: "Vehicle Emissions",
-      description: "Major contributor in urban areas, especially from older diesel vehicles without proper emission controls."
+      description: "Major urban contributor, especially from older diesel vehicles without proper emission controls."
     },
     {
       source: "Brick Kilns",
-      description: "Traditional brick kilns around Kathmandu Valley burn coal and other fuels, releasing large amounts of particulate matter."
+      description: "Traditional kilns burning coal and fuels, releasing large particulate matter amounts."
     },
     {
-      source: "Dust from Roads/Construction",
-      description: "Unpaved roads and construction sites generate significant amounts of PM10, especially during dry seasons."
+      source: "Road/Construction Dust",
+      description: "Unpaved roads and construction generate significant PM10, especially in dry seasons."
     },
     {
       source: "Open Burning",
-      description: "Burning of agricultural waste, garbage, and forest fires contribute significantly to air pollution."
+      description: "Agricultural waste, garbage, and forest fires contribute substantially to pollution."
     },
     {
       source: "Industrial Emissions",
-      description: "Factories and small industries often lack proper pollution control technologies."
+      description: "Factories often lack proper pollution control technologies."
     },
     {
       source: "Transboundary Pollution",
-      description: "During certain seasons, pollution from neighboring countries affects Nepal's air quality."
+      description: "Seasonal pollution from neighboring countries affects Nepal's air quality."
     }
   ];
 
+  // Community actions
   const communityActions = [
     {
-      action: "Use Alternative Transportation",
-      icon: <FiArrowRight size={20} />,
-      description: "Carpool, use public transport, bike, or walk to reduce vehicle emissions."
+      action: "Alternative Transport",
+      
+      description: "Carpool, use public transport, bike, or walk to reduce emissions."
     },
     {
       action: "Plant Trees",
-      iicon: <FiFeather size={20} />,
-      description: "Participate in tree planting initiatives to help filter air pollutants."
+      
+      description: "Join tree planting initiatives to help filter air pollutants."
     },
     {
       action: "Educate Others",
-      icon: <FiInfo size={20} />,
-      description: "Share information about air quality and its impacts with your community."
+      
+      description: "Share air quality information with your community."
     },
     {
       action: "Report Violations",
-      icon: <FiAlertTriangle size={20} />,
-      description: "Report illegal burning or industrial emissions to local authorities."
+      
+      description: "Report illegal burning or industrial emissions to authorities."
     },
     {
       action: "Energy Conservation",
-      icon: <FiSun size={20} />,
-      description: "Reduce energy consumption to decrease demand for polluting power sources."
+     
+      description: "Reduce energy consumption to decrease polluting power demand."
     },
     {
-      action: "Support Clean Air Policies",
-      icon: <FiShield size={20} />,
-      description: "Advocate for and support policies that improve air quality standards."
+      action: "Support Clean Policies",
+      
+      description: "Advocate for policies that improve air quality standards."
     }
   ];
 
+  // Navigation functions
   const goToPrevious = () => {
-    setCurrentIndex((prevIndex) =>
-      prevIndex === 0 ? News.length - 1 : prevIndex - 1
-    );
+    setCurrentIndex((prevIndex) => (prevIndex === 0 ? News.length - 1 : prevIndex - 1));
   };
 
   const goToNext = () => {
-    setCurrentIndex((prevIndex) =>
-      prevIndex === News.length - 1 ? 0 : prevIndex + 1
-    );
+    setCurrentIndex((prevIndex) => (prevIndex === News.length - 1 ? 0 : prevIndex + 1));
   };
 
   // Animation variants
@@ -327,9 +283,7 @@ const EducationModule = () => {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
+      transition: { staggerChildren: 0.1 }
     }
   };
 
@@ -338,9 +292,7 @@ const EducationModule = () => {
     visible: {
       y: 0,
       opacity: 1,
-      transition: {
-        duration: 0.5
-      }
+      transition: { duration: 0.5 }
     }
   };
 
@@ -355,12 +307,12 @@ const EducationModule = () => {
 
   return (
     <div className="education-module" style={{ backgroundImage: `url(${BG})` }}>
-      {/* Hero Slider Section */}
+      {/* Hero Slider */}
       <section className="hero-slider">
         <div className="slider-container">
           <div className="slider-wrapper">
             <button className="slider-arrow left" onClick={goToPrevious}>
-              <FiArrowLeft size={32} />
+              
             </button>
             <div 
               className="slide"
@@ -381,12 +333,12 @@ const EducationModule = () => {
                   transition={{ delay: 0.5 }}
                   className="slide-subtitle"
                 >
-                  Stay informed about air quality issues in Nepal
+                  Stay informed about Nepal's air quality challenges
                 </motion.p>
               </div>
             </div>
             <button className="slider-arrow right" onClick={goToNext}>
-              <FiArrowRight size={32} />
+              
             </button>
           </div>
           <div className="slider-dots">
@@ -401,7 +353,7 @@ const EducationModule = () => {
         </div>
       </section>
 
-      {/* Education Tabs Section */}
+      {/* Education Tabs */}
       <section className="education-tabs-section">
         <div className="section-container">
           <motion.div 
@@ -420,46 +372,40 @@ const EducationModule = () => {
           <div className="tabs-container">
             <div className="tabs-header">
               <button 
-                className={`tab-btn ${activeTab === 'aqi' ? 'active' : ''}`}
-                onClick={() => setActiveTab('aqi')}
+                className={`tab-btn ${activeTab === 'intro' ? 'active' : ''}`}
+                onClick={() => setActiveTab('intro')}
               >
-                <FiInfo className="tab-icon" /> What is AQI?
-              </button>
-              <button 
-                className={`tab-btn ${activeTab === 'pollutants' ? 'active' : ''}`}
-                onClick={() => setActiveTab('pollutants')}
-              >
-                <FiAlertTriangle className="tab-icon" /> Major Pollutants
-              </button>
-              <button 
-                className={`tab-btn ${activeTab === 'measurement' ? 'active' : ''}`}
-                onClick={() => setActiveTab('measurement')}
-              >
-                <FiActivity className="tab-icon" /> Measurement in Nepal
+                 Introduction
               </button>
               <button 
                 className={`tab-btn ${activeTab === 'health' ? 'active' : ''}`}
                 onClick={() => setActiveTab('health')}
               >
-                <FiHeart className="tab-icon" /> Health Effects
+                 Health Impacts
               </button>
               <button 
-                className={`tab-btn ${activeTab === 'protection' ? 'active' : ''}`}
-                onClick={() => setActiveTab('protection')}
+                className={`tab-btn ${activeTab === 'nepal' ? 'active' : ''}`}
+                onClick={() => setActiveTab('nepal')}
               >
-                <FiShield className="tab-icon" /> Protection Tips
+                 Nepal's AQI
               </button>
               <button 
-                className={`tab-btn ${activeTab === 'sources' ? 'active' : ''}`}
-                onClick={() => setActiveTab('sources')}
+                className={`tab-btn ${activeTab === 'measurement' ? 'active' : ''}`}
+                onClick={() => setActiveTab('measurement')}
               >
-                <FiWind className="tab-icon" /> Pollution Sources
+               Measurement
+              </button>
+              <button 
+                className={`tab-btn ${activeTab === 'forecast' ? 'active' : ''}`}
+                onClick={() => setActiveTab('forecast')}
+              >
+                 Forecast
               </button>
               <button 
                 className={`tab-btn ${activeTab === 'action' ? 'active' : ''}`}
                 onClick={() => setActiveTab('action')}
               >
-                <FiUsers className="tab-icon" /> Community Action
+                 Take Action
               </button>
             </div>
 
@@ -470,27 +416,26 @@ const EducationModule = () => {
               initial="hidden"
               animate="visible"
             >
-              {activeTab === 'aqi' && (
-                <div className="aqi-content">
-                  <div className="aqi-intro">
-                    <div className="aqi-icon">
-                      <FiInfo size={48} />
+              {/* Introduction Tab */}
+              {activeTab === 'intro' && (
+                <div className="intro-content">
+                  <div className="intro-section">
+                    <div className="section-icon">
+                     
                     </div>
-                    <div className="aqi-text">
-                      <h3>What is the Air Quality Index (AQI)?</h3>
-                      <p>
-                        The Air Quality Index (AQI) is a numerical scale used to communicate how polluted the air currently is or how polluted it is forecast to become. It transforms complex air quality data into an easy-to-understand format that helps people make decisions about their outdoor activities.
-                      </p>
-                    </div>
+                    <h3>What is Air Quality Index (AQI)?</h3>
+                    <p>
+                      The Air Quality Index (AQI) is a numerical scale used to communicate how polluted the air currently is or how polluted it is forecast to become. It transforms complex air quality data into an easy-to-understand format that helps people make decisions about their outdoor activities.
+                    </p>
                   </div>
 
-                  <div className="aqi-scale">
-                    <h3>AQI Scale (0-500)</h3>
-                    <div className="scale-chart">
+                  <div className="aqi-scale-section">
+                    <h3>AQI Scale and Colors</h3>
+                    <div className="aqi-scale-chart">
                       {aqiScale.map((item, index) => (
                         <div 
                           key={index}
-                          className="scale-level"
+                          className="aqi-level"
                           style={{ backgroundColor: item.color }}
                         >
                           <span className="level-range">{item.range}</span>
@@ -503,119 +448,57 @@ const EducationModule = () => {
                     </div>
                   </div>
 
-                  <div className="aqi-legend">
-                    <h3>AQI Color Legend</h3>
-                    <div className="legend-grid">
-                      {aqiScale.map((item, index) => (
-                        <div key={index} className="legend-item">
-                          <div 
-                            className="legend-color"
-                            style={{ backgroundColor: item.color }}
-                          ></div>
-                          <div className="legend-text">
-                            <strong>{item.level} ({item.range})</strong>
-                            <p>{item.description}</p>
+                  <div className="pollutants-section">
+                    <h3>Common Air Pollutants</h3>
+                    <div className="pollutants-grid">
+                      {pollutants.map((pollutant, index) => (
+                        <motion.div 
+                          key={index}
+                          className="pollutant-card"
+                          whileHover={{ y: -5 }}
+                          variants={itemVariants}
+                        >
+                          <div className="pollutant-header">
+                            <div className="pollutant-icon">
+                              {pollutant.icon}
+                            </div>
+                            <h4>{pollutant.name}</h4>
                           </div>
-                        </div>
+                          <div className="pollutant-details">
+                            <div className="detail-item">
+                              <strong>Sources:</strong>
+                              <p>{pollutant.sources}</p>
+                            </div>
+                            <div className="detail-item">
+                              <strong>Health Effects:</strong>
+                              <p>{pollutant.health}</p>
+                            </div>
+                            <div className="detail-item">
+                              <strong>Safe Levels:</strong>
+                              <p>{pollutant.safeLevel}</p>
+                            </div>
+                          </div>
+                        </motion.div>
                       ))}
                     </div>
                   </div>
                 </div>
               )}
 
-              {activeTab === 'pollutants' && (
-                <div className="pollutants-content">
-                  <h3>Major Air Pollutants and Their Impacts</h3>
-                  <p className="pollutants-intro">
-                    Air pollution consists of various harmful substances that can affect human health and the environment. Below are the key pollutants monitored in air quality indices:
-                  </p>
-                  
-                  <div className="pollutants-grid">
-                    {pollutants.map((pollutant, index) => (
-                      <motion.div 
-                        key={index}
-                        className="pollutant-card"
-                        whileHover={{ y: -5 }}
-                        variants={itemVariants}
-                      >
-                        <div className="pollutant-header">
-                          <div className="pollutant-icon">
-                            {pollutant.icon}
-                          </div>
-                          <h4>{pollutant.name}</h4>
-                        </div>
-                        <div className="pollutant-details">
-                          <div className="detail-item">
-                            <strong>Main Sources:</strong>
-                            <p>{pollutant.sources}</p>
-                          </div>
-                          <div className="detail-item">
-                            <strong>Health Impacts:</strong>
-                            <p>{pollutant.health}</p>
-                          </div>
-                          <div className="detail-item">
-                            <strong>Safe Levels (WHO):</strong>
-                            <p>{pollutant.safeLevel}</p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'measurement' && (
-                <div className="measurement-content">
-                  <h3>How AQI is Measured in Nepal</h3>
-                  
-                  <div className="measurement-grid">
-                    <div className="measurement-card">
-                      <div className="measurement-icon">
-                        <FiActivity size={32} />
-                      </div>
-                      <h4>Monitoring Stations</h4>
-                      <p>
-                        Nepal's Department of Environment operates several air quality monitoring stations across the country, primarily in urban areas like Kathmandu, Pokhara, and Biratnagar. These stations use sophisticated sensors to measure concentrations of key pollutants.
-                      </p>
-                    </div>
-                    
-                    <div className="measurement-card">
-                      <div className="measurement-icon">
-                        <FiCalendar size={32} />
-                      </div>
-                      <h4>Real-time vs Forecasted Data</h4>
-                      <p>
-                        Real-time data comes from ground stations providing current conditions, while forecasted data uses models incorporating weather patterns, historical trends, and satellite observations to predict future air quality.
-                      </p>
-                    </div>
-                    
-                    <div className="measurement-card">
-                      <div className="measurement-icon">
-                        <FiCloud size={32} />
-                      </div>
-                      <h4>Technology Used</h4>
-                      <p>
-                        Nepal utilizes a combination of reference-grade monitors, low-cost sensors, satellite remote sensing, and increasingly, machine learning algorithms to improve data accuracy and fill gaps in monitoring coverage.
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="measurement-note">
-                    <p>
-                      <strong>Note:</strong> While monitoring has improved, Nepal still faces challenges with limited stations outside major cities and occasional data gaps due to technical or resource constraints.
-                    </p>
-                  </div>
-                </div>
-              )}
-
+              {/* Health Impacts Tab */}
               {activeTab === 'health' && (
                 <div className="health-content">
-                  <h3>Health Effects of Poor Air Quality</h3>
-                  <p className="health-intro">
-                    Air pollution affects different groups of people in various ways. Some populations are particularly vulnerable to its harmful effects:
-                  </p>
-                  
-                  <div className="health-grid">
+                  <div className="intro-section">
+                    <div className="section-icon">
+                      
+                    </div>
+                    <h3>Health Impacts of Poor Air Quality</h3>
+                    <p>
+                      Air pollution affects different groups of people in various ways. Some populations are particularly vulnerable to its harmful effects. Understanding these impacts can help you take appropriate precautions.
+                    </p>
+                  </div>
+
+                  <div className="health-effects-grid">
                     {healthEffects.map((group, index) => (
                       <motion.div 
                         key={index}
@@ -629,7 +512,7 @@ const EducationModule = () => {
                           </div>
                           <h4>{group.group}</h4>
                         </div>
-                        <ul className="health-effects">
+                        <ul className="health-effects-list">
                           {group.effects.map((effect, i) => (
                             <li key={i}>{effect}</li>
                           ))}
@@ -637,117 +520,354 @@ const EducationModule = () => {
                       </motion.div>
                     ))}
                   </div>
-                  
-                  <div className="prevention-tips">
-                    <h4>Basic Prevention Tips for All:</h4>
-                    <ul>
-                      <li>Check daily air quality forecasts in your area</li>
-                      <li>Limit outdoor exercise when air quality is poor</li>
-                      <li>Create a clean room at home with good filtration</li>
-                      <li>Stay hydrated to help your body eliminate toxins</li>
-                      <li>Consult your doctor about extra precautions if you're in a high-risk group</li>
-                    </ul>
-                  </div>
-                </div>
-              )}
 
-              {activeTab === 'protection' && (
-                <div className="protection-content">
-                  <h3>How to Protect Yourself from Air Pollution</h3>
-                  
-                  <div className="protection-grid">
-                    {protectionTips.map((tip, index) => (
-                      <motion.div 
-                        key={index}
-                        className="protection-card"
-                        whileHover={{ y: -5 }}
-                        variants={itemVariants}
-                      >
-                        <div className="protection-header">
-                          <div className="protection-icon">
-                            {tip.icon}
-                          </div>
-                          <h4>{tip.title}</h4>
-                        </div>
-                        <ul className="protection-tips">
-                          {tip.tips.map((item, i) => (
-                            <li key={i}>{item}</li>
-                          ))}
+                  <div className="time-effects-section">
+                    <h4>Short-term vs Long-term Effects</h4>
+                    <div className="time-effects-grid">
+                      <div className="time-effect-card">
+                        <h5>Short-term Exposure</h5>
+                        <ul>
+                          <li>Eye, nose and throat irritation</li>
+                          <li>Headaches and dizziness</li>
+                          <li>Aggravated asthma symptoms</li>
+                          <li>Respiratory infections</li>
                         </ul>
-                      </motion.div>
-                    ))}
-                  </div>
-                  
-                  <div className="protection-resources">
-                    <h4>Recommended AQI Resources:</h4>
-                    <ul>
-                      <li>IQAir AirVisual app</li>
-                      <li>World Air Quality Index website</li>
-                      <li>Nepal Department of Environment reports</li>
-                      <li>Local weather and environment news</li>
-                    </ul>
+                      </div>
+                      <div className="time-effect-card">
+                        <h5>Long-term Exposure</h5>
+                        <ul>
+                          <li>Chronic respiratory diseases</li>
+                          <li>Lung cancer</li>
+                          <li>Heart disease and stroke</li>
+                          <li>Reduced lung function growth in children</li>
+                        </ul>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {activeTab === 'sources' && (
-                <div className="sources-content">
-                  <h3>Major Sources of Air Pollution in Nepal</h3>
-                  
-                  <div className="sources-grid">
-                    {pollutionSources.map((source, index) => (
-                      <motion.div 
-                        key={index}
-                        className="source-card"
-                        whileHover={{ y: -5 }}
-                        variants={itemVariants}
-                      >
-                        <h4>{source.source}</h4>
-                        <p>{source.description}</p>
-                      </motion.div>
-                    ))}
-                  </div>
-                  
-                  <div className="sources-seasonal">
-                    <h4>Seasonal Variations:</h4>
+              {/* Nepal AQI Tab */}
+              {activeTab === 'nepal' && (
+                <div className="nepal-content">
+                  <div className="intro-section">
+                    <div className="section-icon">
+                      
+                    </div>
+                    <h3>Air Quality in Nepal</h3>
                     <p>
-                      Air pollution in Nepal varies significantly by season. Winter months (December-February) typically see the worst air quality due to temperature inversions that trap pollutants, increased biomass burning for heating, and reduced rainfall to clear the air. The monsoon season (June-September) generally has better air quality due to frequent rains that wash away pollutants.
+                      Nepal faces significant air quality challenges, particularly in urban areas and during certain seasons. Understanding the sources and patterns can help address this growing public health concern.
                     </p>
                   </div>
+
+                  <div className="sources-section">
+                    <h4>Major Pollution Sources in Nepal</h4>
+                    <div className="sources-grid">
+                      {pollutionSources.map((source, index) => (
+                        <motion.div 
+                          key={index}
+                          className="source-card"
+                          whileHover={{ y: -5 }}
+                          variants={itemVariants}
+                        >
+                          <h5>{source.source}</h5>
+                          <p>{source.description}</p>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="seasonal-section">
+                    <h4>Seasonal Variations</h4>
+                    <div className="seasonal-content">
+                      <p>
+                        Air pollution in Nepal varies significantly by season. Winter months (December-February) typically see the worst air quality due to:
+                      </p>
+                      <ul>
+                        <li>Temperature inversions that trap pollutants</li>
+                        <li>Increased biomass burning for heating</li>
+                        <li>Reduced rainfall to clear the air</li>
+                        <li>Transboundary pollution from neighboring countries</li>
+                      </ul>
+                      <p>
+                        The monsoon season (June-September) generally has better air quality due to frequent rains that wash away pollutants.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="city-comparison-section">
+                    <h4>City Comparison</h4>
+                    <div className="comparison-grid">
+                      <div className="city-card">
+                        <h5>Kathmandu</h5>
+                        <p>Highest pollution levels due to dense traffic, brick kilns, and geographical bowl shape that traps pollutants.</p>
+                      </div>
+                      <div className="city-card">
+                        <h5>Pokhara</h5>
+                        <p>Generally better air quality but affected by seasonal tourism and increasing vehicle numbers.</p>
+                      </div>
+                      <div className="city-card">
+                        <h5>Biratnagar</h5>
+                        <p>Industrial emissions and cross-border pollution contribute to poor air quality, especially in winter.</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
+              {/* Measurement Tab */}
+              {activeTab === 'measurement' && (
+                <div className="measurement-content">
+                  <div className="intro-section">
+                    <div className="section-icon">
+                    
+                    </div>
+                    <h3>How AQI is Measured</h3>
+                    <p>
+                      Understanding how air quality is monitored helps interpret AQI values and forecasts. Nepal uses a combination of ground stations, sensors, and satellite data to assess air pollution levels.
+                    </p>
+                  </div>
+
+                  <div className="methods-section">
+                    <h4>Measurement Methods</h4>
+                    <div className="methods-grid">
+                      <div className="method-card">
+                        <div className="method-icon">
+                       
+                        </div>
+                        <h5>Monitoring Stations</h5>
+                        <p>
+                          Government-operated stations with high-quality instruments measure pollutant concentrations at fixed locations.
+                        </p>
+                      </div>
+                      <div className="method-card">
+                        <div className="method-icon">
+                          
+                        </div>
+                        <h5>Low-cost Sensors</h5>
+                        <p>
+                          Smaller, more affordable devices deployed widely to supplement official monitoring networks.
+                        </p>
+                      </div>
+                      <div className="method-card">
+                        <div className="method-icon">
+                       
+                        </div>
+                        <h5>Satellite Data</h5>
+                        <p>
+                          Remote sensing provides broad coverage, especially useful in areas with few ground stations.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="process-section">
+                    <h4>From Data to AQI</h4>
+                    <div className="process-steps">
+                      <div className="process-step">
+                        <div className="step-number">1</div>
+                        <div className="step-content">
+                          <h5>Data Collection</h5>
+                          <p>Pollutant concentrations are measured continuously at monitoring stations.</p>
+                        </div>
+                      </div>
+                      <div className="process-step">
+                        <div className="step-number">2</div>
+                        <div className="step-content">
+                          <h5>Quality Control</h5>
+                          <p>Data is checked for accuracy and consistency.</p>
+                        </div>
+                      </div>
+                      <div className="process-step">
+                        <div className="step-number">3</div>
+                        <div className="step-content">
+                          <h5>Index Calculation</h5>
+                          <p>Pollutant levels are converted to AQI values using standard formulas.</p>
+                        </div>
+                      </div>
+                      <div className="process-step">
+                        <div className="step-number">4</div>
+                        <div className="step-content">
+                          <h5>Reporting</h5>
+                          <p>The highest AQI value among pollutants becomes the overall AQI for reporting.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Forecast Tab */}
+              {activeTab === 'forecast' && (
+                <div className="forecast-content">
+                  <div className="intro-section">
+                    <div className="section-icon">
+                  
+                    </div>
+                    <h3>AQI Forecast and Prediction</h3>
+                    <p>
+                      Air quality forecasting helps individuals and authorities prepare for and mitigate pollution impacts. Forecasts consider multiple factors that influence pollution levels.
+                    </p>
+                  </div>
+
+                  <div className="importance-section">
+                    <h4>Why Forecasting Matters</h4>
+                    <div className="importance-grid">
+                      <div className="importance-card">
+                        <div className="importance-icon">
+                          
+                        </div>
+                        <div className="importance-text">
+                          <h5>Health Protection</h5>
+                          <p>Allows sensitive groups to take precautions on bad air days.</p>
+                        </div>
+                      </div>
+                      <div className="importance-card">
+                        <div className="importance-icon">
+                          
+                        </div>
+                        <div className="importance-text">
+                          <h5>Activity Planning</h5>
+                          <p>Helps schedule outdoor activities when air quality is better.</p>
+                        </div>
+                      </div>
+                      <div className="importance-card">
+                        <div className="importance-icon">
+                         
+                        </div>
+                        <div className="importance-text">
+                          <h5>Policy Decisions</h5>
+                          <p>Supports temporary measures like traffic restrictions on high pollution days.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="factors-section">
+                    <h4>Factors Affecting AQI</h4>
+                    <div className="factors-grid">
+                      <div className="factor-card">
+                        <h5>Weather Conditions</h5>
+                        <ul>
+                          <li>Wind disperses or concentrates pollutants</li>
+                          <li>Rain cleans the air by washing out particles</li>
+                          <li>Temperature inversions trap pollutants near ground</li>
+                        </ul>
+                      </div>
+                      <div className="factor-card">
+                        <h5>Human Activities</h5>
+                        <ul>
+                          <li>Traffic patterns and volume</li>
+                          <li>Industrial operations</li>
+                          <li>Construction and agricultural activities</li>
+                        </ul>
+                      </div>
+                      <div className="factor-card">
+                        <h5>Seasonal Patterns</h5>
+                        <ul>
+                          <li>Winter heating increases emissions</li>
+                          <li>Dry seasons increase dust</li>
+                          <li>Festivals with fireworks cause spikes</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="forecast-methods-section">
+                    <h4>How We Predict AQI</h4>
+                    <div className="forecast-methods">
+                      <div className="method-card">
+                        <h5>Statistical Models</h5>
+                        <p>Analyze historical patterns and relationships between weather and pollution.</p>
+                      </div>
+                      <div className="method-card">
+                        <h5>Chemical Transport Models</h5>
+                        <p>Simulate how pollutants move and transform in the atmosphere.</p>
+                      </div>
+                      <div className="method-card">
+                        <h5>Machine Learning</h5>
+                        <p>AI algorithms identify complex patterns in large datasets to improve predictions.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Tab */}
               {activeTab === 'action' && (
                 <div className="action-content">
-                  <h3>What You Can Do (Community Action)</h3>
-                  <p className="action-intro">
-                    Individual and community actions can significantly improve air quality. Here are ways you can contribute:
-                  </p>
-                  
-                  <div className="action-grid">
-                    {communityActions.map((action, index) => (
-                      <motion.div 
-                        key={index}
-                        className="action-card"
-                        whileHover={{ y: -5 }}
-                        variants={itemVariants}
-                      >
-                        <div className="action-icon">
-                          {action.icon}
-                        </div>
-                        <div className="action-text">
-                          <h4>{action.action}</h4>
-                          <p>{action.description}</p>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                  
-                  <div className="action-callout">
-                    <h4>Get Involved:</h4>
+                  <div className="intro-section">
+                    <div className="section-icon">
+                      
+                    </div>
+                    <h3>What You Can Do</h3>
                     <p>
-                      Consider joining or supporting local environmental organizations working on air quality issues. Participate in citizen science projects that monitor air pollution. Advocate for cleaner air policies with local representatives. Small individual actions, when multiplied across communities, can create significant positive change.
+                      While air pollution is a complex problem requiring systemic solutions, individual actions can significantly reduce exposure and contribute to cleaner air for everyone.
                     </p>
+                  </div>
+
+                  <div className="protection-section">
+                    <h4>Personal Protection Strategies</h4>
+                    <div className="protection-grid">
+                      {protectionTips.map((tip, index) => (
+                        <motion.div 
+                          key={index}
+                          className="protection-card"
+                          whileHover={{ y: -5 }}
+                          variants={itemVariants}
+                        >
+                          <div className="protection-header">
+                            <div className="protection-icon">
+                              {tip.icon}
+                            </div>
+                            <h5>{tip.title}</h5>
+                          </div>
+                          <ul className="protection-tips-list">
+                            {tip.tips.map((item, i) => (
+                              <li key={i}>{item}</li>
+                            ))}
+                          </ul>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="community-section">
+                    <h4>Community Actions</h4>
+                    <div className="community-grid">
+                      {communityActions.map((action, index) => (
+                        <motion.div 
+                          key={index}
+                          className="action-card"
+                          whileHover={{ y: -5 }}
+                          variants={itemVariants}
+                        >
+                          <div className="action-icon">
+                            {action.icon}
+                          </div>
+                          <div className="action-text">
+                            <h5>{action.action}</h5>
+                            <p>{action.description}</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="advocacy-section">
+                    <h4>Advocacy and Policy</h4>
+                    <div className="advocacy-content">
+                      <p>
+                        While individual actions help, systemic change is needed for lasting air quality improvements. Consider:
+                      </p>
+                      <ul>
+                        <li>Supporting cleaner public transportation initiatives</li>
+                        <li>Advocating for stricter industrial emission standards</li>
+                        <li>Promoting urban green spaces and tree planting programs</li>
+                        <li>Encouraging investment in renewable energy sources</li>
+                        <li>Supporting air quality monitoring and research</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               )}
@@ -766,9 +886,9 @@ const EducationModule = () => {
             viewport={{ once: true }}
             className="section-header"
           >
-            <h2 className="section-title">Latest News on Air Quality</h2>
+            <h2 className="section-title">Latest Air Quality News</h2>
             <p className="section-description">
-              Stay updated with the most recent news articles about air pollution in Nepal and its impacts.
+              Stay updated with recent developments and research about air pollution in Nepal.
             </p>
           </motion.div>
 
@@ -801,7 +921,7 @@ const EducationModule = () => {
                       rel="noopener noreferrer"
                       className="news-link"
                     >
-                      Read Article <FiExternalLink />
+                      Read Article 
                     </a>
                   </div>
                 </div>
@@ -822,9 +942,9 @@ const EducationModule = () => {
             viewport={{ once: true }}
             className="section-header"
           >
-            <h2 className="section-title">Educational Resources</h2>
+            <h2 className="section-title">Additional Resources</h2>
             <p className="section-description">
-              Explore comprehensive materials to deepen your understanding of air quality and its environmental impact.
+              Explore these resources to learn more about air quality and protection strategies.
             </p>
           </motion.div>
 
@@ -852,7 +972,7 @@ const EducationModule = () => {
                   rel="noopener noreferrer"
                   className="resource-link"
                 >
-                  Learn More <FiExternalLink />
+                  Learn More 
                 </a>
               </motion.div>
             ))}
