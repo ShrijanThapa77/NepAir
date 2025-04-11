@@ -92,7 +92,7 @@ function OldData({ setShowInfo }) {
   }, []);
 
   const data = useMemo(() => [
-    { station: 'Kathmandu', value: khumaltarPM25, category: getCategory(khumaltarPM25) },
+    { station: 'Kathmandu', value:'100', category: 'Hazardous' },//khumaltarPM25, category: getCategory(khumaltarPM25) },//
     { station: 'Janakpur', value: 100, category: 'Hazardous' },
     { station: 'Pokhara', value: '100', category: 'Hazardous' },
     { station: 'Butwal', value: 100, category: 'Unhealthy' },

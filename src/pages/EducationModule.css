@@ -673,7 +673,7 @@ body {
 }
 
 .source-card {
-  background: var(--overlay-light);
+  background: var(--overlay-dark);
   border-radius: 10px;
   padding: 20px;
   transition: var(--transition);

@@ -40,7 +40,7 @@
 
 .navbar-left {
   flex: 1;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 /* Logo Section */
@@ -50,7 +50,7 @@
   cursor: pointer;
   transition: transform var(--transition-speed) ease;
   z-index: 10;
-  padding-right: 0.5rem;
+  min-width: fit-content;
 }
 
 .logo-section:hover {
@@ -58,8 +58,8 @@
 }
 
 .logo-icon {
-  color: var(--accent-color);
-  font-size: 1.8rem;
+  height: 3rem;
+  width: auto;
   margin-right: 0.5rem;
   transition: transform var(--transition-speed) ease;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
@@ -81,6 +81,12 @@
 }
 
 /* Search Section */
+.search-container {
+  flex: 1;
+  
+  justify-content: center;
+}
+
 .search-section {
   flex: 1;
   max-width: 400px;
@@ -109,6 +115,7 @@
   color: var(--text-color);
   margin-right: 0.75rem;
   font-size: 1rem;
+  flex-shrink: 0;
 }
 
 .search-input {
@@ -231,8 +238,9 @@
 }
 
 .auth-button.login {
-  background-color: var(--secondary-color);
+  background-color: var(--secondary-color); /* Keeping the login button blue */
   color: white;
+  border-color: var(--secondary-color);
 }
 
 .auth-button.login:hover {
@@ -372,6 +380,10 @@
   height: 100%;
 }
 
+.mobile-search-container {
+  margin-bottom: 1.5rem;
+}
+
 .mobile-nav-links {
   display: flex;
   flex-direction: column;
@@ -459,7 +471,7 @@
 }
 
 .mobile-button.login {
-  background-color: var(--secondary-color);
+  background-color: var(--secondary-color); /* Keeping mobile login button blue */
   color: white;
   width: 100%;
 }
@@ -495,7 +507,7 @@
   }
   
   .logo-icon {
-    font-size: 1.6rem;
+    height: 1.6rem;
   }
 }
 
@@ -539,11 +551,15 @@
     display: block;
   }
   
+  .search-container {
+    flex: 1;
+    max-width: none;
+    margin-left: 0.75rem;
+  }
+  
   .search-section {
     max-width: none;
-    flex-grow: 1;
-    margin-left: 0.75rem;
-    margin-right: 0.75rem;
+    width: 100%;
   }
   
   .search-bar {
@@ -564,12 +580,16 @@
     padding: 0.6rem 0.85rem;
   }
   
+  .navbar-left {
+    gap: 0.75rem;
+  }
+  
   .logo-text {
     font-size: 1.35rem;
   }
   
   .logo-icon {
-    font-size: 1.5rem;
+    height: 1.5rem;
     margin-right: 0.4rem;
   }
   
@@ -598,9 +618,8 @@
     font-size: 1.3rem;
   }
   
-  .search-section {
+  .search-container {
     margin-left: 0.5rem;
-    margin-right: 0.5rem;
   }
 }
 
@@ -614,37 +633,94 @@
   }
   
   .logo-icon {
-    font-size: 1.3rem;
+    height: 1.3rem;
     margin-right: 0.3rem;
   }
   
   .search-input::placeholder {
     font-size: 0.75rem;
   }
-}
-
-/* Animation for Mobile Menu */
-@keyframes slideDown {
-  from {
-    transform: translateY(-20px);
-    opacity: 0;
+  
+  .hamburger {
+    padding: 0.35rem;
   }
-  to {
-    transform: translateY(0);
-    opacity: 1;
+  
+  .hamburger-icon {
+    font-size: 1.2rem;
+  }
+  
+  .mobile-nav-links .nav-link {
+    font-size: 1rem;
+    padding: 0.85rem;
+  }
+  
+  .mobile-user-icon {
+    font-size: 2.2rem;
+  }
+  
+  .mobile-user-name {
+    font-size: 1rem;
+  }
+  
+  .mobile-user-role {
+    font-size: 0.8rem;
+  }
+  
+  .mobile-button {
+    padding: 0.75rem;
+    font-size: 0.9rem;
   }
 }
 
-.mobile-nav.active .nav-link,
-.mobile-nav.active .mobile-button,
-.mobile-nav.active .mobile-user-info {
-  animation: slideDown 0.4s forwards;
-  animation-delay: calc(var(--index) * 0.07s);
-  opacity: 0;
+/* Animations and Visual Enhancements */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.mobile-nav.active .nav-link:nth-child(5) { --index: 5; }
-.mobile-nav.active .mobile-user-info { --index: 6; }
-.mobile-nav.active .mobile-button.profile { --index: 7; }
-.mobile-nav.active .mobile-button.login,
-.mobile-nav.active .mobile-button.logout { --index: 8; }
+.suggestions-dropdown {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Focus styles for accessibility */
+.nav-link:focus-visible,
+.auth-button:focus-visible,
+.profile-button:focus-visible,
+.hamburger:focus-visible,
+.search-input:focus-visible {
+  outline: 2px solid var(--hover-color);
+  outline-offset: 2px;
+}
+
+/* Dark mode adjustments if implemented */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary-color: rgba(3, 37, 65, 0.95);
+    --primary-dark: rgba(1, 16, 28, 0.95);
+    --box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+}
+
+/* Cross-browser compatibility fixes */
+@supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {
+  .navbar {
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+  
+  .mobile-nav {
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+}
+
+/* Fix for Firefox which doesn't support backdrop-filter */
+@-moz-document url-prefix() {
+  .navbar {
+    background: var(--primary-color);
+  }
+  
+  .mobile-nav {
+    background: var(--primary-color);
+  }
+}

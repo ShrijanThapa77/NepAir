@@ -9,7 +9,7 @@ import {
 import { auth, db } from "../firebase";
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { FaUser, FaLock, FaEnvelope, FaVenusMars, FaBirthdayCake, FaShieldAlt, FaArrowRight, FaCheck, FaChevronLeft } from 'react-icons/fa';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import './Login.css';
 
 const Login = () => {
@@ -26,6 +26,7 @@ const Login = () => {
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
   const navigate = useNavigate();
 
   const toggleForm = () => {
@@ -41,14 +42,29 @@ const Login = () => {
       role: 'user',
     });
     setErrors({});
+    setPasswordStrength(0);
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    
     if (errors[name]) {
       setErrors({...errors, [name]: ''});
     }
+    
+    if (name === 'password') {
+      calculatePasswordStrength(value);
+    }
+  };
+
+  const calculatePasswordStrength = (password) => {
+    let strength = 0;
+    if (password.length >= 8) strength += 1;
+    if (/[A-Z]/.test(password)) strength += 1;
+    if (/[0-9]/.test(password)) strength += 1;
+    if (/[!@#$%^&*]/.test(password)) strength += 1;
+    setPasswordStrength(strength);
   };
 
   const validateForm = () => {
@@ -103,10 +119,12 @@ const Login = () => {
             const userData = userDoc.data();
             if (userData.role === 'admin' && userData.status !== 'approved') {
               alert("Your admin account is pending approval.");
+              setIsLoading(false);
               return;
             }
             navigate('/');
           } else {
+            setIsLoading(false);
             alert("Please verify your email address.");
           }
         }
@@ -123,13 +141,13 @@ const Login = () => {
           status: formData.role === 'admin' ? 'pending' : 'approved',
           createdAt: new Date(),
         });
+        setIsLoading(false);
         alert("Account created! Please verify your email.");
         toggleForm();
       }
     } catch (error) {
       console.error("Auth Error:", error.message);
       alert(error.message);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -239,206 +257,221 @@ const Login = () => {
             </div>
           </div>
 
-          <motion.div 
-            className="login-right"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <div className={`login-card ${!isLogin ? 'signup-card' : ''}`}>
-              {/* Form Header */}
-              <div className="login-header">
-                <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
-                <p>{isLogin ? 'Sign in to access your NepAir dashboard' : 'Join NepAir for better air quality insights'}</p>
-              </div>
+          <AnimatePresence mode="wait">
+            <motion.div 
+              className="login-right"
+              key={isLogin ? "login" : "signup"}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.4 }}
+            >
+              <div className={`login-card ${!isLogin ? 'signup-card' : ''}`}>
+                <div className="login-header">
+                  <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
+                  <p>{isLogin ? 'Sign in to access your NepAir dashboard' : 'Join NepAir for better air quality insights'}</p>
+                </div>
 
-              {/* Toggle tabs */}
-              <div className="form-tabs">
-                <button 
-                  className={`form-tab ${isLogin ? 'active' : ''}`} 
-                  onClick={() => setIsLogin(true)}
-                >
-                  Sign In
-                </button>
-                <button 
-                  className={`form-tab ${!isLogin ? 'active' : ''}`} 
-                  onClick={() => setIsLogin(false)}
-                >
-                  Sign Up
-                </button>
-              </div>
+                <div className="form-tabs">
+                  <button 
+                    className={`form-tab ${isLogin ? 'active' : ''}`} 
+                    onClick={() => setIsLogin(true)}
+                  >
+                    Sign In
+                  </button>
+                  <button 
+                    className={`form-tab ${!isLogin ? 'active' : ''}`} 
+                    onClick={() => setIsLogin(false)}
+                  >
+                    Sign Up
+                  </button>
+                </div>
 
-              <form onSubmit={handleSubmit} className="login-form">
-                <div className={`form-scroll-container ${!isLogin ? 'signup-form' : ''}`}>
-                  {!isLogin && (
-                    <>
-                      <div className="form-row">
-                        <div className="input-group">
-                          <FaUser className="input-icon" />
-                          <input
-                            type="text"
-                            name="firstName"
-                            placeholder="First Name"
-                            value={formData.firstName}
-                            onChange={handleChange}
-                            className={errors.firstName ? 'error' : ''}
-                          />
-                          {errors.firstName && <span className="error-message">{errors.firstName}</span>}
+                <form onSubmit={handleSubmit} className="login-form">
+                  <div className={`form-scroll-container ${!isLogin ? 'signup-form' : ''}`}>
+                    {!isLogin && (
+                      <>
+                        <div className="form-row">
+                          <div className="input-group">
+                            <FaUser className="input-icon" />
+                            <input
+                              type="text"
+                              name="firstName"
+                              placeholder="First Name"
+                              value={formData.firstName}
+                              onChange={handleChange}
+                              className={errors.firstName ? 'error' : ''}
+                            />
+                            {errors.firstName && <span className="error-message">{errors.firstName}</span>}
+                          </div>
+                          <div className="input-group">
+                            <FaUser className="input-icon" />
+                            <input
+                              type="text"
+                              name="lastName"
+                              placeholder="Last Name"
+                              value={formData.lastName}
+                              onChange={handleChange}
+                              className={errors.lastName ? 'error' : ''}
+                            />
+                            {errors.lastName && <span className="error-message">{errors.lastName}</span>}
+                          </div>
                         </div>
-                        <div className="input-group">
-                          <FaUser className="input-icon" />
-                          <input
-                            type="text"
-                            name="lastName"
-                            placeholder="Last Name"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                            className={errors.lastName ? 'error' : ''}
-                          />
-                          {errors.lastName && <span className="error-message">{errors.lastName}</span>}
-                        </div>
-                      </div>
 
-                      <div className="form-row">
-                        <div className="input-group">
-                          <FaBirthdayCake className="input-icon" />
-                          <input
-                            type="number"
-                            name="age"
-                            placeholder="Age"
-                            value={formData.age}
-                            onChange={handleChange}
-                            min="13"
-                            className={errors.age ? 'error' : ''}
-                          />
-                          {errors.age && <span className="error-message">{errors.age}</span>}
+                        <div className="form-row">
+                          <div className="input-group">
+                            <FaBirthdayCake className="input-icon" />
+                            <input
+                              type="number"
+                              name="age"
+                              placeholder="Age"
+                              value={formData.age}
+                              onChange={handleChange}
+                              min="13"
+                              className={errors.age ? 'error' : ''}
+                            />
+                            {errors.age && <span className="error-message">{errors.age}</span>}
+                          </div>
+                          <div className="input-group">
+                            <FaVenusMars className="input-icon" />
+                            <select 
+                              name="gender" 
+                              value={formData.gender} 
+                              onChange={handleChange}
+                              className={errors.gender ? 'error' : ''}
+                            >
+                              <option value="">Select Gender</option>
+                              <option value="male">Male</option>
+                              <option value="female">Female</option>
+                              <option value="other">Other</option>
+                            </select>
+                            {errors.gender && <span className="error-message">{errors.gender}</span>}
+                          </div>
                         </div>
+
                         <div className="input-group">
-                          <FaVenusMars className="input-icon" />
+                          <FaShieldAlt className="input-icon" />
                           <select 
-                            name="gender" 
-                            value={formData.gender} 
+                            name="role" 
+                            value={formData.role} 
                             onChange={handleChange}
-                            className={errors.gender ? 'error' : ''}
+                            className="role-select"
                           >
-                            <option value="">Select Gender</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="other">Other</option>
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
                           </select>
-                          {errors.gender && <span className="error-message">{errors.gender}</span>}
+                          <small className="role-hint">Select "Admin" for organization account</small>
                         </div>
-                      </div>
+                      </>
+                    )}
 
-                      <div className="input-group">
-                        <FaShieldAlt className="input-icon" />
-                        <select 
-                          name="role" 
-                          value={formData.role} 
-                          onChange={handleChange}
-                          className="role-select"
-                        >
-                          <option value="user">User</option>
-                          <option value="admin">Admin</option>
-                        </select>
-                        <small className="role-hint">Select "Admin" for organization account</small>
-                      </div>
-                    </>
-                  )}
+                    <div className="input-group">
+                      <FaEnvelope className="input-icon" />
+                      <input
+                        type="email"
+                        name="email"
+                        placeholder="Email Address"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className={errors.email ? 'error' : ''}
+                      />
+                      {errors.email && <span className="error-message">{errors.email}</span>}
+                    </div>
 
-                  <div className="input-group">
-                    <FaEnvelope className="input-icon" />
-                    <input
-                      type="email"
-                      name="email"
-                      placeholder="Email Address"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className={errors.email ? 'error' : ''}
-                    />
-                    {errors.email && <span className="error-message">{errors.email}</span>}
-                  </div>
-
-                  <div className="input-group">
-                    <FaLock className="input-icon" />
-                    <input
-                      type="password"
-                      name="password"
-                      placeholder="Password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      className={errors.password ? 'error' : ''}
-                    />
-                    {errors.password && <span className="error-message">{errors.password}</span>}
-                  </div>
-
-                  {!isLogin && (
                     <div className="input-group">
                       <FaLock className="input-icon" />
                       <input
                         type="password"
-                        name="confirmPassword"
-                        placeholder="Confirm Password"
-                        value={formData.confirmPassword}
+                        name="password"
+                        placeholder="Password"
+                        value={formData.password}
                         onChange={handleChange}
-                        className={errors.confirmPassword ? 'error' : ''}
+                        className={errors.password ? 'error' : ''}
                       />
-                      {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
+                      {errors.password && <span className="error-message">{errors.password}</span>}
+                      
+                      {!isLogin && formData.password && (
+                        <div className="password-strength-meter">
+                          <div className="strength-bars">
+                            <div className={`strength-bar ${passwordStrength >= 1 ? 'active' : ''}`}></div>
+                            <div className={`strength-bar ${passwordStrength >= 2 ? 'active' : ''}`}></div>
+                            <div className={`strength-bar ${passwordStrength >= 3 ? 'active' : ''}`}></div>
+                            <div className={`strength-bar ${passwordStrength >= 4 ? 'active' : ''}`}></div>
+                          </div>
+                         
+                        </div>
+                      )}
+                    </div>
+
+                    {!isLogin && (
+                      <div className="input-group">
+                        <FaLock className="input-icon" />
+                        <input
+                          type="password"
+                          name="confirmPassword"
+                          placeholder="Confirm Password"
+                          value={formData.confirmPassword}
+                          onChange={handleChange}
+                          className={errors.confirmPassword ? 'error' : ''}
+                        />
+                        {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
+                      </div>
+                    )}
+                  </div>
+
+                  <motion.button 
+                    type="submit" 
+                    className={`login-button ${isLogin ? 'signin-button' : 'signup-button'}`}
+                    disabled={isLoading}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {isLoading ? (
+                      <span className="spinner"></span>
+                    ) : (
+                      <>
+                        {isLogin ? 'Sign In' : 'Create Account'}
+                        <FaArrowRight className="button-icon" />
+                      </>
+                    )}
+                  </motion.button>
+                </form>
+
+                <div className="login-footer">
+                  {isLogin ? (
+                    <button 
+                      onClick={handleForgotPassword} 
+                      className="forgot-password-button"
+                    >
+                      Forgot Password?
+                    </button>
+                  ) : (
+                    <div className="password-requirements">
+                      <p>Password must contain:</p>
+                      <ul>
+                        <li className={/[A-Z]/.test(formData.password) ? 'fulfilled' : ''}>
+                          {/[A-Z]/.test(formData.password) ? <FaCheck className="check-icon" /> : null}
+                          One uppercase letter
+                        </li>
+                        <li className={/.{8,}/.test(formData.password) ? 'fulfilled' : ''}>
+                          {/.{8,}/.test(formData.password) ? <FaCheck className="check-icon" /> : null}
+                          At least 8 characters
+                        </li>
+                        <li className={/[0-9]/.test(formData.password) ? 'fulfilled' : ''}>
+                          {/[0-9]/.test(formData.password) ? <FaCheck className="check-icon" /> : null}
+                          One number
+                        </li>
+                        <li className={/[!@#$%^&*]/.test(formData.password) ? 'fulfilled' : ''}>
+                          {/[!@#$%^&*]/.test(formData.password) ? <FaCheck className="check-icon" /> : null}
+                          One special character
+                        </li>
+                      </ul>
                     </div>
                   )}
                 </div>
-
-                <motion.button 
-                  type="submit" 
-                  className="login-button" 
-                  disabled={isLoading}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {isLoading ? (
-                    <span className="spinner"></span>
-                  ) : (
-                    <>
-                      {isLogin ? 'Sign In' : 'Create Account'}
-                      <FaArrowRight className="button-icon" />
-                    </>
-                  )}
-                </motion.button>
-              </form>
-
-              <div className="login-footer">
-                {isLogin ? (
-                  <>
-                    <button onClick={handleForgotPassword} className="text-button forgot-password">
-                      Forgot Password?
-                    </button>
-                  </>
-                ) : (
-                  <div className="password-requirements">
-                    <p>Password must contain:</p>
-                    <ul>
-                      <li className={/[A-Z]/.test(formData.password) ? 'fulfilled' : ''}>
-                        {/[A-Z]/.test(formData.password) ? <FaCheck className="check-icon" /> : null}
-                        One uppercase letter
-                      </li>
-                      <li className={/.{8,}/.test(formData.password) ? 'fulfilled' : ''}>
-                        {/.{8,}/.test(formData.password) ? <FaCheck className="check-icon" /> : null}
-                        At least 8 characters
-                      </li>
-                      <li className={/[0-9]/.test(formData.password) ? 'fulfilled' : ''}>
-                        {/[0-9]/.test(formData.password) ? <FaCheck className="check-icon" /> : null}
-                        One number
-                      </li>
-                      <li className={/[!@#$%^&*]/.test(formData.password) ? 'fulfilled' : ''}>
-                        {/[!@#$%^&*]/.test(formData.password) ? <FaCheck className="check-icon" /> : null}
-                        One special character
-                      </li>
-                    </ul>
-                  </div>
-                )}
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     </div>

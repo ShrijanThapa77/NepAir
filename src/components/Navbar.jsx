@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { FaUserCircle, FaSearch, FaLeaf, FaBars, FaTimes } from "react-icons/fa";
+import { FaUserCircle, FaSearch, FaBars, FaTimes } from "react-icons/fa";
+import logo from "../assets/logo.png"; // Using your logo from assets
 import "./navbar.css";
 
 function Navbar() {
@@ -131,47 +132,48 @@ function Navbar() {
       <nav className="navbar">
         <div className="navbar-left">
           <div className="logo-section" onClick={() => navigate("/")}>
-            <FaLeaf className="logo-icon" />
+            <img src={logo} alt="NepAir Logo" className="logo-icon" />
             <span className="logo-text">NepAir</span>
           </div>
 
-          <div className="search-section" ref={searchRef}>
-            <div className={`search-bar ${isSearchFocused ? 'focused' : ''}`}>
-              <FaSearch className="search-icon" />
-              <input
-                type="text"
-                placeholder="Search location or city"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setShowSuggestions(e.target.value.length > 0);
-                }}
-                onKeyDown={handleKeyDown}
-                className="search-input"
-                onFocus={() => {
-                  setIsSearchFocused(true);
-                  setShowSuggestions(searchQuery.length > 0);
-                }}
-                onBlur={() => {
-                  setIsSearchFocused(false);
-                  // Small delay to allow click on suggestion
-                  setTimeout(() => setShowSuggestions(false), 200);
-                }}
-              />
-              {showSuggestions && filteredCities.length > 0 && (
-                <div className="suggestions-dropdown">
-                  {filteredCities.map((city) => (
-                    <div
-                      key={city.name}
-                      className="suggestion-item"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleSearch(city.path)}
-                    >
-                      {city.name}
-                    </div>
-                  ))}
-                </div>
-              )}
+          <div className="search-container">
+            <div className="search-section" ref={searchRef}>
+              <div className={`search-bar ${isSearchFocused ? 'focused' : ''}`}>
+                <FaSearch className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search location or city"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowSuggestions(e.target.value.length > 0);
+                  }}
+                  onKeyDown={handleKeyDown}
+                  className="search-input"
+                  onFocus={() => {
+                    setIsSearchFocused(true);
+                    setShowSuggestions(searchQuery.length > 0);
+                  }}
+                  onBlur={() => {
+                    setIsSearchFocused(false);
+                    setTimeout(() => setShowSuggestions(false), 200);
+                  }}
+                />
+                {showSuggestions && filteredCities.length > 0 && (
+                  <div className="suggestions-dropdown">
+                    {filteredCities.map((city) => (
+                      <div
+                        key={city.name}
+                        className="suggestion-item"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleSearch(city.path)}
+                      >
+                        {city.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -247,6 +249,25 @@ function Navbar() {
         {/* Mobile Navigation */}
         <div className={`mobile-nav ${menuOpen ? 'active' : ''}`}>
           <div className="mobile-nav-content">
+            <div className="mobile-search-container">
+              <div className="search-section" ref={searchRef}>
+                <div className="search-bar">
+                  <FaSearch className="search-icon" />
+                  <input
+                    type="text"
+                    placeholder="Search location or city"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setShowSuggestions(e.target.value.length > 0);
+                    }}
+                    onKeyDown={handleKeyDown}
+                    className="search-input"
+                  />
+                </div>
+              </div>
+            </div>
+            
             <div className="mobile-nav-links">
               <button className="nav-link" onClick={() => handleNavLinkClick("/")}>
                 Home
