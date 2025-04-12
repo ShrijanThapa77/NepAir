@@ -1,9 +1,6 @@
 import React, { useState } from "react";
 import "./EducationModule.css";
 import Footer from "../components/Footer";
-import { FiFeather } from 'react-icons/fi';
-import BG from '../assets/sky.jpg';
-
 import { motion } from 'framer-motion';
 
 const EducationModule = () => {
@@ -77,42 +74,36 @@ const EducationModule = () => {
   const pollutants = [
     {
       name: "PM2.5",
-      
       sources: "Vehicle emissions, industrial processes, wildfires",
       health: "Respiratory issues, cardiovascular disease, premature death",
       safeLevel: "≤ 10 μg/m³ (annual mean)"
     },
     {
       name: "PM10",
-   
       sources: "Dust from roads, construction sites, agriculture",
       health: "Aggravated asthma, decreased lung function",
       safeLevel: "≤ 20 μg/m³ (annual mean)"
     },
     {
       name: "O₃",
-      
       sources: "Chemical reactions between NOx and VOCs in sunlight",
       health: "Coughing, throat irritation, worsened asthma",
       safeLevel: "≤ 100 μg/m³ (8-hour mean)"
     },
     {
       name: "NO₂",
-     
       sources: "Vehicle emissions, power plants, industrial combustion",
       health: "Respiratory infections, increased asthma symptoms",
       safeLevel: "≤ 10 μg/m³ (annual mean)"
     },
     {
       name: "SO₂",
-      
       sources: "Burning of fossil fuels, industrial processes",
       health: "Respiratory symptoms, chronic bronchitis",
       safeLevel: "≤ 20 μg/m³ (24-hour mean)"
     },
     {
       name: "CO",
-      
       sources: "Vehicle exhaust, incomplete combustion",
       health: "Reduced oxygen delivery, cardiovascular effects",
       safeLevel: "≤ 4 mg/m³ (24-hour mean)"
@@ -123,7 +114,6 @@ const EducationModule = () => {
   const healthEffects = [
     {
       group: "Children",
-      
       effects: [
         "Impaired lung development",
         "Increased respiratory infections",
@@ -133,7 +123,6 @@ const EducationModule = () => {
     },
     {
       group: "Elderly",
-      
       effects: [
         "Increased heart attack risk",
         "Worsening heart/lung disease",
@@ -143,7 +132,6 @@ const EducationModule = () => {
     },
     {
       group: "Pregnant Women",
-     
       effects: [
         "Preterm birth risk",
         "Low birth weight",
@@ -153,7 +141,6 @@ const EducationModule = () => {
     },
     {
       group: "Asthma/Heart Patients",
-      
       effects: [
         "More severe asthma attacks",
         "Worsened COPD",
@@ -167,7 +154,6 @@ const EducationModule = () => {
   const protectionTips = [
     {
       title: "High AQI Days",
-      
       tips: [
         "Limit outdoor activities",
         "Keep windows closed",
@@ -177,7 +163,6 @@ const EducationModule = () => {
     },
     {
       title: "Mask Usage",
-     
       tips: [
         "Use N95/KN95 masks",
         "Ensure proper fit",
@@ -187,7 +172,6 @@ const EducationModule = () => {
     },
     {
       title: "Indoor Air",
-    
       tips: [
         "Add air-purifying plants",
         "Avoid indoor burning",
@@ -197,7 +181,6 @@ const EducationModule = () => {
     },
     {
       title: "Smart Planning",
-      
       tips: [
         "Check AQI forecasts",
         "Morning outdoor activities",
@@ -239,32 +222,26 @@ const EducationModule = () => {
   const communityActions = [
     {
       action: "Alternative Transport",
-      
       description: "Carpool, use public transport, bike, or walk to reduce emissions."
     },
     {
       action: "Plant Trees",
-      
       description: "Join tree planting initiatives to help filter air pollutants."
     },
     {
       action: "Educate Others",
-      
       description: "Share air quality information with your community."
     },
     {
       action: "Report Violations",
-      
       description: "Report illegal burning or industrial emissions to authorities."
     },
     {
       action: "Energy Conservation",
-     
       description: "Reduce energy consumption to decrease polluting power demand."
     },
     {
       action: "Support Clean Policies",
-      
       description: "Advocate for policies that improve air quality standards."
     }
   ];
@@ -306,39 +283,59 @@ const EducationModule = () => {
   };
 
   return (
-    <div className="education-module" style={{ backgroundImage: `url(${BG})` }}>
+    <div className="education-module">
+      {/* Header */}
+      <header className="site-header">
+        <div className="container">
+        </div>
+      </header>
+
       {/* Hero Slider */}
       <section className="hero-slider">
         <div className="slider-container">
           <div className="slider-wrapper">
             <button className="slider-arrow left" onClick={goToPrevious}>
-              
+              <span>&lt;</span>
             </button>
             <div 
               className="slide"
               style={{ backgroundImage: `url(${News[currentIndex].url})` }}
             >
               <div className="slide-overlay">
-                <motion.h1 
+                <motion.div 
+                  className="container"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="slide-title"
                 >
-                  {News[currentIndex].title}
-                </motion.h1>
-                <motion.p 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="slide-subtitle"
-                >
-                  Stay informed about Nepal's air quality challenges
-                </motion.p>
+                  <motion.h1 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="slide-title"
+                  >
+                    {News[currentIndex].title}
+                  </motion.h1>
+                  <motion.p 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="slide-subtitle"
+                  >
+                    Stay informed about Nepal's air quality challenges
+                  </motion.p>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                  >
+                    
+                  </motion.div>
+                </motion.div>
               </div>
             </div>
             <button className="slider-arrow right" onClick={goToNext}>
-              
+              <span>&gt;</span>
             </button>
           </div>
           <div className="slider-dots">
@@ -353,9 +350,11 @@ const EducationModule = () => {
         </div>
       </section>
 
+      
+
       {/* Education Tabs */}
       <section className="education-tabs-section">
-        <div className="section-container">
+        <div className="container">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -375,37 +374,37 @@ const EducationModule = () => {
                 className={`tab-btn ${activeTab === 'intro' ? 'active' : ''}`}
                 onClick={() => setActiveTab('intro')}
               >
-                 Introduction
+                Introduction
               </button>
               <button 
                 className={`tab-btn ${activeTab === 'health' ? 'active' : ''}`}
                 onClick={() => setActiveTab('health')}
               >
-                 Health Impacts
+                Health Impacts
               </button>
               <button 
                 className={`tab-btn ${activeTab === 'nepal' ? 'active' : ''}`}
                 onClick={() => setActiveTab('nepal')}
               >
-                 Nepal's AQI
+                Nepal's AQI
               </button>
               <button 
                 className={`tab-btn ${activeTab === 'measurement' ? 'active' : ''}`}
                 onClick={() => setActiveTab('measurement')}
               >
-               Measurement
+                Measurement
               </button>
               <button 
                 className={`tab-btn ${activeTab === 'forecast' ? 'active' : ''}`}
                 onClick={() => setActiveTab('forecast')}
               >
-                 Forecast
+                Forecast
               </button>
               <button 
                 className={`tab-btn ${activeTab === 'action' ? 'active' : ''}`}
                 onClick={() => setActiveTab('action')}
               >
-                 Take Action
+                Take Action
               </button>
             </div>
 
@@ -420,9 +419,6 @@ const EducationModule = () => {
               {activeTab === 'intro' && (
                 <div className="intro-content">
                   <div className="intro-section">
-                    <div className="section-icon">
-                     
-                    </div>
                     <h3>What is Air Quality Index (AQI)?</h3>
                     <p>
                       The Air Quality Index (AQI) is a numerical scale used to communicate how polluted the air currently is or how polluted it is forecast to become. It transforms complex air quality data into an easy-to-understand format that helps people make decisions about their outdoor activities.
@@ -459,9 +455,6 @@ const EducationModule = () => {
                           variants={itemVariants}
                         >
                           <div className="pollutant-header">
-                            <div className="pollutant-icon">
-                              {pollutant.icon}
-                            </div>
                             <h4>{pollutant.name}</h4>
                           </div>
                           <div className="pollutant-details">
@@ -489,9 +482,6 @@ const EducationModule = () => {
               {activeTab === 'health' && (
                 <div className="health-content">
                   <div className="intro-section">
-                    <div className="section-icon">
-                      
-                    </div>
                     <h3>Health Impacts of Poor Air Quality</h3>
                     <p>
                       Air pollution affects different groups of people in various ways. Some populations are particularly vulnerable to its harmful effects. Understanding these impacts can help you take appropriate precautions.
@@ -507,9 +497,6 @@ const EducationModule = () => {
                         variants={itemVariants}
                       >
                         <div className="health-header">
-                          <div className="health-icon">
-                            {group.icon}
-                          </div>
                           <h4>{group.group}</h4>
                         </div>
                         <ul className="health-effects-list">
@@ -547,13 +534,10 @@ const EducationModule = () => {
                 </div>
               )}
 
-              {/* Nepal AQI Tab */}
+              {/* Nepal AQI Tab - other tabs follow similar pattern */}
               {activeTab === 'nepal' && (
                 <div className="nepal-content">
                   <div className="intro-section">
-                    <div className="section-icon">
-                      
-                    </div>
                     <h3>Air Quality in Nepal</h3>
                     <p>
                       Nepal faces significant air quality challenges, particularly in urban areas and during certain seasons. Understanding the sources and patterns can help address this growing public health concern.
@@ -594,24 +578,6 @@ const EducationModule = () => {
                       </p>
                     </div>
                   </div>
-
-                  <div className="city-comparison-section">
-                    <h4>City Comparison</h4>
-                    <div className="comparison-grid">
-                      <div className="city-card">
-                        <h5>Kathmandu</h5>
-                        <p>Highest pollution levels due to dense traffic, brick kilns, and geographical bowl shape that traps pollutants.</p>
-                      </div>
-                      <div className="city-card">
-                        <h5>Pokhara</h5>
-                        <p>Generally better air quality but affected by seasonal tourism and increasing vehicle numbers.</p>
-                      </div>
-                      <div className="city-card">
-                        <h5>Biratnagar</h5>
-                        <p>Industrial emissions and cross-border pollution contribute to poor air quality, especially in winter.</p>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
 
@@ -619,9 +585,6 @@ const EducationModule = () => {
               {activeTab === 'measurement' && (
                 <div className="measurement-content">
                   <div className="intro-section">
-                    <div className="section-icon">
-                    
-                    </div>
                     <h3>How AQI is Measured</h3>
                     <p>
                       Understanding how air quality is monitored helps interpret AQI values and forecasts. Nepal uses a combination of ground stations, sensors, and satellite data to assess air pollution levels.
@@ -632,65 +595,22 @@ const EducationModule = () => {
                     <h4>Measurement Methods</h4>
                     <div className="methods-grid">
                       <div className="method-card">
-                        <div className="method-icon">
-                       
-                        </div>
                         <h5>Monitoring Stations</h5>
                         <p>
                           Government-operated stations with high-quality instruments measure pollutant concentrations at fixed locations.
                         </p>
                       </div>
                       <div className="method-card">
-                        <div className="method-icon">
-                          
-                        </div>
                         <h5>Low-cost Sensors</h5>
                         <p>
                           Smaller, more affordable devices deployed widely to supplement official monitoring networks.
                         </p>
                       </div>
                       <div className="method-card">
-                        <div className="method-icon">
-                       
-                        </div>
                         <h5>Satellite Data</h5>
                         <p>
                           Remote sensing provides broad coverage, especially useful in areas with few ground stations.
                         </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="process-section">
-                    <h4>From Data to AQI</h4>
-                    <div className="process-steps">
-                      <div className="process-step">
-                        <div className="step-number">1</div>
-                        <div className="step-content">
-                          <h5>Data Collection</h5>
-                          <p>Pollutant concentrations are measured continuously at monitoring stations.</p>
-                        </div>
-                      </div>
-                      <div className="process-step">
-                        <div className="step-number">2</div>
-                        <div className="step-content">
-                          <h5>Quality Control</h5>
-                          <p>Data is checked for accuracy and consistency.</p>
-                        </div>
-                      </div>
-                      <div className="process-step">
-                        <div className="step-number">3</div>
-                        <div className="step-content">
-                          <h5>Index Calculation</h5>
-                          <p>Pollutant levels are converted to AQI values using standard formulas.</p>
-                        </div>
-                      </div>
-                      <div className="process-step">
-                        <div className="step-number">4</div>
-                        <div className="step-content">
-                          <h5>Reporting</h5>
-                          <p>The highest AQI value among pollutants becomes the overall AQI for reporting.</p>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -701,9 +621,6 @@ const EducationModule = () => {
               {activeTab === 'forecast' && (
                 <div className="forecast-content">
                   <div className="intro-section">
-                    <div className="section-icon">
-                  
-                    </div>
                     <h3>AQI Forecast and Prediction</h3>
                     <p>
                       Air quality forecasting helps individuals and authorities prepare for and mitigate pollution impacts. Forecasts consider multiple factors that influence pollution levels.
@@ -714,79 +631,22 @@ const EducationModule = () => {
                     <h4>Why Forecasting Matters</h4>
                     <div className="importance-grid">
                       <div className="importance-card">
-                        <div className="importance-icon">
-                          
-                        </div>
                         <div className="importance-text">
                           <h5>Health Protection</h5>
                           <p>Allows sensitive groups to take precautions on bad air days.</p>
                         </div>
                       </div>
                       <div className="importance-card">
-                        <div className="importance-icon">
-                          
-                        </div>
                         <div className="importance-text">
                           <h5>Activity Planning</h5>
                           <p>Helps schedule outdoor activities when air quality is better.</p>
                         </div>
                       </div>
                       <div className="importance-card">
-                        <div className="importance-icon">
-                         
-                        </div>
                         <div className="importance-text">
                           <h5>Policy Decisions</h5>
                           <p>Supports temporary measures like traffic restrictions on high pollution days.</p>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="factors-section">
-                    <h4>Factors Affecting AQI</h4>
-                    <div className="factors-grid">
-                      <div className="factor-card">
-                        <h5>Weather Conditions</h5>
-                        <ul>
-                          <li>Wind disperses or concentrates pollutants</li>
-                          <li>Rain cleans the air by washing out particles</li>
-                          <li>Temperature inversions trap pollutants near ground</li>
-                        </ul>
-                      </div>
-                      <div className="factor-card">
-                        <h5>Human Activities</h5>
-                        <ul>
-                          <li>Traffic patterns and volume</li>
-                          <li>Industrial operations</li>
-                          <li>Construction and agricultural activities</li>
-                        </ul>
-                      </div>
-                      <div className="factor-card">
-                        <h5>Seasonal Patterns</h5>
-                        <ul>
-                          <li>Winter heating increases emissions</li>
-                          <li>Dry seasons increase dust</li>
-                          <li>Festivals with fireworks cause spikes</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="forecast-methods-section">
-                    <h4>How We Predict AQI</h4>
-                    <div className="forecast-methods">
-                      <div className="method-card">
-                        <h5>Statistical Models</h5>
-                        <p>Analyze historical patterns and relationships between weather and pollution.</p>
-                      </div>
-                      <div className="method-card">
-                        <h5>Chemical Transport Models</h5>
-                        <p>Simulate how pollutants move and transform in the atmosphere.</p>
-                      </div>
-                      <div className="method-card">
-                        <h5>Machine Learning</h5>
-                        <p>AI algorithms identify complex patterns in large datasets to improve predictions.</p>
                       </div>
                     </div>
                   </div>
@@ -797,9 +657,6 @@ const EducationModule = () => {
               {activeTab === 'action' && (
                 <div className="action-content">
                   <div className="intro-section">
-                    <div className="section-icon">
-                      
-                    </div>
                     <h3>What You Can Do</h3>
                     <p>
                       While air pollution is a complex problem requiring systemic solutions, individual actions can significantly reduce exposure and contribute to cleaner air for everyone.
@@ -817,9 +674,6 @@ const EducationModule = () => {
                           variants={itemVariants}
                         >
                           <div className="protection-header">
-                            <div className="protection-icon">
-                              {tip.icon}
-                            </div>
                             <h5>{tip.title}</h5>
                           </div>
                           <ul className="protection-tips-list">
@@ -842,31 +696,12 @@ const EducationModule = () => {
                           whileHover={{ y: -5 }}
                           variants={itemVariants}
                         >
-                          <div className="action-icon">
-                            {action.icon}
-                          </div>
                           <div className="action-text">
                             <h5>{action.action}</h5>
                             <p>{action.description}</p>
                           </div>
                         </motion.div>
                       ))}
-                    </div>
-                  </div>
-
-                  <div className="advocacy-section">
-                    <h4>Advocacy and Policy</h4>
-                    <div className="advocacy-content">
-                      <p>
-                        While individual actions help, systemic change is needed for lasting air quality improvements. Consider:
-                      </p>
-                      <ul>
-                        <li>Supporting cleaner public transportation initiatives</li>
-                        <li>Advocating for stricter industrial emission standards</li>
-                        <li>Promoting urban green spaces and tree planting programs</li>
-                        <li>Encouraging investment in renewable energy sources</li>
-                        <li>Supporting air quality monitoring and research</li>
-                      </ul>
                     </div>
                   </div>
                 </div>
@@ -878,7 +713,7 @@ const EducationModule = () => {
 
       {/* News Section */}
       <section className="news-section">
-        <div className="section-container">
+        <div className="container">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -921,7 +756,7 @@ const EducationModule = () => {
                       rel="noopener noreferrer"
                       className="news-link"
                     >
-                      Read Article 
+                      Read Article
                     </a>
                   </div>
                 </div>
@@ -934,7 +769,7 @@ const EducationModule = () => {
 
       {/* Resources Section */}
       <section className="resources-section">
-        <div className="section-container">
+        <div className="container">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -972,7 +807,7 @@ const EducationModule = () => {
                   rel="noopener noreferrer"
                   className="resource-link"
                 >
-                  Learn More 
+                  Learn More
                 </a>
               </motion.div>
             ))}
@@ -980,6 +815,9 @@ const EducationModule = () => {
         </div>
       </section>
 
+      
+
+      {/* Footer */}
       <Footer />
     </div>
   );
