@@ -7,7 +7,8 @@ import HealthAlert from "./pages/HealthAlert";
 import EducationModule from "./pages/EducationModule";
 import UserProfile from "./pages/UserProfile";
 import UserDashboard from "./pages/UserDashboard";
-import ReportPollutionPage from "./pages/ReportPollutionPage"; // Corrected import name
+import ReportPollutionPage from "./pages/ReportPollutionPage";
+import KhaltiPayment from "./pages/KhaltiPayment";
 import Navbar from "./components/Navbar";
 import "./App.css";
 import AOS from "aos";
@@ -26,7 +27,6 @@ import Birgunj from "./pages/cities/Birgunj";
 import Dharan from "./pages/cities/Dharan";
 
 function App() {
-  // Initialize AOS (Animate On Scroll)
   AOS.init({
     duration: 800,
     easing: 'ease-in-out',
@@ -35,13 +35,13 @@ function App() {
 
   return (
     <BrowserRouter>
-      {/* Navbar is outside Routes to ensure it is rendered only once */}
       <Navbar />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/healthalert" element={<HealthAlert />} />
+        <Route path="/khalti-payment" element={<KhaltiPayment />} />
         <Route path="/education" element={<EducationModule />} />
         <Route path="/userprofile" element={<UserProfile />} />
         <Route path="/userdashboard" element={<UserDashboard />} />

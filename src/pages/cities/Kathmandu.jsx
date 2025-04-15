@@ -119,12 +119,7 @@ const Kathmandu = () => {
       <div className="content-wrapper">
         <div className="header-section">
           <h1>Kathmandu Air Quality</h1>
-          <button 
-            className={`favorite-button ${isFavorite ? 'favorited' : ''}`}
-            onClick={toggleFavorite}
-          >
-            {isFavorite ? '★ Favorited' : '☆ Save as Favorite'}
-          </button>
+         
         </div>
 
         <div className="aqi-section">

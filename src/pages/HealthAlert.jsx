@@ -4,9 +4,8 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiAlertCircle, FiCheckCircle, FiEdit, FiTrash2, FiPhone, FiMail, FiMapPin, FiHeart } from 'react-icons/fi';
+import { FiAlertCircle, FiCheckCircle, FiEdit, FiTrash2, FiPhone, FiMail, FiMapPin, FiHeart, FiCreditCard } from 'react-icons/fi';
 import './HealthAlert.css';
-
 
 function HealthAlert() {
   const [user, setUser] = useState(null);
@@ -82,52 +81,83 @@ function HealthAlert() {
     }
   };
 
-  const handleSubscribe = async (e) => {
-    e.preventDefault();
+  const validateForm = () => {
     if (!stations.length) {
       setMessage('Please select at least one monitoring station');
-      return;
+      return false;
     }
     if (selectedDiseases.length === 0) {
       setMessage('Please select at least one health condition');
-      return;
+      return false;
     }
     if (!phoneNumber || phoneNumber.length !== 10) {
       setMessage('Please enter a valid 10-digit phone number');
-      return;
+      return false;
     }
     if (!agreed) {
       setMessage('Please agree to receive alerts');
+      return false;
+    }
+    return true;
+  };
+
+  const handleProceedToPayment = (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
       return;
     }
     
-    setIsLoading(true);
     setMessage('');
     
+    // Prepare subscription data to pass to payment page
+    const subscriptionData = {
+      stations,
+      diseases: selectedDiseases.map(d => d === 'Other' ? otherDisease : d),
+      phoneNumber,
+      email: user.email,
+      amount: 800 // NPR
+    };
+    
+    // Store data in sessionStorage temporarily
+    sessionStorage.setItem('healthAlertSubscription', JSON.stringify(subscriptionData));
+    
+    // Redirect to payment page
+    navigate('/khalti-payment');
+  };
+
+  const handlePaymentSuccess = async () => {
+    setIsLoading(true);
     try {
-      const diseasesToSave = selectedDiseases.map(d => 
-        d === 'Other' ? otherDisease : d
-      );
+      const subscriptionData = JSON.parse(sessionStorage.getItem('healthAlertSubscription'));
+      
+      if (!subscriptionData) {
+        throw new Error('Subscription data not found');
+      }
+      
+      const subscriptionEndDate = new Date();
+      subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1);
       
       await setDoc(
         doc(db, 'users', user.uid),
         {
           healthAlert: {
-            stations,
-            diseases: diseasesToSave,
+            ...subscriptionData,
             subscribed: true,
-            phoneNumber,
             updatedAt: new Date(),
+            paymentDate: new Date(),
+            expiryDate: subscriptionEndDate
           },
         },
         { merge: true }
       );
       
       setIsSubscribed(true);
-      setMessage('Subscription updated successfully!');
+      setMessage('Payment successful! Your subscription is now active.');
+      sessionStorage.removeItem('healthAlertSubscription');
     } catch (error) {
       console.error('Error saving subscription:', error);
-      setMessage('Failed to save subscription. Please try again.');
+      setMessage('Payment was processed but we could not update your subscription. Please contact support.');
     } finally {
       setIsLoading(false);
     }
@@ -163,7 +193,6 @@ function HealthAlert() {
 
   return (
     <div className="health-alert-wrapper">
-      
       <div className="health-alert-content">
         <motion.div 
           className="health-alert-container"
@@ -189,7 +218,7 @@ function HealthAlert() {
               <h2>NepAir - Air Quality Health Alerts</h2>
               <p className="description">
                 Get notified when air quality reaches dangerous levels in your selected locations.
-                Protect your respiratory health with our free alert service.
+                Protect your respiratory health with our premium alert service.
               </p>
               <motion.button 
                 onClick={() => navigate('/login')} 
@@ -257,7 +286,7 @@ function HealthAlert() {
             </motion.div>
           ) : (
             <motion.form 
-              onSubmit={handleSubscribe} 
+              onSubmit={handleProceedToPayment} 
               className="subscription-form"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -267,6 +296,19 @@ function HealthAlert() {
                 <FiAlertCircle className="form-icon" /> 
                 Health Alert Subscription
               </h2>
+              
+              <div className="subscription-pricing">
+                <div className="price-tag">NPR 800</div>
+                <div className="price-period">per month</div>
+                <div className="price-features">
+                  <ul>
+                    <li>Real-time air quality alerts</li>
+                    <li>Personalized health recommendations</li>
+                    <li>SMS and email notifications</li>
+                    <li>Access to historical air quality data</li>
+                  </ul>
+                </div>
+              </div>
               
               <div className="form-group">
                 <label>
@@ -375,12 +417,13 @@ function HealthAlert() {
               
               <motion.button 
                 type="submit" 
-                className="cta-button primary"
+                className="cta-button primary payment-button"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 disabled={isLoading}
               >
-                {isLoading ? 'Processing...' : 'Subscribe Now'}
+                <FiCreditCard className="button-icon" />
+                {isLoading ? 'Processing...' : 'Proceed to Payment'}
               </motion.button>
             </motion.form>
           )}
@@ -388,7 +431,7 @@ function HealthAlert() {
           <AnimatePresence>
             {message && (
               <motion.div 
-                className={`message ${message.includes('success') ? 'success' : 'error'}`}
+                className={`message ${message.includes('success') ? 'success' : message.includes('Payment successful') ? 'success' : 'error'}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}

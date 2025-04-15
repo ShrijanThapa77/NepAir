@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import "./EducationModule.css";
 import Footer from "../components/Footer";
 import { motion } from 'framer-motion';
+import skyBackground from '../assets/sky.jpg';
 
 const EducationModule = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -283,7 +284,13 @@ const EducationModule = () => {
   };
 
   return (
-    <div className="education-module">
+    <div className="education-module" style={{ 
+      backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url(${skyBackground})`,
+      backgroundAttachment: 'fixed',
+      backgroundPosition: 'top center',
+      backgroundSize: 'cover',
+      backgroundRepeat: 'no-repeat'
+    }}>
       {/* Header */}
       <header className="site-header">
         <div className="container">
@@ -349,8 +356,6 @@ const EducationModule = () => {
           </div>
         </div>
       </section>
-
-      
 
       {/* Education Tabs */}
       <section className="education-tabs-section">
@@ -534,7 +539,7 @@ const EducationModule = () => {
                 </div>
               )}
 
-              {/* Nepal AQI Tab - other tabs follow similar pattern */}
+              {/* Nepal AQI Tab */}
               {activeTab === 'nepal' && (
                 <div className="nepal-content">
                   <div className="intro-section">
@@ -814,8 +819,6 @@ const EducationModule = () => {
           </motion.div>
         </div>
       </section>
-
-      
 
       {/* Footer */}
       <Footer />

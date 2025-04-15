@@ -14,7 +14,6 @@
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   color: var(--text-dark);
-  background-color: var(--light-gray);
   line-height: 1.6;
   margin: 0;
   padding: 0;
@@ -28,6 +27,11 @@ body {
 
 .education-module {
   overflow-x: hidden;
+  background-attachment: fixed;
+  background-position: top center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  min-height: 100vh;
 }
 
 /* Typography */
@@ -35,6 +39,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
   line-height: 1.3;
   margin-top: 0;
+  color: var(--text-dark);
 }
 
 h1 {
@@ -51,6 +56,7 @@ h3 {
 
 p {
   margin-bottom: 1.5rem;
+  color: var(--text-dark);
 }
 
 /* Buttons */
@@ -75,12 +81,13 @@ p {
 
 /* Header */
 .site-header {
-  background-color: var(--white);
+  background-color: rgba(255, 255, 255, 0.95);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   padding: 1rem 0;
   position: sticky;
   top: 0;
   z-index: 1000;
+  backdrop-filter: blur(5px);
 }
 
 /* Hero Slider */
@@ -109,6 +116,9 @@ p {
   background-position: center;
   display: flex;
   align-items: center;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 0 20px;
 }
 
 .slide-overlay {
@@ -127,12 +137,16 @@ p {
   font-size: 3rem;
   font-weight: 700;
   margin-bottom: 1rem;
+  color: var(--white);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .slide-subtitle {
   font-size: 1.25rem;
   max-width: 600px;
   margin-bottom: 2rem;
+  color: var(--white);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .slider-arrow {
@@ -152,19 +166,21 @@ p {
   font-size: 1.5rem;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
+  color: var(--primary-dark);
 }
 
 .slider-arrow:hover {
   background: var(--white);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  color: var(--primary-color);
 }
 
 .slider-arrow.left {
-  left: 20px;
+  left: 0;
 }
 
 .slider-arrow.right {
-  right: 20px;
+  right: 0;
 }
 
 .slider-dots {
@@ -191,28 +207,15 @@ p {
   transform: scale(1.2);
 }
 
-/* CTA Banner */
-.cta-banner {
-  background: linear-gradient(120deg, var(--primary-color), var(--primary-dark));
-  color: var(--white);
-  padding: 2.5rem 0;
-  margin-bottom: 3rem;
-  text-align: center;
-}
-
-.cta-banner h2 {
-  font-size: 2.2rem;
-  margin-bottom: 1rem;
-}
-
-.cta-button {
-  margin-top: 1.5rem;
-}
-
 /* Section Header */
 .section-header {
   text-align: center;
   margin-bottom: 3rem;
+  position: relative;
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .section-title {
@@ -224,18 +227,20 @@ p {
 .section-description {
   max-width: 700px;
   margin: 0 auto;
-  color: var(--text-light);
+  color: var(--text-dark);
   font-size: 1.1rem;
 }
 
 /* Education Tabs */
 .education-tabs-section {
- 
-  background-color: var(--white);
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 3rem 0;
+  margin: 3rem 0;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .tabs-container {
-  box-shadow: var(--shadow);
   border-radius: 8px;
   overflow: hidden;
   background-color: var(--white);
@@ -247,6 +252,7 @@ p {
   scrollbar-width: none;
   -ms-overflow-style: none;
   background-color: var(--primary-light);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .tabs-header::-webkit-scrollbar {
@@ -262,11 +268,22 @@ p {
   color: var(--text-dark);
   transition: all 0.3s ease;
   white-space: nowrap;
+  position: relative;
 }
 
 .tab-btn.active {
   color: var(--primary-color);
-  box-shadow: inset 0 -3px 0 var(--primary-color);
+  background-color: var(--white);
+}
+
+.tab-btn.active:after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: var(--primary-color);
 }
 
 .tab-btn:hover:not(.active) {
@@ -277,6 +294,7 @@ p {
 .tab-content {
   padding: 2rem;
   min-height: 400px;
+  background-color: var(--white);
 }
 
 /* Introduction Tab */
@@ -285,6 +303,10 @@ p {
 .methods-section, .importance-section, .protection-section,
 .community-section {
   margin-bottom: 2.5rem;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .intro-section h3,
@@ -292,6 +314,8 @@ p {
 .pollutants-section h3 {
   margin-bottom: 1rem;
   color: var(--primary-dark);
+  border-bottom: 2px solid var(--primary-light);
+  padding-bottom: 0.5rem;
 }
 
 /* AQI Scale Chart */
@@ -307,18 +331,30 @@ p {
   flex: 1;
   padding: 1rem;
   text-align: center;
-  color: var(--white);
+  color: var(--text-dark);
   position: relative;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.aqi-level:hover {
+  transform: scale(1.05);
+  z-index: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .level-range {
   font-weight: bold;
   display: block;
   margin-bottom: 0.5rem;
+  color: var(--white);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .level-name {
   font-size: 0.9rem;
+  color: var(--white);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .level-tooltip {
@@ -371,6 +407,7 @@ p {
   box-shadow: var(--shadow);
   transition: all 0.3s ease;
   border: 1px solid var(--border-color);
+  color: var(--text-dark);
 }
 
 .pollutant-card:hover, .health-card:hover, .source-card:hover,
@@ -409,6 +446,7 @@ p {
 .detail-item p {
   margin: 0;
   font-size: 0.95rem;
+  color: var(--text-dark);
 }
 
 /* Health Effects Lists */
@@ -419,6 +457,7 @@ p {
 
 .health-effects-list li, .protection-tips-list li {
   margin-bottom: 0.5rem;
+  color: var(--text-dark);
 }
 
 /* Time Effects Section */
@@ -451,6 +490,7 @@ p {
 
 .time-effect-card li {
   margin-bottom: 0.5rem;
+  color: var(--text-dark);
 }
 
 /* Source Card */
@@ -467,7 +507,7 @@ p {
 .source-card p {
   margin: 0;
   font-size: 0.95rem;
-  color: var(--text-light);
+  color: var(--text-dark);
 }
 
 /* Method Card */
@@ -484,7 +524,7 @@ p {
 .method-card p {
   margin: 0;
   font-size: 0.95rem;
-  color: var(--text-light);
+  color: var(--text-dark);
 }
 
 /* Importance Card */
@@ -501,7 +541,7 @@ p {
 .importance-text p {
   margin: 0;
   font-size: 0.95rem;
-  color: var(--text-light);
+  color: var(--text-dark);
 }
 
 /* Action Card */
@@ -518,7 +558,7 @@ p {
 .action-text p {
   margin: 0;
   font-size: 0.95rem;
-  color: var(--text-light);
+  color: var(--text-dark);
 }
 
 /* Seasonal Content */
@@ -531,6 +571,7 @@ p {
 
 .seasonal-content p {
   margin-top: 0;
+  color: var(--text-dark);
 }
 
 .seasonal-content ul {
@@ -539,12 +580,16 @@ p {
 
 .seasonal-content li {
   margin-bottom: 0.5rem;
+  color: var(--text-dark);
 }
 
 /* News Section */
 .news-section {
   padding: 4rem 0;
-  background-color: var(--light-gray);
+  background-color: rgba(255, 255, 255, 0.95);
+  margin: 3rem 0;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .news-grid {
@@ -628,7 +673,10 @@ p {
 /* Resources Section */
 .resources-section {
   padding: 4rem 0;
-  background-color: var(--white);
+  background-color: rgba(255, 255, 255, 0.95);
+  margin: 3rem 0;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .resources-grid {
@@ -665,7 +713,7 @@ p {
 }
 
 .resource-description {
-  color: var(--text-light);
+  color: var(--text-dark);
   margin-bottom: 0;
 }
 
@@ -682,35 +730,6 @@ p {
 
 .resource-link:hover {
   background-color: var(--primary-dark);
-}
-
-/* Call to Action Bottom */
-.cta-bottom {
-  padding: 4rem 0;
-  background: linear-gradient(to right, var(--primary-light), var(--white));
-  text-align: center;
-}
-
-.cta-content {
-  max-width: 700px;
-  margin: 0 auto;
-}
-
-.cta-content h2 {
-  color: var(--primary-dark);
-  margin-bottom: 1rem;
-}
-
-.cta-content p {
-  color: var(--text-light);
-  margin-bottom: 2rem;
-}
-
-/* Footer */
-footer {
-  background-color: var(--primary-dark);
-  color: var(--white);
-  padding: 3rem 0;
 }
 
 /* Responsive Design */
@@ -759,5 +778,14 @@ footer {
   
   .tab-content {
     padding: 1.5rem;
+  }
+  
+  .tabs-header {
+    flex-wrap: wrap;
+  }
+  
+  .tab-btn {
+    flex: 1 0 50%;
+    text-align: center;
   }
 }

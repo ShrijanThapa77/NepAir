@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import emailjs from '@emailjs/browser';
@@ -6,7 +6,6 @@ import { FaBiohazard, FaSkull, FaExclamationTriangle } from "react-icons/fa";
 import { MdDangerous, MdHealthAndSafety } from "react-icons/md";
 import { useNavigate } from 'react-router-dom';
 
-// ✅ FIXED: Correct API base URL depending on environment
 const API_BASE_URL = process.env.NODE_ENV === 'development' 
   ? 'http://localhost:5001' 
   : 'https://your-production-api-url.com';
@@ -14,7 +13,9 @@ const API_BASE_URL = process.env.NODE_ENV === 'development'
 function OldData({ setShowInfo }) {
   const [khumaltarPM25, setKhumaltarPM25] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lastAlertTime, setLastAlertTime] = useState(0);
   const navigate = useNavigate();
+  const previousDataRef = useRef([]);
 
   const getCategory = (value) => {
     if (value === '-') return '';
@@ -26,11 +27,11 @@ function OldData({ setShowInfo }) {
   };
 
   const categoryIcons = {
-    Hazardous: <FaBiohazard />,
-    Sensitive: <FaSkull />,
-    Unhealthy: <FaExclamationTriangle />,
-    Moderate: <MdDangerous />,
-    Good: <MdHealthAndSafety />,
+    Hazardous: 'biohazard',
+    Sensitive: 'skull',
+    Unhealthy: 'warning',
+    Moderate: 'danger',
+    Good: 'health',
   };
 
   const categoryColors = {
@@ -73,7 +74,7 @@ function OldData({ setShowInfo }) {
       });
       
       if (!response.ok) {
-        const errorText = await response.text(); // helpful for debugging
+        const errorText = await response.text();
         console.error('Raw error response:', errorText);
         throw new Error('Failed to send SMS');
       }
@@ -91,25 +92,56 @@ function OldData({ setShowInfo }) {
     fetchRealTimePM25(); 
   }, []);
 
-  const data = useMemo(() => [
-    { station: 'Kathmandu', value:'100', category: 'Hazardous' },//khumaltarPM25, category: getCategory(khumaltarPM25) },//
-    { station: 'Janakpur', value: 100, category: 'Hazardous' },
-    { station: 'Pokhara', value: '100', category: 'Hazardous' },
-    { station: 'Butwal', value: 100, category: 'Unhealthy' },
-    { station: 'Bharatpur', value: 100, category: 'Unhealthy' },
-    { station: 'Nepalgunj', value: 100, category: 'Sensitive' },
-    { station: 'Mahendranagar', value: 80, category: 'Moderate' },
-    { station: 'Biratnagar', value: 40, category: 'Good' },
-    { station: 'Birgunj', value: 90, category: 'Moderate' },
-    { station: 'Dharan', value: 80, category: 'Moderate' },
-  ].map(entry => ({
-    ...entry,
-    icon: categoryIcons[entry.category] || null,
-    color: categoryColors[entry.category] || '#000',
-  })), [khumaltarPM25]);
+  const getIconComponent = (iconName) => {
+    switch(iconName) {
+      case 'biohazard': return <FaBiohazard />;
+      case 'skull': return <FaSkull />;
+      case 'warning': return <FaExclamationTriangle />;
+      case 'danger': return <MdDangerous />;
+      case 'health': return <MdHealthAndSafety />;
+      default: return null;
+    }
+  };
+
+  const data = useMemo(() => {
+    const newData = [
+      { station: 'Kathmandu', value: khumaltarPM25 || '-', category: getCategory(khumaltarPM25) },
+      { station: 'Janakpur', value: 1000, category: 'Hazardous' },
+      { station: 'Pokhara', value: '10000', category: 'Hazardous' },
+      { station: 'Butwal', value: 100, category: 'Unhealthy' },
+      { station: 'Bharatpur', value: 100, category: 'Unhealthy' },
+      { station: 'Nepalgunj', value: 100, category: 'Sensitive' },
+      { station: 'Mahendranagar', value: 80, category: 'Moderate' },
+      { station: 'Biratnagar', value: 40, category: 'Good' },
+      { station: 'Birgunj', value: 90, category: 'Moderate' },
+      { station: 'Dharan', value: 80, category: 'Moderate' },
+    ].map(entry => ({
+      ...entry,
+      iconName: categoryIcons[entry.category] || null,
+      color: categoryColors[entry.category] || '#000',
+    }));
+
+    // Create simplified version for comparison (without React components)
+    const simplifiedNewData = newData.map(({ iconName, ...rest }) => rest);
+    const simplifiedPrevData = previousDataRef.current.map(({ iconName, ...rest }) => rest);
+
+    // Only return new array if values actually changed
+    if (JSON.stringify(simplifiedNewData) !== JSON.stringify(simplifiedPrevData)) {
+      previousDataRef.current = newData;
+      return newData;
+    }
+    return previousDataRef.current;
+  }, [khumaltarPM25]);
 
   useEffect(() => {
     const checkAQIAndNotify = async () => {
+      // Only send alerts once every hour (3600000 ms)
+      const now = Date.now();
+      if (now - lastAlertTime < 3600000) {
+        console.log('Alerts throttled - too soon since last notification');
+        return;
+      }
+
       const highAQIStations = data.filter(entry => 
         entry.value !== '-' && entry.value > 100
       );
@@ -124,6 +156,8 @@ function OldData({ setShowInfo }) {
         const q = query(usersRef, where('healthAlert.subscribed', '==', true));
         const querySnapshot = await getDocs(q);
 
+        const notificationPromises = [];
+        
         for (const doc of querySnapshot.docs) {
           const user = doc.data();
           const userStations = user.healthAlert?.stations || [];
@@ -142,33 +176,39 @@ function OldData({ setShowInfo }) {
 
             if (userPhone && userPhone.length === 10) {
               console.log(`Preparing to notify ${user.email} via SMS`);
-              await sendSMS(userPhone, alertMessage);
+              notificationPromises.push(sendSMS(userPhone, alertMessage));
             }
 
             if (user.email) {
-              emailjs.send(
-                'service_thkeu45',
-                'template_kk30yhg',
-                {
-                  to_email: user.email,
-                  stations: relevantStations.map(s => 
-                    `${s.station}: ${s.value}`
-                  ).join('\n')
-                },
-                'v6pNvmbYK2iyUdR2Z'
-              ).catch(emailError => 
-                console.error('Email failed:', emailError)
+              notificationPromises.push(
+                emailjs.send(
+                  'service_thkeu45',
+                  'template_kk30yhg',
+                  {
+                    to_email: user.email,
+                    stations: relevantStations.map(s => 
+                      `${s.station}: ${s.value}`
+                    ).join('\n')
+                  },
+                  'v6pNvmbYK2iyUdR2Z'
+                ).catch(emailError => 
+                  console.error('Email failed:', emailError)
+                )
               );
             }
           }
         }
+
+        await Promise.all(notificationPromises);
+        setLastAlertTime(now);
+        console.log('All notifications sent successfully');
       } catch (error) {
         console.error('Notification error:', error);
       }
     };
 
     checkAQIAndNotify();
-  }, [data]);
+  }, [data, lastAlertTime]);
 
   const handleStationClick = (stationName) => {
     navigate(`/${stationName.toLowerCase()}`);
@@ -196,7 +236,7 @@ function OldData({ setShowInfo }) {
                 style={{ color: entry.color, fontWeight: 'bold', cursor: 'pointer' }}
                 onClick={() => handleStationClick(entry.station)}
               >
-                {entry.station} {entry.icon}
+                {entry.station} {getIconComponent(entry.iconName)}
               </td>
               <td className='tdata' style={{ color: entry.color }}>
                 {entry.value}
