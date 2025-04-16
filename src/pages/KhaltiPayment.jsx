@@ -1,479 +1,453 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Khalti from './Khalti';
-import { motion } from 'framer-motion';
-import { FiCheckCircle, FiArrowLeft, FiCreditCard, FiInfo } from 'react-icons/fi';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase';
+import axios from 'axios';
+import { 
+  FiCreditCard, 
+  FiAlertCircle, 
+  FiArrowLeft, 
+  FiCalendar, 
+  FiCheckCircle, 
+  FiShield,
+  FiClock,
+  FiLock,
+  FiSmartphone,
+  FiInfo
+} from 'react-icons/fi';
+import './KhaltiPayment.css';
 
 const KhaltiPayment = () => {
   const [subscriptionData, setSubscriptionData] = useState(null);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [paymentInitiated, setPaymentInitiated] = useState(false);
+  const [paymentStep, setPaymentStep] = useState(1);
+  const [toast, setToast] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const data = sessionStorage.getItem('healthAlertSubscription');
-    if (!data) {
-      navigate('/healthalert');
-      return;
+    // Get subscription data from session storage
+    const storedData = sessionStorage.getItem('healthAlertSubscription');
+    
+    if (storedData) {
+      try {
+        const data = JSON.parse(storedData);
+        setSubscriptionData(data);
+      } catch (error) {
+        console.error("Error parsing subscription data:", error);
+        showToast('error', 'Invalid Data', 'Subscription data is invalid');
+        setTimeout(() => navigate('/healthalert'), 3000);
+      }
+    } else {
+      // No subscription data found, redirect to health alert page
+      showToast('error', 'Missing Data', 'No subscription data found');
+      setTimeout(() => navigate('/healthalert'), 3000);
     }
-    setSubscriptionData(JSON.parse(data));
+
+    // Check if we have a payment verification response in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const pidx = urlParams.get('pidx');
+    const txnId = urlParams.get('txnId');
+    const amount = urlParams.get('amount');
+    const status = urlParams.get('status');
+
+    if (pidx && status) {
+      setPaymentStep(3);
+      verifyPayment(pidx, txnId, amount, status);
+    }
   }, [navigate]);
 
-  const handlePaymentSuccess = () => {
-    setPaymentSuccess(true);
-    // Redirect back to health alert page after 3 seconds
-    setTimeout(() => {
-      navigate('/healthalert');
-    }, 3000);
+  // Show toast notification
+  const showToast = (type, title, message) => {
+    setToast({ type, title, message });
+    setTimeout(() => setToast(null), 3000);
   };
 
-  if (paymentSuccess) {
+  // Format date to display in a friendly format
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  // Format amount with commas
+  const formatAmount = (amount) => {
+    return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+
+  // Initialize Khalti payment
+  const initiatePayment = async () => {
+    if (!subscriptionData) {
+      showToast('error', 'Payment Failed', 'No subscription data available');
+      return;
+    }
+
+    setIsLoading(true);
+    setMessage('');
+
+    const data = {
+      return_url: window.location.origin + "/khalti-payment",
+      website_url: window.location.origin,
+      amount: subscriptionData.amount * 100, // Convert to paisa (Khalti's smallest unit)
+      purchase_order_id: `healthalert-${Date.now()}`,
+      purchase_order_name: `NepAir Health Alert ${subscriptionData.months}-Month Subscription`,
+      customer_info: {
+        name: auth.currentUser?.displayName || "NepAir User",
+        email: subscriptionData.email,
+        phone: subscriptionData.phoneNumber,
+      },
+      amount_breakdown: [
+        {
+          label: `${subscriptionData.months}-Month Subscription`,
+          amount: subscriptionData.amount * 100,
+        }
+      ],
+      product_details: [
+        {
+          identity: "health-alert-subscription",
+          name: "NepAir Health Alert",
+          total_price: subscriptionData.amount * 100,
+          quantity: 1,
+          unit_price: subscriptionData.amount * 100,
+        },
+      ],
+    };
+
+    const headers = {
+      Authorization: "Key e53ffb1e15a443ce8c65cfb95e0037e8", // Replace with your Khalti Key
+    };
+
+    try {
+      const response = await axios.post(
+        "https://a.khalti.com/api/v2/epayment/initiate/",
+        data,
+        { headers }
+      );
+      
+      setPaymentUrl(response.data.payment_url);
+      setPaymentInitiated(true);
+      setPaymentStep(2);
+      setIsLoading(false);
+      
+      // Auto-redirect to Khalti payment page
+      window.location.href = response.data.payment_url;
+    } catch (error) {
+      console.error("Khalti payment initiation error:", error);
+      showToast('error', 'Payment Failed', 'Failed to initiate payment');
+      setIsLoading(false);
+    }
+  };
+
+  // Verify payment and update subscription
+  const verifyPayment = async (pidx, txnId, amount, status) => {
+    setIsLoading(true);
+    
+    try {
+      // Get subscription data from session storage again (in case page was refreshed)
+      const storedData = sessionStorage.getItem('healthAlertSubscription');
+      const subscriptionData = storedData ? JSON.parse(storedData) : null;
+      
+      if (!subscriptionData || !subscriptionData.userId) {
+        throw new Error('Subscription data not found');
+      }
+      
+      if (status === 'Completed') {
+        // Calculate subscription expiry date (based on selected number of months)
+        const today = new Date();
+        const expiryDate = new Date();
+        expiryDate.setMonth(today.getMonth() + subscriptionData.months);
+        
+        // Update user document with subscription details
+        await setDoc(
+          doc(db, 'users', subscriptionData.userId),
+          {
+            healthAlert: {
+              subscribed: true,
+              subscribedAt: today,
+              stations: subscriptionData.stations,
+              diseases: subscriptionData.diseases,
+              phoneNumber: subscriptionData.phoneNumber,
+              months: subscriptionData.months,
+              paymentInfo: {
+                pidx: pidx,
+                txnId: txnId,
+                amount: amount,
+                status: status,
+                paymentDate: today,
+                expiryDate: expiryDate
+              }
+            },
+          },
+          { merge: true }
+        );
+        
+        // Set success flag in session storage
+        sessionStorage.setItem('paymentSuccess', 'true');
+        
+        // Clean up subscription data
+        sessionStorage.removeItem('healthAlertSubscription');
+        
+        // Show success message before redirecting
+        setMessage('Payment successful! Redirecting to Health Alert dashboard...');
+        setTimeout(() => navigate('/healthalert'), 3000);
+      } else {
+        // Payment failed or was cancelled
+        setMessage(`Payment ${status.toLowerCase()}. Please try again.`);
+        setPaymentStep(1);
+        setTimeout(() => setIsLoading(false), 1000);
+      }
+    } catch (error) {
+      console.error("Payment verification error:", error);
+      showToast('error', 'Verification Failed', 'Please contact support');
+      setIsLoading(false);
+    }
+  };
+
+  // Payment progress steps
+  const renderProgressSteps = () => {
+    const steps = [
+      { label: 'Review', number: 1, icon: <FiInfo /> },
+      { label: 'Payment', number: 2, icon: <FiCreditCard /> },
+      { label: 'Confirmation', number: 3, icon: <FiCheckCircle /> }
+    ];
+
     return (
-      <div className="payment-page">
-        <div className="payment-success-container">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 100 }}
-            className="payment-success-content"
-          >
-            <div className="success-icon-wrapper">
-              <FiCheckCircle size={72} className="success-icon" />
+      <div className="payment-progress">
+        {steps.map((step, index) => (
+          <React.Fragment key={step.number}>
+            <div className="progress-step">
+              <div 
+                className={`step-circle ${
+                  paymentStep === step.number ? 'active' : 
+                  paymentStep > step.number ? 'completed' : ''
+                }`}
+              >
+                {paymentStep > step.number ? <FiCheckCircle /> : step.icon}
+              </div>
+              <div 
+                className={`step-label ${
+                  paymentStep === step.number ? 'active' : 
+                  paymentStep > step.number ? 'completed' : ''
+                }`}
+              >
+                {step.label}
+              </div>
             </div>
-            <h2>Payment Successful!</h2>
-            <p className="success-message">Your health alert subscription has been activated successfully.</p>
-            <div className="redirect-message">
-              <span className="pulse-dot"></span>
-              <p>You will be redirected shortly...</p>
-            </div>
-          </motion.div>
-        </div>
+            {index < steps.length - 1 && (
+              <div className={`progress-connector ${
+                paymentStep > index + 1 ? 'completed' : ''
+              }`}></div>
+            )}
+          </React.Fragment>
+        ))}
       </div>
     );
-  }
+  };
 
   return (
-    <div className="payment-page">
-      <div className="khalti-payment-container">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="khalti-payment-content"
-        >
-          <button 
-            onClick={() => navigate('/healthalert')}
-            className="back-button"
-          >
-            <FiArrowLeft /> <span>Back to Subscription</span>
-          </button>
-
-          <h1 className="payment-title">Complete Your Payment</h1>
-          <div className="payment-steps">
-            <div className="step completed">
-              <div className="step-number">1</div>
-              <div className="step-label">Select Plan</div>
-            </div>
-            <div className="step-connector"></div>
-            <div className="step active">
-              <div className="step-number">2</div>
-              <div className="step-label">Payment</div>
-            </div>
-            <div className="step-connector"></div>
-            <div className="step">
-              <div className="step-number">3</div>
-              <div className="step-label">Confirmation</div>
-            </div>
+    <div className="khalti-payment-container">
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="loading-content">
+            <div className="spinner"></div>
+            <p>Processing your request...</p>
           </div>
-          
-          {subscriptionData && (
-            <>
-              <div className="subscription-card">
-                <h3 className="card-title">Subscription Details</h3>
-                <div className="subscription-summary">
-                  <div className="summary-item">
-                    <span className="label">Email:</span>
-                    <span className="value">{subscriptionData.email}</span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">Phone:</span>
-                    <span className="value">+977 {subscriptionData.phoneNumber}</span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">Stations:</span>
-                    <span className="value">{subscriptionData.stations.join(', ')}</span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="label">Conditions:</span>
-                    <span className="value">{subscriptionData.diseases.join(', ')}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="payment-details-card">
-                <div className="amount-section">
-                  <span className="amount-label">Total Amount</span>
-                  <span className="amount-value">NPR {subscriptionData.amount}</span>
-                </div>
-                
-                <div className="payment-info">
-                  <div className="info-icon">
-                    <FiInfo />
-                  </div>
-                  <p>Your subscription will be activated immediately after successful payment.</p>
-                </div>
-              </div>
-            </>
-          )}
-
-          <div className="payment-method-section">
-            <h3><FiCreditCard className="section-icon" /> Payment Method</h3>
-            <div className="khalti-payment-wrapper">
-              <Khalti payment={subscriptionData?.amount} onSuccess={handlePaymentSuccess} />
-            </div>
-          </div>
-        </motion.div>
-      </div>
+        </div>
+      )}
       
-      <style jsx>{`
-        .payment-page {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          padding: 2rem;
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+      {toast && (
+        <div className={`toast ${toast.type}`}>
+          <div className="toast-icon">
+            {toast.type === 'success' ? <FiCheckCircle /> : <FiAlertCircle />}
+          </div>
+          <div className="toast-content">
+            <div className="toast-title">{toast.title}</div>
+            <div>{toast.message}</div>
+          </div>
+        </div>
+      )}
+      
+      <div className="khalti-payment-card">
+        <div className="card-header">
+          <h2>
+            <FiCreditCard className="header-icon" /> 
+            <span>NepAir Health Alert</span>
+            <span className="header-subtitle">Payment Portal</span>
+          </h2>
+        </div>
         
-        .khalti-payment-container {
-          width: 100%;
-          max-width: 650px;
-        }
+        {renderProgressSteps()}
         
-        .khalti-payment-content {
-          background: white;
-          border-radius: 16px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-          padding: 2.5rem;
-          position: relative;
-        }
+        {message && (
+          <div className={`message ${message.includes('successful') ? 'success' : 'error'}`}>
+            {message.includes('successful') ? <FiCheckCircle className="message-icon" /> : <FiAlertCircle className="message-icon" />}
+            {message}
+          </div>
+        )}
         
-        .back-button {
-          position: absolute;
-          top: 1.5rem;
-          left: 1.5rem;
-          background: transparent;
-          border: none;
-          color: #6c63ff;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.9rem;
-          cursor: pointer;
-          padding: 0.5rem;
-          border-radius: 8px;
-          transition: all 0.2s ease;
-        }
+        {subscriptionData && !paymentInitiated && (
+          <div className="payment-summary">
+            <h3>Subscription Summary</h3>
+            
+            <div className="summary-details">
+              <div className="summary-row">
+                <span>Service:</span>
+                <span>Health Alert Subscription</span>
+              </div>
+              
+              <div className="summary-row highlight">
+                <span>Duration:</span>
+                <span>{subscriptionData.months} {subscriptionData.months === 1 ? 'Month' : 'Months'}</span>
+              </div>
+              
+              <div className="summary-row">
+                <span>Valid Until:</span>
+                <span className="valid-until">
+                  <FiCalendar className="inline-icon" /> 
+                  {formatDate(new Date(new Date().setMonth(new Date().getMonth() + subscriptionData.months)))}
+                </span>
+              </div>
+              
+              <div className="summary-row">
+                <span>Monitoring Stations:</span>
+                <span>{subscriptionData.stations.join(', ')}</span>
+              </div>
+              
+              <div className="summary-row">
+                <span>Health Conditions:</span>
+                <span>{subscriptionData.diseases.join(', ')}</span>
+              </div>
+              
+              <div className="summary-row">
+                <span>Contact Number:</span>
+                <span><FiSmartphone className="inline-icon" /> +977 {subscriptionData.phoneNumber}</span>
+              </div>
+              
+              <div className="summary-row total">
+                <span>Total Amount:</span>
+                <span>NPR {formatAmount(subscriptionData.amount)}</span>
+              </div>
+            </div>
+            
+            <div className="subscription-notice">
+              <FiInfo className="notice-icon" />
+              <p>
+                Your subscription will be active immediately after successful payment and will 
+                remain active until {formatDate(new Date(new Date().setMonth(new Date().getMonth() + subscriptionData.months)))}.
+              </p>
+            </div>
+            
+            <div className="payment-info">
+              <div className="payment-security">
+                <FiShield className="info-icon security" /> 
+                <span>Secure Payment via Khalti Digital Wallet</span>
+              </div>
+              <div className="payment-timing">
+                <FiClock className="info-icon" /> 
+                <span>Processing time: Less than 1 minute</span>
+              </div>
+            </div>
+            
+            <div className="payment-actions">
+              <button 
+                className="back-button"
+                onClick={() => navigate('/healthalert')}
+                aria-label="Go back to Health Alert page"
+              >
+                <FiArrowLeft className="button-icon" /> Back
+              </button>
+              
+              <button 
+                className="khalti-button"
+                onClick={initiatePayment}
+                disabled={isLoading}
+                aria-label="Pay with Khalti"
+              >
+                <FiLock className="button-icon" /> Pay NPR {formatAmount(subscriptionData?.amount || 0)}
+              </button>
+            </div>
+          </div>
+        )}
         
-        .back-button:hover {
-          background: rgba(108, 99, 255, 0.1);
-        }
+        {paymentInitiated && paymentUrl && (
+          <div className="payment-redirect">
+            <div className="redirect-message">
+              <FiAlertCircle className="redirect-icon pulse" />
+              <p>Redirecting to Khalti payment page...</p>
+              <p className="redirect-subtitle">If you're not redirected automatically, please click the button below:</p>
+            </div>
+            
+            <a 
+              href={paymentUrl} 
+              className="khalti-link-button"
+              target="_blank" 
+              rel="noopener noreferrer"
+              aria-label="Continue to Khalti Payment"
+            >
+              <FiCreditCard className="button-icon" /> Continue to Khalti Payment
+            </a>
+            
+            <button 
+              className="cancel-button"
+              onClick={() => {
+                setPaymentInitiated(false);
+                setPaymentUrl(null);
+                setPaymentStep(1);
+              }}
+              aria-label="Cancel Payment"
+            >
+              Cancel Payment
+            </button>
+          </div>
+        )}
         
-        .payment-title {
-          text-align: center;
-          color: #2d3748;
-          font-size: 1.75rem;
-          margin-bottom: 2rem;
-          font-weight: 600;
-          margin-top: 1rem;
-        }
+        {paymentStep === 3 && (
+          <div className="payment-success">
+            <div className="success-icon-wrapper">
+              <FiCheckCircle className="success-icon" />
+            </div>
+            <h3>Payment Successful!</h3>
+            <p>Your Health Alert subscription is now active.</p>
+            <p className="transaction-id">Transaction ID: {new URLSearchParams(window.location.search).get('txnId') || 'N/A'}</p>
+            
+            <div className="success-details">
+              <div className="success-detail-row">
+                <span>Status:</span>
+                <span className="success-status">Active</span>
+              </div>
+              <div className="success-detail-row">
+                <span>Amount Paid:</span>
+                <span>NPR {formatAmount(subscriptionData?.amount || 0)}</span>
+              </div>
+              <div className="success-detail-row">
+                <span>Payment Date:</span>
+                <span>{formatDate(new Date())}</span>
+              </div>
+            </div>
+            
+            <button 
+              className="dashboard-button"
+              onClick={() => navigate('/healthalert')}
+              aria-label="Go to Health Alert Dashboard"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        )}
         
-        .payment-steps {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          margin-bottom: 2.5rem;
-        }
-        
-        .step {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          position: relative;
-        }
-        
-        .step-number {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          background: #e2e8f0;
-          color: #718096;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          font-weight: 600;
-          margin-bottom: 0.5rem;
-        }
-        
-        .step.active .step-number {
-          background: #6c63ff;
-          color: white;
-        }
-        
-        .step.completed .step-number {
-          background: #48bb78;
-          color: white;
-        }
-        
-        .step-label {
-          font-size: 0.85rem;
-          color: #718096;
-        }
-        
-        .step.active .step-label {
-          color: #6c63ff;
-          font-weight: 600;
-        }
-        
-        .step-connector {
-          width: 60px;
-          height: 2px;
-          background: #e2e8f0;
-          margin: 0 0.5rem;
-          margin-bottom: 1.5rem;
-        }
-        
-        .subscription-card {
-          background: #f7fafc;
-          border-radius: 12px;
-          padding: 1.5rem;
-          margin-bottom: 1.5rem;
-          border: 1px solid #e2e8f0;
-        }
-        
-        .card-title {
-          color: #4a5568;
-          margin-top: 0;
-          margin-bottom: 1rem;
-          font-size: 1.1rem;
-          font-weight: 600;
-        }
-        
-        .subscription-summary {
-          display: grid;
-          gap: 0.85rem;
-        }
-        
-        .summary-item {
-          display: flex;
-          justify-content: space-between;
-          font-size: 0.95rem;
-        }
-        
-        .label {
-          color: #718096;
-          font-weight: 500;
-        }
-        
-        .value {
-          color: #2d3748;
-          font-weight: 500;
-        }
-        
-        .payment-details-card {
-          background: #fff;
-          border-radius: 12px;
-          padding: 1.5rem;
-          margin-bottom: 2rem;
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-        
-        .amount-section {
-          display: flex;
-          justify-content: space-between;
-          padding: 1rem;
-          background: #6c63ff10;
-          border-radius: 8px;
-          margin-bottom: 1rem;
-        }
-        
-        .amount-label {
-          color: #4a5568;
-          font-weight: 600;
-        }
-        
-        .amount-value {
-          color: #6c63ff;
-          font-weight: 700;
-          font-size: 1.2rem;
-        }
-        
-        .payment-info {
-          display: flex;
-          gap: 0.75rem;
-          background: #ebf8ff;
-          padding: 1rem;
-          border-radius: 8px;
-          color: #2b6cb0;
-          font-size: 0.9rem;
-        }
-        
-        .info-icon {
-          margin-top: 2px;
-        }
-        
-        .payment-method-section {
-          background: white;
-          border-radius: 12px;
-          padding: 1.5rem;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-          border: 1px solid #e2e8f0;
-        }
-        
-        .payment-method-section h3 {
-          color: #2d3748;
-          font-size: 1.1rem;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          margin-top: 0;
-          margin-bottom: 1.5rem;
-        }
-        
-        .section-icon {
-          color: #6c63ff;
-        }
-        
-        .khalti-payment-wrapper {
-          display: flex;
-          justify-content: center;
-        }
-        
-        /* Success page styles */
-        .payment-success-container {
-          width: 100%;
-          max-width: 500px;
-        }
-        
-        .payment-success-content {
-          background: white;
-          border-radius: 16px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-          padding: 3rem 2rem;
-          text-align: center;
-        }
-        
-        .success-icon-wrapper {
-          width: 110px;
-          height: 110px;
-          background: #f0fdf4;
-          border-radius: 50%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          margin: 0 auto 1.5rem;
-        }
-        
-        .success-icon {
-          color: #10b981;
-        }
-        
-        .payment-success-content h2 {
-          color: #10b981;
-          font-size: 1.75rem;
-          margin-bottom: 1rem;
-        }
-        
-        .success-message {
-          color: #4b5563;
-          font-size: 1.1rem;
-          margin-bottom: 2rem;
-        }
-        
-        .redirect-message {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #6b7280;
-          font-size: 0.95rem;
-          gap: 0.75rem;
-        }
-        
-        .pulse-dot {
-          width: 10px;
-          height: 10px;
-          background-color: #10b981;
-          border-radius: 50%;
-          display: inline-block;
-          animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-          0% {
-            transform: scale(0.8);
-            opacity: 0.5;
-          }
-          50% {
-            transform: scale(1.2);
-            opacity: 1;
-          }
-          100% {
-            transform: scale(0.8);
-            opacity: 0.5;
-          }
-        }
-        
-        /* Responsive styles */
-        @media (max-width: 768px) {
-          .payment-page {
-            padding: 1rem;
-          }
-          
-          .khalti-payment-content {
-            padding: 2rem 1.5rem;
-          }
-          
-          .back-button {
-            top: 1rem;
-            left: 1rem;
-          }
-          
-          .payment-title {
-            margin-top: 2rem;
-            font-size: 1.5rem;
-          }
-          
-          .step-connector {
-            width: 40px;
-          }
-        }
-        
-        @media (max-width: 480px) {
-          .summary-item {
-            flex-direction: column;
-            gap: 0.25rem;
-          }
-          
-          .payment-steps {
-            margin-bottom: 2rem;
-          }
-          
-          .step-number {
-            width: 28px;
-            height: 28px;
-            font-size: 0.85rem;
-          }
-          
-          .step-label {
-            font-size: 0.75rem;
-          }
-          
-          .step-connector {
-            width: 30px;
-          }
-        }
-      `}</style>
+        <div className="card-footer">
+          <div className="secure-badge">
+            <FiLock className="footer-icon" /> Secured by Khalti
+          </div>
+          <div className="copyright">
+            © {new Date().getFullYear()} NepAir Health Alert
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
