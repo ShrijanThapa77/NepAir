@@ -107,9 +107,9 @@ function OldData({ setShowInfo }) {
     const newData = [
       { station: 'Kathmandu', value: khumaltarPM25 || '-', category: getCategory(khumaltarPM25) },
       { station: 'Janakpur', value: 1000, category: 'Hazardous' },
-      { station: 'Pokhara', value: '10000', category: 'Hazardous' },
+      { station: 'Pokhara', value: '100', category: 'Hazardous' },
       { station: 'Butwal', value: 100, category: 'Unhealthy' },
-      { station: 'Bharatpur', value: 10000, category: 'Unhealthy' },
+      { station: 'Bharatpur', value: 100, category: 'Unhealthy' },
       { station: 'Nepalgunj', value: 100, category: 'Sensitive' },
       { station: 'Mahendranagar', value: 80, category: 'Moderate' },
       { station: 'Biratnagar', value: 40, category: 'Good' },
