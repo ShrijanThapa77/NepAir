@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiAlertCircle, FiCheckCircle, FiEdit, FiTrash2, FiPhone, FiMail,
   FiMapPin, FiHeart, FiCreditCard, FiCalendar, FiInfo, FiRefreshCw,
-  FiClock, FiShield, FiDollarSign, FiCheck
+  FiClock, FiShield, FiDollarSign, FiCheck, FiArrowUpRight
 } from 'react-icons/fi';
+import { TbRefresh } from "react-icons/tb";
 import './HealthAlert.css';
+import khalti from "../assets/khalti.png"
+import Select from 'react-select';
 
 function HealthAlert() {
   const [user, setUser] = useState(null);
@@ -28,7 +31,6 @@ function HealthAlert() {
   const [daysRemaining, setDaysRemaining] = useState(0);
   const [subscriptionStartDate, setSubscriptionStartDate] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
-  const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
 
   const stationOptions = [
@@ -55,15 +57,14 @@ function HealthAlert() {
       months: 1,
       discount: 0,
     },
-    {
-      id: 'quarterly',
-      name: 'Quarterly',
-      price: 2100,
-      currency: 'NPR',
-      months: 3,
-      discount: 12.5,
-      popular: true
-    },
+    // {
+    //   id: 'quarterly',
+    //   name: 'Quarterly',
+    //   price: 2100,
+    //   currency: 'NPR',
+    //   months: 3,
+    //   discount: 12.5,
+    // },
     {
       id: 'biannual',
       name: '6 Months',
@@ -71,6 +72,7 @@ function HealthAlert() {
       currency: 'NPR',
       months: 6,
       discount: 18.75,
+      popular: true
     },
     {
       id: 'annual',
@@ -89,6 +91,12 @@ function HealthAlert() {
 
   // Format number with thousands separator
   const formatNumber = (num) => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  };
+
+  // Format number to display in health alert dashboard
+  const formatNum = (num) => {
+    num=num/100;
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   };
 
@@ -117,13 +125,10 @@ function HealthAlert() {
             setPhoneNumber(healthAlertData.phoneNumber || '');
             setSubscriptionDetails(healthAlertData);
             
-            // Set the selected plan based on subscription months
-            const plan = plans.find(p => p.months === healthAlertData.months);
-            if (plan) setSelectedPlan(plan.id);
-            
             // Format the subscription end date and calculate days remaining
             if (healthAlertData.paymentInfo?.expiryDate) {
               const expiryDate = new Date(healthAlertData.paymentInfo.expiryDate.seconds * 1000);
+              
               setSubscriptionEndDate(formatDate(expiryDate));
               
               // Calculate days remaining in subscription
@@ -276,64 +281,35 @@ function HealthAlert() {
     navigate('/khalti-payment');
   };
 
-  const handleEditSubscription = () => {
-    setIsEditing(true);
-    setCurrentStep(2);
-  };
-
-  const handleSaveChanges = async () => {
-    if (!validateForm()) return;
-
-    setIsLoading(true);
-    try {
-      const diseasesToSave = selectedDiseases
-        .filter(d => d !== 'Other')
-        .concat(selectedDiseases.includes('Other') ? [otherDisease] : []);
-
-      await updateDoc(doc(db, 'users', user.uid), {
-        'healthAlert.stations': stations,
-        'healthAlert.diseases': diseasesToSave,
-        'healthAlert.phoneNumber': phoneNumber,
-        'healthAlert.lastUpdated': new Date()
-      });
-
-      setMessage('Your preferences have been updated successfully!');
-      setIsEditing(false);
-      setCurrentStep(1);
-      
-      // Update local subscription details
-      setSubscriptionDetails(prev => ({
-        ...prev,
-        stations: stations,
-        diseases: diseasesToSave,
-        phoneNumber: phoneNumber
-      }));
-    } catch (error) {
-      console.error('Error updating subscription:', error);
-      setMessage('Failed to update preferences. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleRenewSubscription = () => {
     setIsSubscribed(false);
     setPaymentSuccess(false);
-    setIsEditing(false);
+    // Pre-fill the form with existing subscription details
+    if (subscriptionDetails) {
+      // Set plan based on subscription months
+      const { months } = subscriptionDetails;
+      const matchingPlan = plans.find(plan => plan.months === months);
+      if (matchingPlan) {
+        setSelectedPlan(matchingPlan.id);
+      }
+    }
     setCurrentStep(1);
   };
 
   const handleUnsubscribe = async () => {
-    if (window.confirm('Are you sure you want to unsubscribe from health alerts? You will no longer receive notifications about air quality conditions that may affect your health.')) {
+    if (window.confirm('Are you sure you want to unsubscribe from health alerts?')) {
       setIsLoading(true);
       try {
-        await updateDoc(
+        await setDoc(
           doc(db, 'users', user.uid),
           {
-            'healthAlert.subscribed': false,
-            'healthAlert.unsubscribedAt': new Date(),
-            'healthAlert.previousSubscription': subscriptionDetails
-          }
+            healthAlert: { 
+              subscribed: false,
+              unsubscribedAt: new Date(),
+              previousSubscription: subscriptionDetails
+            },
+          },
+          { merge: true }
         );
         setIsSubscribed(false);
         setStations([]);
@@ -342,7 +318,6 @@ function HealthAlert() {
         setMessage('You have been unsubscribed from health alerts.');
         setPaymentSuccess(false);
         setCurrentStep(1);
-        setIsEditing(false);
       } catch (error) {
         console.error('Unsubscribe error:', error);
         setMessage('Failed to unsubscribe. Please try again.');
@@ -389,6 +364,11 @@ function HealthAlert() {
                       <span className="discount-badge">{plan.discount}% OFF</span>
                     </div>
                   )}
+                  {plan.discount===0 &&(
+                    <div className='empty'>
+                      <p>.</p>
+                    </div>
+                  )}
                   <button 
                     className="choose-plan-btn"
                     onClick={() => {
@@ -396,10 +376,15 @@ function HealthAlert() {
                       nextStep();
                     }}
                   >
-                    Choose Plan
+                    Get Started
+                    <FiArrowUpRight className='arroww'/>
                   </button>
                 </motion.div>
               ))}
+            </div>
+            <div className='powr'>
+            <h1>Powered by Khalti</h1>
+            <img src={khalti} alt="" />
             </div>
           </div>
         );
@@ -407,39 +392,50 @@ function HealthAlert() {
       case 2:
         return (
           <div className="subscription-details-step">
-            <h2>{isEditing ? 'Edit Monitoring Preferences' : 'Monitoring Preferences'}</h2>
+            <h2>Monitoring Preferences</h2>
             
             <div className="step-content">
               <div className="selected-plan-summary">
-                <h3>Selected Plan</h3>
                 <div className="plan-summary-details">
                   <div className="plan-name">
+                <h3>Selected Plan</h3>
+                <h2>
                     {plans.find(p => p.id === selectedPlan)?.name} Plan
+                </h2>
                   </div>
                   <div className="plan-price">
-                    {plans.find(p => p.id === selectedPlan)?.currency} {formatNumber(getSubscriptionAmount())}
+                  <h3>Price</h3>
+                  <h2>
+                    NPR {formatNumber(getSubscriptionAmount())}
+                  </h2>
                   </div>
-                  <div className="plan-duration">
+                  {/* <div className="plan-duration">
                     {plans.find(p => p.id === selectedPlan)?.months + 
                     (plans.find(p => p.id === selectedPlan)?.months === 1 ? ' Month' : ' Months')}
+                  </div> */}
+                  <div className="subscription-period">
+                  <h3>Subscription Duration</h3>
+                  <h2>
+                    {subscriptionStartDate} - {subscriptionEndDate}
+                  </h2>
                   </div>
-                  {!isEditing && (
-                    <div className="subscription-period">
-                      {subscriptionStartDate} - {subscriptionEndDate}
-                    </div>
-                  )}
-                  <button className="change-plan-btn" onClick={() => setCurrentStep(1)}>
+                </div>
+                <div className='chngplandiv'>
+                <button className="change-plan-btn" onClick={() => setCurrentStep(1)}>
+                    <span>
                     Change Plan
+                    <TbRefresh className='reff'/>
+                      </span>
                   </button>
                 </div>
               </div>
               
               <div className="form-group">
-                <label>
+                <p className='lebb'>
                   <FiMapPin className="label-icon" /> 
                   Select Monitoring Stations:
-                </label>
-                <select
+                </p>
+                {/* <select
                   multiple
                   value={stations}
                   onChange={(e) => {
@@ -454,17 +450,29 @@ function HealthAlert() {
                       {station}
                     </option>
                   ))}
-                </select>
+                </select> */}
+                <div className='dropdownmenu'>
+                <Select
+                isMulti
+                options={stationOptions.map(station => ({ value: station, label: station }))}
+                value={stations.map(station => ({ value: station, label: station }))}
+                onChange={(selectedOptions) => {
+                  setStations(selectedOptions.map(option => option.value));
+                }}
+                className="react-select-container"
+                classNamePrefix="react-select"
+                required/>
+                </div>
                 <small className="select-hint">
                   Hold Ctrl (Windows) or Command (Mac) to select multiple stations
                 </small>
               </div>
               
               <div className="form-group">
-                <label>
+                <p className='lebb'>
                   <FiHeart className="label-icon" /> 
                   Select Respiratory Conditions:
-                </label>
+                </p>
                 <div className="disease-grid">
                   {diseases.map(({name, icon}) => (
                     <motion.label 
@@ -500,15 +508,9 @@ function HealthAlert() {
                 <button className="nav-button back" onClick={prevStep}>
                   Back
                 </button>
-                {isEditing ? (
-                  <button className="nav-button save" onClick={handleSaveChanges}>
-                    Save Changes
-                  </button>
-                ) : (
-                  <button className="nav-button next" onClick={nextStep}>
-                    Next
-                  </button>
-                )}
+                <button className="nav-button next" onClick={nextStep}>
+                  Next
+                </button>
               </div>
             </div>
           </div>
@@ -562,21 +564,23 @@ function HealthAlert() {
                   </small>
                 </div>
                 
-                <div className="form-group checkbox-group">
+                <div className="checkbox-group">
                   <motion.label 
                     className="checkbox-label"
                     whileHover={{ scale: 1.02 }}
                   >
+                    <div className='radiodiv'>
                     <input
                       type="checkbox"
                       checked={agreed}
                       onChange={(e) => setAgreed(e.target.checked)}
                       required
-                    />
-                    <span>
-                      I agree to receive SMS and email alerts about air quality conditions 
-                      that may affect my health conditions
-                    </span>
+                      />
+                      <p>
+                        I agree to receive SMS and email alerts about air quality conditions 
+                        that may affect my health conditions
+                      </p>
+                    </div>
                   </motion.label>
                 </div>
                 
@@ -608,7 +612,7 @@ function HealthAlert() {
                     disabled={isLoading}
                   >
                     <FiCreditCard className="button-icon" />
-                    Pay {plans.find(p => p.id === selectedPlan)?.currency} {formatNumber(getSubscriptionAmount())} with Khalti
+                    Pay NPR {formatNumber(getSubscriptionAmount())} with Khalti
                   </button>
                 </div>
               </div>
@@ -713,20 +717,20 @@ function HealthAlert() {
                 <div className="detail-item">
                   <FiMail className="detail-icon" />
                   <span>{user.email}</span>
-                  <div className="detail-label">EMAIL ALERTS</div>
+                  <div className="detail-label">Email Alerts</div>
                 </div>
                 {phoneNumber && (
                   <div className="detail-item">
                     <FiPhone className="detail-icon" />
                     <span>+977 {phoneNumber}</span>
-                    <div className="detail-label">SMS ALERTS</div>
+                    <div className="detail-label">SMS Alerts</div>
                   </div>
                 )}
                 {stations.length > 0 && (
                   <div className="detail-item">
                     <FiMapPin className="detail-icon" />
                     <span>{stations.join(', ')}</span>
-                    <div className="detail-label">MONITORED LOCATIONS</div>
+                    <div className="detail-label">Monitored Locations</div>
                   </div>
                 )}
                 {selectedDiseases.length > 0 && (
@@ -738,21 +742,21 @@ function HealthAlert() {
                         .filter(d => d !== '')
                         .join(', ')}
                     </span>
-                    <div className="detail-label">HEALTH CONDITIONS</div>
+                    <div className="detail-label">Health Conditions</div>
                   </div>
                 )}
                 {subscriptionDetails?.months && (
                   <div className="detail-item">
                     <FiCalendar className="detail-icon" />
                     <span>{subscriptionDetails.months} {subscriptionDetails.months === 1 ? 'Month' : 'Months'}</span>
-                    <div className="detail-label">SUBSCRIPTION DURATION</div>
+                    <div className="detail-label">Subscription Duration</div>
                   </div>
                 )}
                 {subscriptionDetails?.paymentInfo?.amount && (
                   <div className="detail-item">
                     <FiDollarSign className="detail-icon" />
-                    <span>NPR {formatNumber(subscriptionDetails.paymentInfo.amount)}</span>
-                    <div className="detail-label">AMOUNT PAID</div>
+                    <span>NPR {formatNum(subscriptionDetails.paymentInfo.amount)}</span>
+                    <div className="detail-label">Amount Paid</div>
                   </div>
                 )}
               </div>
@@ -767,15 +771,6 @@ function HealthAlert() {
               </div>
               
               <div className="subscription-actions">
-                <motion.button 
-                  className="action-button edit"
-                  onClick={handleEditSubscription}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  <FiEdit className="button-icon" />
-                  Edit Preferences
-                </motion.button>
                 <motion.button 
                   className="action-button renew"
                   onClick={handleRenewSubscription}
@@ -808,16 +803,15 @@ function HealthAlert() {
                   <div className="step-number">1</div>
                   <div className="step-label">Select Plan</div>
                 </div>
+                <div className="progress-line"></div>
                 <div className={`progress-step ${currentStep >= 2 ? 'active' : ''}`}>
                   <div className="step-number">2</div>
-                  <div className="step-label">Preferences</div>
+                  <div className="step-label">Monitoring Preferences</div>
                 </div>
+                <div className="progress-line"></div>
                 <div className={`progress-step ${currentStep >= 3 ? 'active' : ''}`}>
                   <div className="step-number">3</div>
                   <div className="step-label">Contact Details</div>
-                </div>
-                <div className="progress-bar">
-                  <div className="progress" style={{ width: `${(currentStep - 1) * 50}%` }}></div>
                 </div>
               </div>
               
@@ -828,22 +822,10 @@ function HealthAlert() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.3 }}
-                  className="wizard-content"
                 >
                   {renderStepContent()}
                 </motion.div>
               </AnimatePresence>
-              
-              {message && (
-                <motion.div 
-                  className="alert-message"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <FiAlertCircle className="alert-icon" />
-                  {message}
-                </motion.div>
-              )}
             </div>
           )}
         </motion.div>

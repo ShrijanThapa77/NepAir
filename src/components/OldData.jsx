@@ -6,14 +6,15 @@ import { FaBiohazard, FaSkull, FaExclamationTriangle } from "react-icons/fa";
 import { MdDangerous, MdHealthAndSafety } from "react-icons/md";
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE_URL = process.env.NODE_ENV === 'development' 
-  ? 'http://localhost:5001' 
+const API_BASE_URL = process.env.NODE_ENV === 'development'
+  ? 'http://localhost:5001'
   : 'https://your-production-api-url.com';
 
 function OldData({ setShowInfo }) {
   const [khumaltarPM25, setKhumaltarPM25] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastAlertTime, setLastAlertTime] = useState(0);
+  const hasNotified = useRef(false); // Used instead of state
   const navigate = useNavigate();
   const previousDataRef = useRef([]);
 
@@ -61,24 +62,18 @@ function OldData({ setShowInfo }) {
   const sendSMS = async (toPhone, message) => {
     try {
       console.log('Attempting to send SMS to:', toPhone);
-      
       const response = await fetch(`${API_BASE_URL}/send-sms`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          toPhone: `+977${toPhone}`,
-          message 
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toPhone: `+977${toPhone}`, message }),
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Raw error response:', errorText);
         throw new Error('Failed to send SMS');
       }
-      
+
       const result = await response.json();
       console.log('SMS sent successfully:', result.sid);
       return true;
@@ -93,7 +88,7 @@ function OldData({ setShowInfo }) {
   }, []);
 
   const getIconComponent = (iconName) => {
-    switch(iconName) {
+    switch (iconName) {
       case 'biohazard': return <FaBiohazard />;
       case 'skull': return <FaSkull />;
       case 'warning': return <FaExclamationTriangle />;
@@ -121,33 +116,33 @@ function OldData({ setShowInfo }) {
       color: categoryColors[entry.category] || '#000',
     }));
 
-    // Create simplified version for comparison (without React components)
+    // Comparison logic
     const simplifiedNewData = newData.map(({ iconName, ...rest }) => rest);
     const simplifiedPrevData = previousDataRef.current.map(({ iconName, ...rest }) => rest);
 
-    // Only return new array if values actually changed
     if (JSON.stringify(simplifiedNewData) !== JSON.stringify(simplifiedPrevData)) {
       previousDataRef.current = newData;
-      return newData;
     }
+
     return previousDataRef.current;
   }, [khumaltarPM25]);
 
   useEffect(() => {
     const checkAQIAndNotify = async () => {
-      // Only send alerts once every hour (3600000 ms)
       const now = Date.now();
-      if (now - lastAlertTime < 3600000) {
-        console.log('Alerts throttled - too soon since last notification');
+
+      if (now - lastAlertTime < 3600000 || hasNotified.current) {
+        console.log('Alerts throttled - too soon or already sent');
         return;
       }
 
-      const highAQIStations = data.filter(entry => 
+      const highAQIStations = data.filter(entry =>
         entry.value !== '-' && entry.value > 100
       );
-      
+
       if (highAQIStations.length === 0) {
-        console.log('No high AQI stations detected.');
+        console.log('No high AQI stations');
+        hasNotified.current = false;
         return;
       }
 
@@ -157,19 +152,19 @@ function OldData({ setShowInfo }) {
         const querySnapshot = await getDocs(q);
 
         const notificationPromises = [];
-        
+
         for (const doc of querySnapshot.docs) {
           const user = doc.data();
           const userStations = user.healthAlert?.stations || [];
           const userPhone = user.healthAlert?.phoneNumber;
-          
-          const relevantStations = highAQIStations.filter(station => 
+
+          const relevantStations = highAQIStations.filter(station =>
             userStations.includes(station.station)
           );
 
           if (relevantStations.length > 0) {
             const alertMessage = `⚠️ Air Quality Alert!\n${
-              relevantStations.map(s => 
+              relevantStations.map(s =>
                 `${s.station}: ${s.value} (${s.category})`
               ).join('\n')
             }\nTake precautions!`;
@@ -186,12 +181,12 @@ function OldData({ setShowInfo }) {
                   'template_kk30yhg',
                   {
                     to_email: user.email,
-                    stations: relevantStations.map(s => 
+                    stations: relevantStations.map(s =>
                       `${s.station}: ${s.value}`
-                    ).join('\n')
+                    ).join('\n'),
                   },
                   'v6pNvmbYK2iyUdR2Z'
-                ).catch(emailError => 
+                ).catch(emailError =>
                   console.error('Email failed:', emailError)
                 )
               );
@@ -200,6 +195,7 @@ function OldData({ setShowInfo }) {
         }
 
         await Promise.all(notificationPromises);
+        hasNotified.current = true;
         setLastAlertTime(now);
         console.log('All notifications sent successfully');
       } catch (error) {
@@ -207,8 +203,10 @@ function OldData({ setShowInfo }) {
       }
     };
 
-    checkAQIAndNotify();
-  }, [data, lastAlertTime]);
+    if (!loading) {
+      checkAQIAndNotify();
+    }
+  }, [data, loading]);
 
   const handleStationClick = (stationName) => {
     navigate(`/${stationName.toLowerCase()}`);
@@ -230,8 +228,8 @@ function OldData({ setShowInfo }) {
         <tbody>
           {data.map((entry, index) => (
             <tr key={index}>
-              <td 
-                id='category' 
+              <td
+                id='category'
                 className={entry.category}
                 style={{ color: entry.color, fontWeight: 'bold', cursor: 'pointer' }}
                 onClick={() => handleStationClick(entry.station)}
