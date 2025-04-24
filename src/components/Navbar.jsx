@@ -5,6 +5,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { FaUserCircle, FaSearch, FaBars, FaTimes } from "react-icons/fa";
 import logo from "../assets/logo.png"; // Using your logo from assets
+import { useLocation } from "react-router-dom";
 import "./navbar.css";
 
 function Navbar() {
@@ -127,6 +128,15 @@ function Navbar() {
     navigate(path);
   };
 
+
+// Then inside your Navbar component:
+const location = useLocation();
+
+// Helper function to check if path matches
+const isActive = (path) => {
+  return location.pathname === path;
+};
+
   return (
     <header className="navbar-container" ref={navRef}>
       <nav className="navbar">
@@ -139,7 +149,7 @@ function Navbar() {
           <div className="search-container">
             <div className="search-section" ref={searchRef}>
               <div className={`search-bar ${isSearchFocused ? 'focused' : ''}`}>
-                <FaSearch className="search-icon" />
+                {/* <FaSearch className="search-icon" /> */}
                 <input
                   type="text"
                   placeholder="Search location or city"
@@ -181,19 +191,21 @@ function Navbar() {
         <div className="navbar-right">
           <div className="desktop-nav">
             <div className="nav-links">
-              <button className="nav-link" onClick={() => handleNavLinkClick("/")}>
+              <button className={`nav-link ${isActive("/") ? 'active' : ''}`} onClick={() => handleNavLinkClick("/")}>
                 Home
               </button>
-              <button className="nav-link" onClick={handleDashboardClick}>
+              <button   className={`nav-link ${
+              isActive("/admindash") || isActive("/userdashboard") ? 'active' : ''
+              }`}  onClick={handleDashboardClick}>
                 Dashboard
               </button>
-              <button className="nav-link" onClick={() => handleNavLinkClick("/education")}>
+              <button className={`nav-link ${isActive("/education") ? 'active' : ''}`} onClick={() => handleNavLinkClick("/education")}>
                 Education
               </button>
-              <button className="nav-link" onClick={() => handleNavLinkClick("/healthalert")}>
+              <button className={`nav-link ${isActive("/healthalert") ? 'active' : ''}`} onClick={() => handleNavLinkClick("/healthalert")}>
                 HealthAlert
               </button>
-              <button className="nav-link" onClick={() => handleNavLinkClick("/report")}>
+              <button className={`nav-link ${isActive("/report") ? 'active' : ''}`} onClick={() => handleNavLinkClick("/report")}>
                 Report
               </button>
             </div>
@@ -269,19 +281,23 @@ function Navbar() {
             </div>
             
             <div className="mobile-nav-links">
-              <button className="nav-link" onClick={() => handleNavLinkClick("/")}>
+              <button className={`nav-link ${isActive("/") ? 'active' : ''}`}  onClick={() => handleNavLinkClick("/")}>
                 Home
               </button>
-              <button className="nav-link" onClick={handleDashboardClick}>
+              <button
+                className={`nav-link ${
+                  isActive("/admindash") || isActive("/userdashboard") ? 'active' : ''
+                }`}
+               onClick={handleDashboardClick}>
                 Dashboard
               </button>
-              <button className="nav-link" onClick={() => handleNavLinkClick("/education")}>
+              <button className={`nav-link ${isActive("/education") ? 'active' : ''}`}  onClick={() => handleNavLinkClick("/education")}>
                 Education
               </button>
-              <button className="nav-link" onClick={() => handleNavLinkClick("/healthalert")}>
+              <button className={`nav-link ${isActive("/healthalert") ? 'active' : ''}`}  onClick={() => handleNavLinkClick("/healthalert")}>
                 HealthAlert
               </button>
-              <button className="nav-link" onClick={() => handleNavLinkClick("/report")}>
+              <button className={`nav-link ${isActive("/report") ? 'active' : ''}`}  onClick={() => handleNavLinkClick("/report")}>
                 Report
               </button>
             </div>

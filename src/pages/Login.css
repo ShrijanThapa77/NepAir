@@ -62,7 +62,7 @@
   right: 0;
   width: 30%;
   height: 100%;
-  background: linear-gradient(to right, rgba(26, 58, 143, 0), rgba(255, 255, 255, 0.1));
+  background: linear-gradient(to right, rgba(241, 242, 245, 0), rgba(255, 255, 255, 0.1));
 }
 
 .login-info {
@@ -105,6 +105,7 @@
   font-weight: 600;
   margin-bottom: 1rem;
   letter-spacing: -0.5px;
+  color: white;
 }
 
 .brand-message p {
@@ -112,6 +113,7 @@
   line-height: 1.6;
   margin-bottom: 2rem;
   opacity: 0.9;
+  color: white;
 }
 
 .features {
@@ -158,6 +160,7 @@
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 0.3rem;
+  color: white;
 }
 
 .feature-text p {
@@ -165,6 +168,7 @@
   opacity: 0.8;
   line-height: 1.5;
   margin: 0;
+  color: white;
 }
 
 .login-right {
