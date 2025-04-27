@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiAlertCircle, FiCheckCircle, FiEdit, FiTrash2, FiPhone, FiMail,
   FiMapPin, FiHeart, FiCreditCard, FiCalendar, FiInfo, FiRefreshCw,
-  FiClock, FiShield, FiDollarSign, FiCheck, FiArrowUpRight
+  FiClock, FiShield, FiDollarSign, FiCheck, FiArrowUpRight, FiAlertTriangle,
+  FiX, FiMessageSquare, FiRepeat
 } from 'react-icons/fi';
 import { TbRefresh } from "react-icons/tb";
 import './HealthAlert.css';
-import khalti from "../assets/khalti.png"
+import khalti from "../assets/khalti.png";
 import Select from 'react-select';
 
 function HealthAlert() {
@@ -31,6 +32,15 @@ function HealthAlert() {
   const [daysRemaining, setDaysRemaining] = useState(0);
   const [subscriptionStartDate, setSubscriptionStartDate] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
+  const [subscriptionExpired, setSubscriptionExpired] = useState(false);
+  const [showExpiryModal, setShowExpiryModal] = useState(false);
+  const [isRenewing, setIsRenewing] = useState(false);
+  const [showUnsubscribeModal, setShowUnsubscribeModal] = useState(false);
+  const [unsubscribeFeedback, setUnsubscribeFeedback] = useState('');
+  const [unsubscribeReason, setUnsubscribeReason] = useState('');
+  const [manualTestMode, setManualTestMode] = useState(false);
+  const [testStartDate, setTestStartDate] = useState('');
+  const [testEndDate, setTestEndDate] = useState('');
   const navigate = useNavigate();
 
   const stationOptions = [
@@ -48,6 +58,15 @@ function HealthAlert() {
     { name: 'No Diseases', icon: '❌' },
   ];
 
+  const unsubscribeReasons = [
+    'Cost is too high',
+    'Service not helpful',
+    'Technical issues',
+    'Using another service',
+    'No longer needed',
+    'Other'
+  ];
+
   const plans = [
     {
       id: 'monthly',
@@ -57,14 +76,6 @@ function HealthAlert() {
       months: 1,
       discount: 0,
     },
-    // {
-    //   id: 'quarterly',
-    //   name: 'Quarterly',
-    //   price: 2100,
-    //   currency: 'NPR',
-    //   months: 3,
-    //   discount: 12.5,
-    // },
     {
       id: 'biannual',
       name: '6 Months',
@@ -96,85 +107,9 @@ function HealthAlert() {
 
   // Format number to display in health alert dashboard
   const formatNum = (num) => {
-    num=num/100;
+    num = num/100;
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   };
-
-  // Check user authentication and subscription status
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUser(user);
-        setIsLoading(true);
-        try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          
-          // Check if we're returning from a successful payment
-          const paymentSuccessFlag = sessionStorage.getItem('paymentSuccess');
-          if (paymentSuccessFlag === 'true') {
-            setPaymentSuccess(true);
-            // Remove the flag from session storage
-            sessionStorage.removeItem('paymentSuccess');
-          }
-          
-          if (userDoc.exists() && userDoc.data().healthAlert?.subscribed) {
-            const healthAlertData = userDoc.data().healthAlert;
-            setIsSubscribed(true);
-            setStations(healthAlertData.stations || []);
-            setSelectedDiseases(healthAlertData.diseases || []);
-            setPhoneNumber(healthAlertData.phoneNumber || '');
-            setSubscriptionDetails(healthAlertData);
-            
-            // Format the subscription end date and calculate days remaining
-            if (healthAlertData.paymentInfo?.expiryDate) {
-              const expiryDate = new Date(healthAlertData.paymentInfo.expiryDate.seconds * 1000);
-              
-              setSubscriptionEndDate(formatDate(expiryDate));
-              
-              // Calculate days remaining in subscription
-              const today = new Date();
-              const timeDiff = expiryDate.getTime() - today.getTime();
-              const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-              setDaysRemaining(daysDiff > 0 ? daysDiff : 0);
-            }
-            
-            // Set subscription start date if available
-            if (healthAlertData.paymentInfo?.startDate) {
-              const startDate = new Date(healthAlertData.paymentInfo.startDate.seconds * 1000);
-              setSubscriptionStartDate(formatDate(startDate));
-            }
-            
-            // Handle "Other" disease option
-            if (healthAlertData.diseases) {
-              const other = healthAlertData.diseases.find(d => !diseases.some(disease => disease.name === d));
-              if (other && other !== 'Other') {
-                setOtherDisease(other);
-                if (!selectedDiseases.includes('Other')) {
-                  setSelectedDiseases(prev => [...prev, 'Other']);
-                }
-              }
-            }
-          }
-          
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-          setMessage('Failed to load subscription data');
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        setUser(null);
-        setIsSubscribed(false);
-        setPaymentSuccess(false);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Update subscription date preview based on selected plan
-  useEffect(() => {
-    updateSubscriptionDates();
-  }, [selectedPlan]);
 
   // Format date helper
   const formatDate = (date) => {
@@ -184,6 +119,174 @@ function HealthAlert() {
       day: 'numeric'
     });
   };
+
+  // Format time helper
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Calculate time remaining (in days, hours, minutes)
+  const calculateTimeRemaining = (endDate) => {
+    const now = new Date();
+    const end = new Date(endDate);
+    const diffTime = end - now;
+    
+    if (diffTime <= 0) {
+      return { days: 0, hours: 0, minutes: 0, expired: true };
+    }
+    
+    const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return { days, hours, minutes, expired: false };
+  };
+
+  // Update subscription date preview based on selected plan
+  useEffect(() => {
+    if (!manualTestMode) {
+      updateSubscriptionDates();
+    }
+  }, [selectedPlan, manualTestMode]);
+
+  // Check user authentication and subscription status
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setUser(user);
+        setIsLoading(true);
+        try {
+          // Set up real-time listener for the user document
+          const userDocRef = doc(db, 'users', user.uid);
+          const unsubscribeDoc = onSnapshot(userDocRef, (docSnap) => {
+            if (docSnap.exists() && docSnap.data().healthAlert?.subscribed) {
+              const healthAlertData = docSnap.data().healthAlert;
+              setIsSubscribed(true);
+              setStations(healthAlertData.stations || []);
+              setSelectedDiseases(healthAlertData.diseases || []);
+              setPhoneNumber(healthAlertData.phoneNumber || '');
+              setSubscriptionDetails(healthAlertData);
+              
+              // Format the subscription dates and calculate time remaining
+              if (healthAlertData.paymentInfo?.expiryDate) {
+                let expiryDate;
+                
+                if (manualTestMode && testEndDate) {
+                  expiryDate = new Date(testEndDate);
+                } else if (healthAlertData.paymentInfo.expiryDate.seconds) {
+                  expiryDate = new Date(healthAlertData.paymentInfo.expiryDate.seconds * 1000);
+                } else {
+                  expiryDate = new Date(healthAlertData.paymentInfo.expiryDate);
+                }
+                
+                setSubscriptionEndDate(formatDate(expiryDate));
+                
+                // Calculate time remaining
+                const timeRemaining = calculateTimeRemaining(expiryDate);
+                setDaysRemaining(timeRemaining.days);
+                
+                // Check if subscription has expired
+                if (timeRemaining.expired) {
+                  setSubscriptionExpired(true);
+                  setShowExpiryModal(true);
+                } else {
+                  setSubscriptionExpired(false);
+                }
+              }
+              
+              // Set subscription start date if available
+              if (healthAlertData.paymentInfo?.paymentDate) {
+                let startDate;
+                
+                if (manualTestMode && testStartDate) {
+                  startDate = new Date(testStartDate);
+                } else if (healthAlertData.paymentInfo.paymentDate.seconds) {
+                  startDate = new Date(healthAlertData.paymentInfo.paymentDate.seconds * 1000);
+                } else {
+                  startDate = new Date(healthAlertData.paymentInfo.paymentDate);
+                }
+                
+                setSubscriptionStartDate(formatDate(startDate));
+              }
+              
+              // Handle "Other" disease option
+              if (healthAlertData.diseases) {
+                const other = healthAlertData.diseases.find(d => !diseases.some(disease => disease.name === d));
+                if (other && other !== 'Other') {
+                  setOtherDisease(other);
+                  if (!selectedDiseases.includes('Other')) {
+                    setSelectedDiseases(prev => [...prev, 'Other']);
+                  }
+                }
+              }
+            } else {
+              setIsSubscribed(false);
+              setSubscriptionDetails(null);
+            }
+            setIsLoading(false);
+          });
+          
+          // Check if we're returning from a successful payment
+          const paymentSuccessFlag = sessionStorage.getItem('paymentSuccess');
+          if (paymentSuccessFlag === 'true') {
+            setPaymentSuccess(true);
+            // Remove the flag from session storage
+            sessionStorage.removeItem('paymentSuccess');
+          }
+          
+          return () => unsubscribeDoc();
+          
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          setMessage('Failed to load subscription data');
+          setIsLoading(false);
+        }
+      } else {
+        setUser(null);
+        setIsSubscribed(false);
+        setPaymentSuccess(false);
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [manualTestMode, testStartDate, testEndDate]);
+
+  // Update remaining time every minute
+  useEffect(() => {
+    if (isSubscribed && subscriptionDetails?.paymentInfo?.expiryDate) {
+      let expiryDate;
+      
+      if (manualTestMode && testEndDate) {
+        expiryDate = new Date(testEndDate);
+      } else if (subscriptionDetails.paymentInfo.expiryDate.seconds) {
+        expiryDate = new Date(subscriptionDetails.paymentInfo.expiryDate.seconds * 1000);
+      } else {
+        expiryDate = new Date(subscriptionDetails.paymentInfo.expiryDate);
+      }
+      
+      // Initial calculation
+      const updateRemainingTime = () => {
+        const timeRemaining = calculateTimeRemaining(expiryDate);
+        setDaysRemaining(timeRemaining.days);
+        
+        if (timeRemaining.expired && !subscriptionExpired) {
+          setSubscriptionExpired(true);
+          setShowExpiryModal(true);
+        }
+      };
+      
+      // Update immediately
+      updateRemainingTime();
+      
+      // Set up interval for updates
+      const intervalId = setInterval(updateRemainingTime, 60000); // Update every minute
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [isSubscribed, subscriptionDetails, subscriptionExpired, manualTestMode, testEndDate]);
 
   // Update subscription dates
   const updateSubscriptionDates = () => {
@@ -240,6 +343,44 @@ function HealthAlert() {
     return true;
   };
 
+  // Start renewal process
+  const startRenewal = (keepSamePlan = false) => {
+    setIsRenewing(true);
+    setShowExpiryModal(false);
+    
+    // Prefill form with existing data
+    if (subscriptionDetails) {
+      // Set stations and diseases from existing subscription
+      setStations(subscriptionDetails.stations || []);
+      setSelectedDiseases(subscriptionDetails.diseases || []);
+      setPhoneNumber(subscriptionDetails.phoneNumber || '');
+      
+      // Set the same plan if requested
+      if (keepSamePlan && subscriptionDetails.planId) {
+        setSelectedPlan(subscriptionDetails.planId);
+      } else if (subscriptionDetails.months) {
+        // Try to match based on months
+        const matchingPlan = plans.find(plan => plan.months === subscriptionDetails.months);
+        if (matchingPlan) {
+          setSelectedPlan(matchingPlan.id);
+        }
+      }
+      
+      // Set other disease if applicable
+      if (subscriptionDetails.diseases) {
+        const other = subscriptionDetails.diseases.find(d => !diseases.some(disease => disease.name === d));
+        if (other && other !== 'Other') {
+          setOtherDisease(other);
+        }
+      }
+      
+      // Set agreement checkbox
+      setAgreed(true);
+    }
+    
+    setCurrentStep(1);
+  };
+
   // Handle "Proceed to Payment" button click
   const handleProceedToPayment = (e) => {
     e.preventDefault();
@@ -271,7 +412,8 @@ function HealthAlert() {
       planId: selectedPlan,
       startDate: new Date(),
       endDate: new Date(subscriptionEndDate),
-      userId: user.uid
+      userId: user.uid,
+      isRenewal: isRenewing
     };
     
     // Store the data in session storage for the payment page
@@ -282,49 +424,58 @@ function HealthAlert() {
   };
 
   const handleRenewSubscription = () => {
-    setIsSubscribed(false);
-    setPaymentSuccess(false);
-    // Pre-fill the form with existing subscription details
-    if (subscriptionDetails) {
-      // Set plan based on subscription months
-      const { months } = subscriptionDetails;
-      const matchingPlan = plans.find(plan => plan.months === months);
-      if (matchingPlan) {
-        setSelectedPlan(matchingPlan.id);
-      }
-    }
-    setCurrentStep(1);
+    setSubscriptionExpired(false);
+    setShowExpiryModal(false);
+    startRenewal(false); // Don't automatically keep the same plan
   };
 
-  const handleUnsubscribe = async () => {
-    if (window.confirm('Are you sure you want to unsubscribe from health alerts?')) {
-      setIsLoading(true);
-      try {
-        await setDoc(
-          doc(db, 'users', user.uid),
-          {
-            healthAlert: { 
-              subscribed: false,
-              unsubscribedAt: new Date(),
-              previousSubscription: subscriptionDetails
-            },
+  const handleRenewWithSamePlan = () => {
+    setSubscriptionExpired(false);
+    setShowExpiryModal(false);
+    startRenewal(true); // Keep the same plan
+  };
+
+  const handleUnsubscribeClick = () => {
+    setShowUnsubscribeModal(true);
+  };
+
+  const handleSubmitUnsubscribe = async () => {
+    setIsLoading(true);
+    try {
+      await setDoc(
+        doc(db, 'users', user.uid),
+        {
+          healthAlert: { 
+            subscribed: false,
+            unsubscribedAt: new Date(),
+            previousSubscription: subscriptionDetails,
+            unsubscribeReason: unsubscribeReason,
+            unsubscribeFeedback: unsubscribeFeedback
           },
-          { merge: true }
-        );
-        setIsSubscribed(false);
-        setStations([]);
-        setSelectedDiseases([]);
-        setPhoneNumber('');
-        setMessage('You have been unsubscribed from health alerts.');
-        setPaymentSuccess(false);
-        setCurrentStep(1);
-      } catch (error) {
-        console.error('Unsubscribe error:', error);
-        setMessage('Failed to unsubscribe. Please try again.');
-      } finally {
-        setIsLoading(false);
-      }
+        },
+        { merge: true }
+      );
+      setIsSubscribed(false);
+      setStations([]);
+      setSelectedDiseases([]);
+      setPhoneNumber('');
+      setMessage('You have been unsubscribed from health alerts.');
+      setPaymentSuccess(false);
+      setCurrentStep(1);
+      setShowUnsubscribeModal(false);
+      setShowExpiryModal(false);
+    } catch (error) {
+      console.error('Unsubscribe error:', error);
+      setMessage('Failed to unsubscribe. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleCancelUnsubscribe = () => {
+    setShowUnsubscribeModal(false);
+    setUnsubscribeReason('');
+    setUnsubscribeFeedback('');
   };
 
   const nextStep = () => {
@@ -335,12 +486,58 @@ function HealthAlert() {
     setCurrentStep(currentStep - 1);
   };
 
+  // For testing subscription expiration with custom dates
+  const enableTestMode = () => {
+    setManualTestMode(true);
+    // Initialize with current dates if not already set
+    if (!testStartDate) {
+      const today = new Date();
+      setTestStartDate(today.toISOString().split('T')[0]);
+      
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 30); // Default to 30 days in future
+      setTestEndDate(futureDate.toISOString().split('T')[0]);
+    }
+  };
+
+  const disableTestMode = () => {
+    setManualTestMode(false);
+    updateSubscriptionDates();
+  };
+
+  const applyTestDates = () => {
+    if (testStartDate && testEndDate) {
+      const start = new Date(testStartDate);
+      const end = new Date(testEndDate);
+      
+      setSubscriptionStartDate(formatDate(start));
+      setSubscriptionEndDate(formatDate(end));
+      
+      // Calculate if subscription is expired
+      const timeRemaining = calculateTimeRemaining(end);
+      setDaysRemaining(timeRemaining.days);
+      setSubscriptionExpired(timeRemaining.expired);
+      
+      if (timeRemaining.expired && !showExpiryModal) {
+        setShowExpiryModal(true);
+      }
+    }
+  };
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
         return (
           <div className="subscription-plans">
-            <h2>Choose Your Subscription Plan</h2>
+            <h2>{isRenewing ? "Renew Your Subscription" : "Choose Your Subscription Plan"}</h2>
+            
+            {isRenewing && (
+              <div className="renewal-notice">
+                <FiRefreshCw className="renewal-icon" />
+                <p>You are renewing your Health Alert subscription. Choose a plan below or continue with your previous plan.</p>
+              </div>
+            )}
+            
             <div className="plans-container">
               {plans.map(plan => (
                 <motion.div 
@@ -364,7 +561,7 @@ function HealthAlert() {
                       <span className="discount-badge">{plan.discount}% OFF</span>
                     </div>
                   )}
-                  {plan.discount===0 &&(
+                  {plan.discount === 0 && (
                     <div className='empty'>
                       <p>.</p>
                     </div>
@@ -383,8 +580,48 @@ function HealthAlert() {
               ))}
             </div>
             <div className='powr'>
-            <h1>Powered by Khalti</h1>
-            <img src={khalti} alt="" />
+              <h1>Powered by Khalti</h1>
+              <img src={khalti} alt="Khalti Payment" />
+            </div>
+            
+            {/* Test Mode Controls (Hidden in Production) */}
+            <div className="test-mode-controls">
+              <button 
+                className="test-mode-toggle"
+                onClick={manualTestMode ? disableTestMode : enableTestMode}
+              >
+                {manualTestMode ? "Disable Test Mode" : "Enable Test Mode"}
+              </button>
+              
+              {manualTestMode && (
+                <div className="date-test-controls">
+                  <h4>Test Subscription Dates</h4>
+                  <div className="date-inputs">
+                    <div className="date-input-group">
+                      <label>Start Date:</label>
+                      <input 
+                        type="date" 
+                        value={testStartDate}
+                        onChange={(e) => setTestStartDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="date-input-group">
+                      <label>End Date:</label>
+                      <input 
+                        type="date" 
+                        value={testEndDate}
+                        onChange={(e) => setTestEndDate(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <button 
+                    className="apply-test-dates"
+                    onClick={applyTestDates}
+                  >
+                    Apply Test Dates
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -398,34 +635,30 @@ function HealthAlert() {
               <div className="selected-plan-summary">
                 <div className="plan-summary-details">
                   <div className="plan-name">
-                <h3>Selected Plan</h3>
-                <h2>
-                    {plans.find(p => p.id === selectedPlan)?.name} Plan
-                </h2>
+                    <h3>Selected Plan</h3>
+                    <h2>
+                      {plans.find(p => p.id === selectedPlan)?.name} Plan
+                    </h2>
                   </div>
                   <div className="plan-price">
-                  <h3>Price</h3>
-                  <h2>
-                    NPR {formatNumber(getSubscriptionAmount())}
-                  </h2>
+                    <h3>Price</h3>
+                    <h2>
+                      NPR {formatNumber(getSubscriptionAmount())}
+                    </h2>
                   </div>
-                  {/* <div className="plan-duration">
-                    {plans.find(p => p.id === selectedPlan)?.months + 
-                    (plans.find(p => p.id === selectedPlan)?.months === 1 ? ' Month' : ' Months')}
-                  </div> */}
                   <div className="subscription-period">
-                  <h3>Subscription Duration</h3>
-                  <h2>
-                    {subscriptionStartDate} - {subscriptionEndDate}
-                  </h2>
+                    <h3>Subscription Duration</h3>
+                    <h2>
+                      {subscriptionStartDate} - {subscriptionEndDate}
+                    </h2>
                   </div>
                 </div>
                 <div className='chngplandiv'>
-                <button className="change-plan-btn" onClick={() => setCurrentStep(1)}>
+                  <button className="change-plan-btn" onClick={() => setCurrentStep(1)}>
                     <span>
-                    Change Plan
-                    <TbRefresh className='reff'/>
-                      </span>
+                      Change Plan
+                      <TbRefresh className='reff'/>
+                    </span>
                   </button>
                 </div>
               </div>
@@ -435,33 +668,18 @@ function HealthAlert() {
                   <FiMapPin className="label-icon" /> 
                   Select Monitoring Stations:
                 </p>
-                {/* <select
-                  multiple
-                  value={stations}
-                  onChange={(e) => {
-                    const selected = Array.from(e.target.selectedOptions, option => option.value);
-                    setStations(selected);
-                  }}
-                  className="station-select"
-                  required
-                >
-                  {stationOptions.map(station => (
-                    <option key={station} value={station}>
-                      {station}
-                    </option>
-                  ))}
-                </select> */}
                 <div className='dropdownmenu'>
-                <Select
-                isMulti
-                options={stationOptions.map(station => ({ value: station, label: station }))}
-                value={stations.map(station => ({ value: station, label: station }))}
-                onChange={(selectedOptions) => {
-                  setStations(selectedOptions.map(option => option.value));
-                }}
-                className="react-select-container"
-                classNamePrefix="react-select"
-                required/>
+                  <Select
+                    isMulti
+                    options={stationOptions.map(station => ({ value: station, label: station }))}
+                    value={stations.map(station => ({ value: station, label: station }))}
+                    onChange={(selectedOptions) => {
+                      setStations(selectedOptions.map(option => option.value));
+                    }}
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    required
+                  />
                 </div>
                 <small className="select-hint">
                   Hold Ctrl (Windows) or Command (Mac) to select multiple stations
@@ -570,11 +788,11 @@ function HealthAlert() {
                     whileHover={{ scale: 1.02 }}
                   >
                     <div className='radiodiv'>
-                    <input
-                      type="checkbox"
-                      checked={agreed}
-                      onChange={(e) => setAgreed(e.target.checked)}
-                      required
+                      <input
+                        type="checkbox"
+                        checked={agreed}
+                        onChange={(e) => setAgreed(e.target.checked)}
+                        required
                       />
                       <p>
                         I agree to receive SMS and email alerts about air quality conditions 
@@ -612,7 +830,7 @@ function HealthAlert() {
                     disabled={isLoading}
                   >
                     <FiCreditCard className="button-icon" />
-                    Pay NPR {formatNumber(getSubscriptionAmount())} with Khalti
+                    {isRenewing ? 'Renew Subscription' : 'Proceed to Payment'}
                   </button>
                 </div>
               </div>
@@ -625,211 +843,400 @@ function HealthAlert() {
     }
   };
 
-  return (
-    <div className="health-alert-wrapper">
-      <div className="health-alert-content">
-        <motion.div 
-          className="health-alert-container"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          {isLoading ? (
-            <div className="loading-overlay">
-              <div className="spinner"></div>
-              <p>Processing your request...</p>
+  // Render payment success message
+  const renderPaymentSuccess = () => {
+    return (
+      <motion.div 
+        className="payment-success-container"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <div className="success-icon-container">
+          <FiCheckCircle className="success-icon" />
+        </div>
+        <h2>Payment Successful!</h2>
+        <p>Your Health Alert subscription has been activated successfully.</p>
+        <div className="subscription-details">
+          <div className="detail-item">
+            <FiCalendar className="detail-icon" />
+            <div>
+              <span className="detail-label">Subscription Period:</span>
+              <span className="detail-value">{subscriptionStartDate} - {subscriptionEndDate}</span>
             </div>
-          ) : !user ? (
-            <motion.div 
-              className="auth-required"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <div className="header-icon">
-                <FiAlertCircle size={48} />
-              </div>
-              <h2>NepAir - Air Quality Health Alerts</h2>
-              <p className="description">
-                Get notified when air quality reaches dangerous levels in your selected locations.
-              </p>
-              <motion.button 
-                onClick={() => navigate('/login')} 
-                className="cta-button primary"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Login to Subscribe
-              </motion.button>
-            </motion.div>
-          ) : isSubscribed || paymentSuccess ? (
-            <motion.div 
-              className="subscription-success"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <div className="success-icon">
-                <FiCheckCircle size={64} />
-              </div>
-              <h2>Your Health Alert Subscription is Active!</h2>
-              
-              {paymentSuccess && (
-                <div className="payment-success-message">
-                  <p>Thank you for subscribing to NepAir Health Alerts.</p>
-                  <p>You will receive email alerts at <strong>{user.email}</strong></p>
-                  {phoneNumber && (
-                    <p>and SMS alerts at <strong>+977 {phoneNumber}</strong></p>
-                  )}
-                </div>
-              )}
-              
-              <div className="subscription-timeline">
-                <div className="timeline-container">
-                  <div className="timeline-start">
-                    <div className="timeline-dot start"></div>
-                    <div className="timeline-date">{subscriptionStartDate || 'Today'}</div>
-                    <div className="timeline-label">Subscription Start</div>
-                  </div>
-                  <div className="timeline-line">
-                    <div className="timeline-progress" style={{ 
-                      width: `${daysRemaining > 0 && subscriptionDetails?.months ? 
-                        100 - (daysRemaining / (subscriptionDetails.months * 30)) * 100 : 0}%` 
-                    }}></div>
-                  </div>
-                  <div className="timeline-end">
-                    <div className="timeline-dot end"></div>
-                    <div className="timeline-date">{subscriptionEndDate}</div>
-                    <div className="timeline-label">Subscription End</div>
-                  </div>
-                </div>
-                <div className="timeline-status">
-                  <FiClock className="timeline-icon" />
-                  {daysRemaining > 0 ? (
-                    <span>{daysRemaining} days remaining in your subscription</span>
-                  ) : (
-                    <span>Your subscription has expired</span>
-                  )}
-                </div>
-              </div>
-              
-              <div className="subscription-details">
-                <div className="detail-item">
-                  <FiMail className="detail-icon" />
-                  <span>{user.email}</span>
-                  <div className="detail-label">Email Alerts</div>
-                </div>
-                {phoneNumber && (
-                  <div className="detail-item">
-                    <FiPhone className="detail-icon" />
-                    <span>+977 {phoneNumber}</span>
-                    <div className="detail-label">SMS Alerts</div>
-                  </div>
-                )}
-                {stations.length > 0 && (
-                  <div className="detail-item">
-                    <FiMapPin className="detail-icon" />
-                    <span>{stations.join(', ')}</span>
-                    <div className="detail-label">Monitored Locations</div>
-                  </div>
-                )}
-                {selectedDiseases.length > 0 && (
-                  <div className="detail-item">
-                    <FiHeart className="detail-icon" />
-                    <span>
-                      {selectedDiseases
-                        .map(d => d === 'Other' ? otherDisease : d)
-                        .filter(d => d !== '')
-                        .join(', ')}
-                    </span>
-                    <div className="detail-label">Health Conditions</div>
-                  </div>
-                )}
-                {subscriptionDetails?.months && (
-                  <div className="detail-item">
-                    <FiCalendar className="detail-icon" />
-                    <span>{subscriptionDetails.months} {subscriptionDetails.months === 1 ? 'Month' : 'Months'}</span>
-                    <div className="detail-label">Subscription Duration</div>
-                  </div>
-                )}
-                {subscriptionDetails?.paymentInfo?.amount && (
-                  <div className="detail-item">
-                    <FiDollarSign className="detail-icon" />
-                    <span>NPR {formatNum(subscriptionDetails.paymentInfo.amount)}</span>
-                    <div className="detail-label">Amount Paid</div>
-                  </div>
-                )}
-              </div>
-              
-              <div className={`subscription-message ${daysRemaining <= 7 ? 'warning' : ''}`}>
-                <FiInfo className="info-icon" />
-                {daysRemaining <= 7 ? (
-                  <p>Your subscription will expire on <strong>{subscriptionEndDate}</strong>. Consider renewing soon to avoid service interruption.</p>
-                ) : (
-                  <p>Your subscription is valid until <strong>{subscriptionEndDate}</strong>.</p>
-                )}
-              </div>
-              
-              <div className="subscription-actions">
-                <motion.button 
-                  className="action-button renew"
-                  onClick={handleRenewSubscription}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  <FiRefreshCw className="button-icon" />
-                  Renew Subscription
-                </motion.button>
-                <motion.button 
-                  className="action-button unsubscribe"
-                  onClick={handleUnsubscribe}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  <FiTrash2 className="button-icon" />
-                  Unsubscribe
-                </motion.button>
-              </div>
-            </motion.div>
+          </div>
+          <div className="detail-item">
+            <FiDollarSign className="detail-icon" />
+            <div>
+              <span className="detail-label">Amount Paid:</span>
+              <span className="detail-value">NPR {formatNum(subscriptionDetails?.paymentInfo?.amount || 0)}</span>
+            </div>
+          </div>
+          <div className="detail-item">
+            <FiCheck className="detail-icon" />
+            <div>
+              <span className="detail-label">Status:</span>
+              <span className="detail-value success">Active</span>
+            </div>
+          </div>
+        </div>
+        <p className="success-message">
+          You will now receive personalized health alerts based on your preferences and air quality conditions.
+        </p>
+        <button 
+          className="view-dashboard-btn"
+          onClick={() => setPaymentSuccess(false)}
+        >
+          View Your Health Alert Dashboard
+        </button>
+      </motion.div>
+    );
+  };
+
+  // Render subscription details dashboard
+  const renderSubscriptionDashboard = () => {
+    return (
+      <div className="subscription-dashboard">
+        <div className="dashboard-header">
+          <h2>Health Alert Dashboard</h2>
+          {subscriptionExpired ? (
+            <div className="subscription-status expired">
+              <FiAlertTriangle className="status-icon" />
+              Expired
+            </div>
           ) : (
-            <div className="subscription-wizard">
-              <h1>NepAir - Air Quality Health Alerts</h1>
-              <p className="service-description">
-                Get personalized alerts when air quality may affect your health conditions.
-              </p>
-              
-              <div className="wizard-progress">
-                <div className={`progress-step ${currentStep >= 1 ? 'active' : ''}`}>
-                  <div className="step-number">1</div>
-                  <div className="step-label">Select Plan</div>
-                </div>
-                <div className="progress-line"></div>
-                <div className={`progress-step ${currentStep >= 2 ? 'active' : ''}`}>
-                  <div className="step-number">2</div>
-                  <div className="step-label">Monitoring Preferences</div>
-                </div>
-                <div className="progress-line"></div>
-                <div className={`progress-step ${currentStep >= 3 ? 'active' : ''}`}>
-                  <div className="step-number">3</div>
-                  <div className="step-label">Contact Details</div>
-                </div>
-              </div>
-              
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentStep}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {renderStepContent()}
-                </motion.div>
-              </AnimatePresence>
+            <div className="subscription-status active">
+              <FiCheckCircle className="status-icon" />
+              Active
             </div>
           )}
-        </motion.div>
+        </div>
+        
+        <div className="dashboard-content">
+          <div className="subscription-info-panel">
+            <div className="subscription-info-item">
+              <div className="info-header">
+                <FiCalendar className="info-icon" />
+                <h3>Subscription Period</h3>
+              </div>
+              <div className="info-content date-range">
+                <div className="date">
+                  <span className="label">From:</span>
+                  <span className="value">{subscriptionStartDate}</span>
+                </div>
+                <div className="date">
+                  <span className="label">To:</span>
+                  <span className="value">{subscriptionEndDate}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="subscription-info-item">
+              <div className="info-header">
+                <FiClock className="info-icon" />
+                <h3>Time Remaining</h3>
+              </div>
+              <div className="info-content time-remaining">
+                {subscriptionExpired ? (
+                  <div className="expired-message">
+                    <FiAlertTriangle className="expired-icon" />
+                    Your subscription has expired
+                  </div>
+                ) : (
+                  <div className="days-count">
+                    <span className="value">{daysRemaining}</span>
+                    <span className="unit">days</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="subscription-info-item">
+              <div className="info-header">
+                <FiInfo className="info-icon" />
+                <h3>Plan Details</h3>
+              </div>
+              <div className="info-content plan-details">
+                <div className="plan-detail">
+                  <span className="label">Plan:</span>
+                  <span className="value">
+                    {subscriptionDetails?.months === 1 ? 'Monthly' :
+                     subscriptionDetails?.months === 6 ? '6 Months' :
+                     subscriptionDetails?.months === 12 ? 'Annual' :
+                     'Custom'} Plan
+                  </span>
+                </div>
+                <div className="plan-detail">
+                  <span className="label">Amount Paid:</span>
+                  <span className="value">
+                    NPR {formatNum(subscriptionDetails?.paymentInfo?.amount || 0)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="monitored-info-panel">
+            <div className="monitored-info-item">
+              <div className="info-header">
+                <FiMapPin className="info-icon" />
+                <h3>Monitored Stations</h3>
+              </div>
+              <div className="stations-grid">
+                {stations.map(station => (
+                  <div key={station} className="station-item">
+                    {station}
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="monitored-info-item">
+              <div className="info-header">
+                <FiHeart className="info-icon" />
+                <h3>Health Conditions</h3>
+              </div>
+              <div className="diseases-list">
+                {subscriptionDetails?.diseases?.map(disease => (
+                  <div key={disease} className="disease-item">
+                    {disease}
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="monitored-info-item">
+              <div className="info-header">
+                <FiMessageSquare className="info-icon" />
+                <h3>Contact Details</h3>
+              </div>
+              <div className="contact-details">
+                <div className="contact-detail">
+                  <FiMail className="contact-icon" />
+                  <span>{user.email || 'No email set'}</span>
+                </div>
+                <div className="contact-detail">
+                  <FiPhone className="contact-icon" />
+                  <span>+977 {phoneNumber || 'No phone number set'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="dashboard-actions">
+          {subscriptionExpired ? (
+            <button 
+              className="action-button renew"
+              onClick={handleRenewSubscription}
+            >
+              <FiRepeat className="button-icon" />
+              Renew Subscription
+            </button>
+          ) : (
+            <>
+              <button 
+                className="action-button unsubscribe"
+                onClick={handleUnsubscribeClick}
+              >
+                <FiX className="button-icon" />
+                Unsubscribe
+              </button>
+              <button 
+                className="action-button renew"
+                onClick={handleRenewSubscription}
+              >
+                <FiRepeat className="button-icon" />
+                Renew/Change Plan
+              </button>
+            </>
+          )}
+        </div>
       </div>
+    );
+  };
+
+  // Render the subscription expiry modal
+  const renderExpiryModal = () => {
+    return (
+      <AnimatePresence>
+        {showExpiryModal && (
+          <motion.div
+            className="modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="expiry-modal"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+            >
+              <div className="modal-header">
+                <FiAlertTriangle className="expired-icon" />
+                <h2>Subscription Expired</h2>
+              </div>
+              
+              <div className="modal-content">
+                <p>Your Health Alert subscription has expired on <strong>{subscriptionEndDate}</strong>.</p>
+                <p>To continue receiving personalized air quality health alerts, please renew your subscription.</p>
+                
+                <div className="previous-plan-details">
+                  <h4>Your Previous Plan</h4>
+                  <p>
+                    <strong>Type:</strong> {
+                      subscriptionDetails?.months === 1 ? 'Monthly' :
+                      subscriptionDetails?.months === 6 ? '6 Months' :
+                      subscriptionDetails?.months === 12 ? 'Annual' : 'Custom'
+                    } Plan
+                  </p>
+                  <p><strong>Amount:</strong> NPR {formatNum(subscriptionDetails?.paymentInfo?.amount || 0)}</p>
+                </div>
+              </div>
+              
+              <div className="modal-actions">
+                <button 
+                  className="modal-action renew-same"
+                  onClick={handleRenewWithSamePlan}
+                >
+                  <FiCheck className="button-icon" />
+                  Renew Same Plan
+                </button>
+                <button
+                  className="modal-action renew-different"
+                  onClick={handleRenewSubscription}
+                >
+                  <FiRefreshCw className="button-icon" />
+                  Choose Different Plan
+                </button>
+                <button
+                  className="modal-action close"
+                  onClick={() => setShowExpiryModal(false)}
+                >
+                  <FiX className="button-icon" />
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  };
+
+  // Render the unsubscribe confirmation modal
+  const renderUnsubscribeModal = () => {
+    return (
+      <AnimatePresence>
+        {showUnsubscribeModal && (
+          <motion.div
+            className="modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="unsubscribe-modal"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+            >
+              <div className="modal-header">
+                <FiAlertCircle className="warning-icon" />
+                <h2>Unsubscribe from Health Alerts</h2>
+              </div>
+              
+              <div className="modal-content">
+                <p>Are you sure you want to unsubscribe from Health Alerts? This action cannot be undone.</p>
+                <p>Your subscription will end immediately, and you will no longer receive any air quality health alerts.</p>
+                
+                <div className="feedback-form">
+                  <h4>Help us improve our service</h4>
+                  <div className="form-group">
+                    <label>Why are you unsubscribing?</label>
+                    <select
+                      value={unsubscribeReason}
+                      onChange={(e) => setUnsubscribeReason(e.target.value)}
+                      className="form-control"
+                    >
+                      <option value="">Select a reason...</option>
+                      {unsubscribeReasons.map(reason => (
+                        <option key={reason} value={reason}>{reason}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>Additional feedback (optional):</label>
+                    <textarea
+                      value={unsubscribeFeedback}
+                      onChange={(e) => setUnsubscribeFeedback(e.target.value)}
+                      placeholder="Please let us know how we can improve..."
+                      className="form-control"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="modal-actions">
+                <button
+                  className="modal-action confirm-unsubscribe"
+                  onClick={handleSubmitUnsubscribe}
+                  disabled={isLoading}
+                >
+                  <FiX className="button-icon" />
+                  {isLoading ? 'Processing...' : 'Confirm Unsubscribe'}
+                </button>
+                <button
+                  className="modal-action cancel"
+                  onClick={handleCancelUnsubscribe}
+                >
+                  <FiArrowUpRight className="button-icon" />
+                  Keep My Subscription
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  };
+
+  // Main render
+  return (
+    <div className="health-alert-container">
+      {!user ? (
+        <div className="login-prompt">
+          <FiAlertCircle className="alert-icon" />
+          <h2>Please log in to access Health Alerts</h2>
+          <p>You need to be logged in to subscribe to health alerts.</p>
+          <button 
+            className="login-button"
+            onClick={() => navigate('/login')}
+          >
+            Log In / Sign Up
+          </button>
+        </div>
+      ) : isLoading ? (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading your subscription details...</p>
+        </div>
+      ) : paymentSuccess ? (
+        renderPaymentSuccess()
+      ) : isSubscribed && !isRenewing ? (
+        <>
+          {renderSubscriptionDashboard()}
+          {renderExpiryModal()}
+          {renderUnsubscribeModal()}
+        </>
+      ) : (
+        <>
+          {renderStepContent()}
+          {renderUnsubscribeModal()}
+        </>
+      )}
     </div>
   );
 }

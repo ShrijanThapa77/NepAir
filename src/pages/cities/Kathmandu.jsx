@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./Kathmandu.css";
 import { useNavigate } from "react-router-dom";
-import BG from '../../assets/BGGG.jpg';
+import Footer from "../../components/Footer";
 
 const Kathmandu = () => {
   const navigate = useNavigate();
@@ -115,17 +115,18 @@ const Kathmandu = () => {
   const pollutionSources = getPollutionSources();
 
   return (
-    <div className="kathmandu-container" style={{ backgroundImage: `url(${BG})` }}>
+        <>
+            <div className="kathmandu-container">
       <div className="content-wrapper">
         <div className="header-section">
-          <h1>Kathmandu Air Quality</h1>
+          <h1 className="head">Kathmandu Air Quality</h1>
          
         </div>
 
         <div className="aqi-section">
           <div className="aqi-display" style={{ backgroundColor: currentAqiLevel.color }}>
             <h2>Current Air Quality Index</h2>
-            <div className="aqi-value animate-pulse">{airData.aqi}</div>
+            <div className="aqi-value">{airData.aqi}</div>
             <div className="aqi-level">{currentAqiLevel.level}</div>
             <div className="aqi-date">{airData.date}</div>
           </div>
@@ -139,7 +140,7 @@ const Kathmandu = () => {
         <div className="prediction-section">
           <div className="aqi-display tomorrow" style={{ backgroundColor: tomorrowAqiLevel.color }}>
             <h2>Tomorrow's Predicted AQI</h2>
-            <div className="aqi-value animate-float">{tomorrowData.aqi}</div>
+            <div className="aqi-value">{tomorrowData.aqi}</div>
             <div className="aqi-level">{tomorrowAqiLevel.level}</div>
           </div>
           <div className="aqi-advice">
@@ -155,7 +156,7 @@ const Kathmandu = () => {
         </div>
 
         <div className="details-section">
-          <h2>Pollution Details</h2>
+          <h2 className="headerr">Pollution Details</h2>
           <div className="pollution-grid">
             <div className="pollution-item hover-scale" style={{ backgroundColor: '#e3f2fd' }}>
               <h3>PM2.5</h3>
@@ -191,7 +192,7 @@ const Kathmandu = () => {
         </div>
 
         <div className="weather-section">
-          <h2>Kathmandu Weather</h2>
+          <h2 className="headerr">Kathmandu Weather</h2>
           <div className="weather-grid">
             <div className="weather-item hover-scale" style={{ backgroundColor: '#e1f5fe' }}>
               <h3>Temperature</h3>
@@ -213,7 +214,7 @@ const Kathmandu = () => {
         </div>
 
         <div className="sources-section">
-          <h2>Pollution Sources in Kathmandu</h2>
+          <h2 className="headerr">Pollution Sources in Kathmandu</h2>
           <h3>Main Contributors:</h3>
           <ul>
             {pollutionSources.mainSources.map((source, index) => (
@@ -224,7 +225,7 @@ const Kathmandu = () => {
         </div>
 
         <div className="other-cities">
-          <h2>Other Cities in Nepal</h2>
+          <h2 className="headerr">Other Cities in Nepal</h2>
           <div className="cities-grid">
             {allCities.map((city, index) => {
               const randomAqi = Math.floor(Math.random() * 200) + 50;
@@ -248,6 +249,8 @@ const Kathmandu = () => {
         </div>
       </div>
     </div>
+    <Footer/>
+        </>
   );
 };
 
