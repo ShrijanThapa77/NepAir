@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, 
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, 
-  PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import './UserDashboard.css';
+import { 
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart,
+  PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ScatterChart, Scatter,
+  ComposedChart, ReferenceLine, ReferenceArea
+} from 'recharts';
+import { TrendingUp, AlertTriangle, Wind, CloudRain, ThermometerSun, Calendar, MapPin, Filter } from 'lucide-react';
 
 const Dashboard = () => {
   const [airQualityData, setAirQualityData] = useState([]);
@@ -17,17 +20,33 @@ const Dashboard = () => {
   const [yearlyData, setYearlyData] = useState([]);
   const [selectedYear, setSelectedYear] = useState('2023');
   const [years, setYears] = useState([]);
+  const [weatherData, setWeatherData] = useState({
+    temperature: 25,
+    humidity: 68,
+    windSpeed: 3.4,
+    weatherCondition: 'Partly Cloudy'
+  });
+  const [darkMode, setDarkMode] = useState(false);
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
 
-  const getPollutantYearlyComparison = () => {
-    return yearlyData.map(data => ({
-      name: data.year,
-      pm25: data.pm25,
-      pm10: data.pm10,
-      o3: data.o3,
-      no2: data.no2,
-      so2: data.so2,
-      co: data.co
-    }));
+  // Theme colors based on mode
+  const theme = {
+    background: darkMode ? '#121212' : '#f5f7fa',
+    cardBg: darkMode ? '#1e1e1e' : '#ffffff',
+    text: darkMode ? '#e0e0e0' : '#333333',
+    subtext: darkMode ? '#aaaaaa' : '#666666',
+    border: darkMode ? '#333333' : '#e0e0e0',
+    chartGrid: darkMode ? '#333333' : '#e0e0e0',
+    highlight: '#1E88E5'
+  };
+
+  const pollutantLabels = {
+    'pm25': 'PM2.5',
+    'pm10': 'PM10',
+    'o3': 'Ozone (O₃)',
+    'no2': 'Nitrogen Dioxide (NO₂)',
+    'so2': 'Sulfur Dioxide (SO₂)',
+    'co': 'Carbon Monoxide (CO)',
   };
 
   const cityColors = {
@@ -43,13 +62,13 @@ const Dashboard = () => {
     'Birgunj': '#FF9800'
   };
 
-  const pollutantLabels = {
-    'pm25': 'PM2.5',
-    'pm10': 'PM10',
-    'o3': 'Ozone (O₃)',
-    'no2': 'Nitrogen Dioxide (NO₂)',
-    'so2': 'Sulfur Dioxide (SO₂)',
-    'co': 'Carbon Monoxide (CO)',
+  const pollutantColors = {
+    'pm25': '#1E88E5',
+    'pm10': '#4CAF50',
+    'o3': '#FFC107',
+    'no2': '#FF5722',
+    'so2': '#9C27B0',
+    'co': '#607D8B'
   };
 
   useEffect(() => {
@@ -208,6 +227,63 @@ const Dashboard = () => {
     return months[monthIndex];
   };
 
+  // Get health impact details based on AQI level
+  const getHealthImpacts = (aqiLevel) => {
+    switch(aqiLevel) {
+      case 'Good':
+        return [
+          { group: 'General Population', impact: 'No health impacts expected' },
+          { group: 'Sensitive Groups', impact: 'No health impacts expected' }
+        ];
+      case 'Moderate':
+        return [
+          { group: 'General Population', impact: 'Few people may experience slight irritation' },
+          { group: 'Sensitive Groups', impact: 'People with respiratory conditions may experience symptoms' }
+        ];
+      case 'Unhealthy for Sensitive Groups':
+        return [
+          { group: 'General Population', impact: 'Some may begin to experience health effects' },
+          { group: 'Sensitive Groups', impact: 'Reduced lung function, increased respiratory symptoms' }
+        ];
+      case 'Unhealthy':
+        return [
+          { group: 'General Population', impact: 'May experience respiratory symptoms, breathing discomfort' },
+          { group: 'Sensitive Groups', impact: 'More serious effects, should avoid outdoor exertion' }
+        ];
+      case 'Very Unhealthy':
+        return [
+          { group: 'General Population', impact: 'Significant respiratory symptoms, reduced exercise capacity' },
+          { group: 'Sensitive Groups', impact: 'Serious health effects, avoid all outdoor activities' }
+        ];
+      case 'Hazardous':
+        return [
+          { group: 'General Population', impact: 'Everyone may experience serious health effects' },
+          { group: 'Sensitive Groups', impact: 'Emergency conditions, stay indoors with air purification' }
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const getHealthRecommendation = (aqiLevel) => {
+    switch(aqiLevel) {
+      case 'Good':
+        return 'Air quality is satisfactory. Enjoy your normal outdoor activities.';
+      case 'Moderate':
+        return 'Air quality is acceptable. Unusually sensitive people should consider reducing prolonged outdoor exertion.';
+      case 'Unhealthy for Sensitive Groups':
+        return 'People with respiratory or heart conditions, children and older adults should reduce prolonged outdoor exertion.';
+      case 'Unhealthy':
+        return 'Everyone may begin to experience health effects. Sensitive groups should avoid prolonged outdoor exertion.';
+      case 'Very Unhealthy':
+        return 'Health alert: everyone may experience more serious health effects. Avoid outdoor activities.';
+      case 'Hazardous':
+        return 'Health warnings of emergency conditions. The entire population is more likely to be affected. Stay indoors.';
+      default:
+        return 'No specific recommendations available.';
+    }
+  };
+
   const filterDataByTimeframe = () => {
     if (!airQualityData.length) return [];
     
@@ -311,155 +387,565 @@ const Dashboard = () => {
     }));
   };
 
-  const getHealthRecommendation = (aqiLevel) => {
-    switch(aqiLevel) {
-      case 'Good':
-        return 'Air quality is satisfactory. Enjoy your normal outdoor activities.';
-      case 'Moderate':
-        return 'Air quality is acceptable. Unusually sensitive people should consider reducing prolonged outdoor exertion.';
-      case 'Unhealthy for Sensitive Groups':
-        return 'People with respiratory or heart conditions, children and older adults should reduce prolonged outdoor exertion.';
-      case 'Unhealthy':
-        return 'Everyone may begin to experience health effects. Sensitive groups should avoid prolonged outdoor exertion.';
-      case 'Very Unhealthy':
-        return 'Health alert: everyone may experience more serious health effects. Avoid outdoor activities.';
-      case 'Hazardous':
-        return 'Health warnings of emergency conditions. The entire population is more likely to be affected. Stay indoors.';
-      default:
-        return 'No specific recommendations available.';
-    }
+  const getPollutantYearlyComparison = () => {
+    return yearlyData.map(data => ({
+      name: data.year,
+      pm25: data.pm25,
+      pm10: data.pm10,
+      o3: data.o3,
+      no2: data.no2,
+      so2: data.so2,
+      co: data.co
+    }));
   };
 
+  // Generate data for top pollutants gauge
+  const getTopPollutantsData = () => {
+    if (!selectedCity || !averages[selectedCity]) return [];
+    
+    const cityAvg = averages[selectedCity];
+    const pollutants = Object.keys(pollutantLabels);
+    
+    // Sort pollutants by their values
+    const sortedPollutants = [...pollutants].sort((a, b) => cityAvg[b] - cityAvg[a]);
+    
+    return sortedPollutants.map(key => ({
+      name: pollutantLabels[key],
+      value: cityAvg[key] || 0,
+      color: pollutantColors[key]
+    }));
+  };
+
+  // Get data for spider chart
+  const getSpiderChartData = () => {
+    if (!cities.length || !averages) return [];
+    
+    // Take top 5 cities for clarity
+    const topCities = cities.slice(0, 5);
+    
+    // Create data for each pollutant type
+    return Object.keys(pollutantLabels).map(pollutant => {
+      const dataPoint = { name: pollutantLabels[pollutant] };
+      
+      topCities.forEach(city => {
+        if (averages[city]) {
+          dataPoint[city] = averages[city][pollutant] || 0;
+        }
+      });
+      
+      return dataPoint;
+    });
+  };
+
+  // Get correlation data between PM2.5 and other pollutants
+  const getCorrelationData = () => {
+    if (!selectedCity || !averages) return [];
+    
+    const cityData = airQualityData.filter(data => data.City === selectedCity);
+    
+    if (!cityData.length) return [];
+    
+    // Create correlation points between PM2.5 and other pollutants
+    const correlations = [];
+    
+    ['pm10', 'o3', 'no2', 'so2', 'co'].forEach(pollutant => {
+      cityData.forEach(point => {
+        if (!isNaN(point.pm25) && !isNaN(point[pollutant])) {
+          correlations.push({
+            pm25: point.pm25,
+            [pollutant]: point[pollutant],
+            pollutant
+          });
+        }
+      });
+    });
+    
+    return correlations;
+  };
+
+  // Format for health impact gauge
+  const formatHealthImpact = (aqi) => {
+    if (aqi <= 50) return { value: 0.2, color: '#4caf50' };
+    if (aqi <= 100) return { value: 0.4, color: '#ffeb3b' };
+    if (aqi <= 150) return { value: 0.6, color: '#ff9800' };
+    if (aqi <= 200) return { value: 0.7, color: '#f44336' };
+    if (aqi <= 300) return { value: 0.9, color: '#9c27b0' };
+    return { value: 1, color: '#7e0023' };
+  };
+
+  // Generate historical comparison data
+  const getHistoricalComparison = () => {
+    if (!yearlyData.length || yearlyData.length < 2) return [];
+    
+    const years = yearlyData.map(data => data.year);
+    const sortedYears = [...years].sort();
+    
+    if (sortedYears.length < 2) return [];
+    
+    const currentYearData = yearlyData.find(data => data.year === sortedYears[sortedYears.length - 1]);
+    const previousYearData = yearlyData.find(data => data.year === sortedYears[sortedYears.length - 2]);
+    
+    if (!currentYearData || !previousYearData) return [];
+    
+    return Object.keys(pollutantLabels).map(key => {
+      const currentValue = currentYearData[key] || 0;
+      const previousValue = previousYearData[key] || 0;
+      const change = currentValue - previousValue;
+      const percentChange = previousValue !== 0 ? 
+        Math.round((change / previousValue) * 100) : 0;
+      
+      return {
+        name: pollutantLabels[key],
+        current: currentValue,
+        previous: previousValue,
+        change,
+        percentChange
+      };
+    });
+  };
+
+  const healthImpact = formatHealthImpact(currentAQI);
   const timeframeData = filterDataByTimeframe();
 
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading air quality data...</p>
+      <div className="loading-container" style={{
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: theme.background
+      }}>
+        <div className="loading-spinner" style={{
+          width: '50px',
+          height: '50px',
+          border: `4px solid ${theme.border}`,
+          borderTop: `4px solid ${theme.highlight}`,
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }}></div>
+        <p style={{ color: theme.text, marginTop: '20px' }}>Loading air quality data...</p>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-wrapper">
-      
-      
-      <div className="filter-container">
-        <div className="filter-group">
-          <label htmlFor="city-select">City</label>
-          <select 
-            id="city-select" 
-            value={selectedCity} 
-            onChange={(e) => setSelectedCity(e.target.value)}
-          >
-            {cities.map(city => (
-              <option key={city} value={city}>{city}</option>
-            ))}
-          </select>
+    <div className="dashboard-wrapper" style={{
+      background: theme.background,
+      color: theme.text,
+      minHeight: '100vh',
+      padding: '20px',
+      transition: 'all 0.3s ease'
+    }}>
+      <div className="dashboard-header" style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '20px'
+      }}>
+        <div className="dashboard-title" style={{ display: 'flex', alignItems: 'center' }}>
+          <Wind size={28} color={theme.highlight} style={{ marginRight: '10px' }} />
+          <h1 style={{ margin: 0, fontSize: '24px' }}>Air Quality Dashboard</h1>
         </div>
         
-        <div className="filter-group">
-          <label htmlFor="pollutant-select">Pollutant</label>
-          <select 
-            id="pollutant-select" 
-            value={selectedPollutant} 
-            onChange={(e) => setSelectedPollutant(e.target.value)}
-          >
-            {Object.entries(pollutantLabels).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="filter-group">
-          <label htmlFor="timeframe-select">Timeframe</label>
-          <select 
-            id="timeframe-select" 
-            value={selectedTimeframe} 
-            onChange={(e) => setSelectedTimeframe(e.target.value)}
-          >
-            <option value="month">Monthly</option>
-            <option value="week">Weekly</option>
-          </select>
-        </div>
-
-        <div className="filter-group">
-          <label htmlFor="year-select">Year</label>
-          <select 
-            id="year-select" 
-            value={selectedYear} 
-            onChange={(e) => setSelectedYear(e.target.value)}
-          >
-            {years.map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
+        <div className="controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <div className="theme-toggle" style={{
+            cursor: 'pointer',
+            padding: '5px 10px',
+            borderRadius: '4px',
+            border: `1px solid ${theme.border}`,
+            background: theme.cardBg
+          }} onClick={() => setDarkMode(!darkMode)}>
+            {darkMode ? 'Light Mode' : 'Dark Mode'}
+          </div>
+          
+          <div className="filter-toggle" style={{
+            cursor: 'pointer',
+            padding: '5px 10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            borderRadius: '4px',
+            border: `1px solid ${theme.border}`,
+            background: theme.cardBg
+          }} onClick={() => setShowFilterPanel(!showFilterPanel)}>
+            <Filter size={16} />
+            Filters
+          </div>
         </div>
       </div>
+      
+      {showFilterPanel && (
+        <div className="filter-panel" style={{
+          background: theme.cardBg,
+          borderRadius: '8px',
+          padding: '15px',
+          marginBottom: '20px',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '15px',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div className="filter-group" style={{ flex: '1', minWidth: '200px' }}>
+            <label htmlFor="city-select" style={{ display: 'block', marginBottom: '8px', color: theme.subtext }}>
+              <MapPin size={16} style={{ verticalAlign: 'middle', marginRight: '5px' }} />
+              City
+            </label>
+            <select 
+              id="city-select" 
+              value={selectedCity} 
+              onChange={(e) => setSelectedCity(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '4px',
+                border: `1px solid ${theme.border}`,
+                background: theme.cardBg,
+                color: theme.text
+              }}
+            >
+              {cities.map(city => (
+                <option key={city} value={city}>{city}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="filter-group" style={{ flex: '1', minWidth: '200px' }}>
+            <label htmlFor="pollutant-select" style={{ display: 'block', marginBottom: '8px', color: theme.subtext }}>
+              <Wind size={16} style={{ verticalAlign: 'middle', marginRight: '5px' }} />
+              Pollutant
+            </label>
+            <select 
+              id="pollutant-select" 
+              value={selectedPollutant} 
+              onChange={(e) => setSelectedPollutant(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '4px',
+                border: `1px solid ${theme.border}`,
+                background: theme.cardBg,
+                color: theme.text
+              }}
+            >
+              {Object.entries(pollutantLabels).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="filter-group" style={{ flex: '1', minWidth: '200px' }}>
+            <label htmlFor="timeframe-select" style={{ display: 'block', marginBottom: '8px', color: theme.subtext }}>
+              <Calendar size={16} style={{ verticalAlign: 'middle', marginRight: '5px' }} />
+              Timeframe
+            </label>
+            <select 
+              id="timeframe-select" 
+              value={selectedTimeframe} 
+              onChange={(e) => setSelectedTimeframe(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '4px',
+                border: `1px solid ${theme.border}`,
+                background: theme.cardBg,
+                color: theme.text
+              }}
+            >
+              <option value="month">Monthly</option>
+              <option value="week">Weekly</option>
+            </select>
+          </div>
+
+          <div className="filter-group" style={{ flex: '1', minWidth: '200px' }}>
+            <label htmlFor="year-select" style={{ display: 'block', marginBottom: '8px', color: theme.subtext }}>
+              <Calendar size={16} style={{ verticalAlign: 'middle', marginRight: '5px' }} />
+              Year
+            </label>
+            <select 
+              id="year-select" 
+              value={selectedYear} 
+              onChange={(e) => setSelectedYear(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '4px',
+                border: `1px solid ${theme.border}`,
+                background: theme.cardBg,
+                color: theme.text
+              }}
+            >
+              {years.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
 
       <div className="dashboard-content">
-        <div className="dashboard-grid">
-          <div className="aqi-card">
-            <div className="aqi-header">Current Air Quality</div>
-            <div className="aqi-display">
-              <div className="aqi-value" style={{ color: getAQIColor(currentAQI) }}>
-                {currentAQI}
-              </div>
-              <div className="aqi-label" style={{ color: getAQIColor(currentAQI) }}>{aqiLevel}</div>
+        {/* Top Highlight Row */}
+        <div className="highlight-row" style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: '20px',
+          marginBottom: '20px'
+        }}>
+          {/* AQI Gauge Card */}
+          <div className="highlight-card" style={{
+            background: theme.cardBg,
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            textAlign: 'center',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div className="card-title" style={{ marginBottom: '10px', fontSize: '16px', color: theme.subtext }}>
+              Current AQI · {selectedCity}
             </div>
-            <div className="aqi-city">{selectedCity}</div>
-            <div className="aqi-recommendation">
+            
+            <div className="aqi-gauge" style={{ position: 'relative', width: '160px', height: '160px', margin: '10px 0' }}>
+              <svg width="160" height="160" viewBox="0 0 160 160">
+                {/* Background Arc */}
+                <path 
+                  d="M 80 140 A 60 60 0 1 1 80.1 140" 
+                  fill="none" 
+                  stroke={theme.border} 
+                  strokeWidth="12" 
+                  strokeLinecap="round"
+                />
+                {/* Value Arc */}
+                <path 
+                  d={`M 80 140 A 60 60 0 ${healthImpact.value > 0.5 ? 1 : 0} 1 ${
+                    80 + 60 * Math.sin(2 * Math.PI * healthImpact.value)
+                  } ${
+                    140 - 60 * Math.cos(2 * Math.PI * healthImpact.value)
+                  }`} 
+                  fill="none" 
+                  stroke={healthImpact.color} 
+                  strokeWidth="12" 
+                  strokeLinecap="round"
+                />
+                {/* Value Text */}
+                <text 
+                  x="80" 
+                  y="75" 
+                  textAnchor="middle" 
+                  fontSize="28" 
+                  fontWeight="bold"
+                  fill={theme.text}
+                >
+                  {currentAQI}
+                </text>
+                <text 
+                  x="80" 
+                  y="100" 
+                  textAnchor="middle" 
+                  fontSize="14"
+                  fill={healthImpact.color}
+                >
+                  {aqiLevel}
+                </text>
+              </svg>
+            </div>
+            
+            <div className="aqi-recommendation" style={{ fontSize: '14px', color: theme.subtext, maxWidth: '80%' }}>
               {getHealthRecommendation(aqiLevel)}
             </div>
           </div>
           
-          <div className="chart-card">
-            <h3>{pollutantLabels[selectedPollutant]} Trends ({selectedYear})</h3>
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart
-                  data={timeframeData}
-                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="colorPollutant" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#1E88E5" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#1E88E5" stopOpacity={0.1}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                  <XAxis dataKey="name" stroke="#666" />
-                  <YAxis stroke="#666" />
-                  <Tooltip />
+          {/* City Pollutant Profile */}
+          <div className="highlight-card" style={{
+            background: theme.cardBg,
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
+          }}>
+            <div className="card-title" style={{ marginBottom: '10px', fontSize: '16px', color: theme.subtext }}>
+              {selectedCity} Pollutant Profile
+            </div>
+            
+            <div className="pollutant-profile" style={{ height: '200px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart outerRadius="70%" data={getPollutantRadarData()}>
+                  <PolarGrid stroke={theme.chartGrid} />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: theme.text, fontSize: 12 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 'auto']} tick={{ fill: theme.subtext }} />
+                  <Radar 
+                    name={selectedCity} 
+                    dataKey="A" 
+                    stroke={theme.highlight} 
+                    fill={theme.highlight} 
+                    fillOpacity={0.4} 
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      background: theme.cardBg, 
+                      border: `1px solid ${theme.border}`, 
+                      color: theme.text 
+                    }} 
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Weather Conditions Card */}
+          <div className="highlight-card" style={{
+            background: theme.cardBg,
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
+          }}>
+            <div className="card-title" style={{ marginBottom: '10px', fontSize: '16px', color: theme.subtext }}>
+              Weather Conditions
+            </div>
+            
+            <div className="weather-content" style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              height: '200px', 
+              justifyContent: 'space-around'
+            }}>
+              <div className="weather-main" style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '15px',
+                margin: '10px 0'
+              }}>
+                {weatherData.weatherCondition.includes('Cloud') ? (
+                  <CloudRain size={48} color={theme.highlight} />
+                ) : (
+                  <ThermometerSun size={48} color={theme.highlight} />
+                )}
+                <div className="weather-temp" style={{ fontSize: '36px', fontWeight: 'bold' }}>
+                  {weatherData.temperature}°C
+                </div>
+              </div>
+              
+              <div className="weather-details" style={{ 
+                display: 'flex', 
+                justifyContent: 'space-around',
+                borderTop: `1px solid ${theme.border}`,
+                paddingTop: '15px' 
+              }}>
+                <div className="weather-item">
+                  <div style={{ color: theme.subtext, fontSize: '14px' }}>Humidity</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '18px' }}>{weatherData.humidity}%</div>
+                </div>
+                <div className="weather-item">
+                  <div style={{ color: theme.subtext, fontSize: '14px' }}>Wind</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '18px' }}>{weatherData.windSpeed} m/s</div>
+                </div>
+                <div className="weather-item">
+                  <div style={{ color: theme.subtext, fontSize: '14px' }}>Condition</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '18px' }}>{weatherData.weatherCondition}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Main Charts Row */}
+        <div className="charts-row" style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))',
+          gap: '20px',
+          marginBottom: '20px'
+        }}>
+          {/* Pollutant Time Series */}
+          <div className="chart-card" style={{
+            background: theme.cardBg,
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
+          }}>
+            <div className="card-title" style={{ marginBottom: '15px', fontSize: '16px', color: theme.subtext }}>
+              <TrendingUp size={16} style={{ verticalAlign: 'middle', marginRight: '8px' }} />
+              Air Quality Trend ({selectedTimeframe === 'month' ? 'Monthly' : 'Weekly'})
+            </div>
+            
+            <div className="pollutant-chart" style={{ height: '300px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={timeframeData}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                  <XAxis dataKey="name" tick={{ fill: theme.text }} />
+                  <YAxis tick={{ fill: theme.text }} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      background: theme.cardBg, 
+                      border: `1px solid ${theme.border}`, 
+                      color: theme.text 
+                    }} 
+                  />
                   <Legend />
-                  <Area 
+                  <Line 
                     type="monotone" 
                     dataKey={selectedPollutant} 
-                    stroke="#1E88E5" 
-                    fill="url(#colorPollutant)" 
-                    fillOpacity={1}
-                    activeDot={{ r: 8 }}
+                    stroke={pollutantColors[selectedPollutant]} 
+                    activeDot={{ r: 8 }} 
+                    name={pollutantLabels[selectedPollutant]}
                   />
-                </AreaChart>
+                  {selectedPollutant === 'pm25' && (
+                    <ReferenceLine y={35} label={{ 
+                      value: "WHO Guideline", 
+                      position: 'insideTopRight',
+                      fill: theme.text
+                    }} stroke="#ff0000" strokeDasharray="3 3" />
+                  )}
+                </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
           
-          <div className="chart-card">
-            <h3>City Comparison ({pollutantLabels[selectedPollutant]})</h3>
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart
-                  data={getPollutantComparisonData()}
-                  margin={{ top: 10, right: 30, left: 0, bottom: 5 }}
-                  layout="vertical"
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" horizontal={false} />
-                  <XAxis type="number" stroke="#666" />
-                  <YAxis dataKey="name" type="category" stroke="#666" width={80} />
-                  <Tooltip />
-                  <Bar dataKey="value">
+          {/* City Comparison Chart */}
+          <div className="chart-card" style={{
+            background: theme.cardBg,
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
+          }}>
+            <div className="card-title" style={{ marginBottom: '15px', fontSize: '16px', color: theme.subtext }}>
+              <MapPin size={16} style={{ verticalAlign: 'middle', marginRight: '8px' }} />
+              City Comparison: {pollutantLabels[selectedPollutant]}
+            </div>
+            
+            <div className="city-chart" style={{ height: '300px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={getPollutantComparisonData()} layout="vertical"
+                  margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                  <XAxis type="number" tick={{ fill: theme.text }} />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    tick={{ fill: theme.text }} 
+                    width={80}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      background: theme.cardBg, 
+                      border: `1px solid ${theme.border}`, 
+                      color: theme.text 
+                    }} 
+                  />
+                  <Bar dataKey="value" name={pollutantLabels[selectedPollutant]}>
                     {getPollutantComparisonData().map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
@@ -469,121 +955,229 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
-        <div className="dashboard-section">
-          <h2>Yearly Analysis for {selectedYear}</h2>
-          <div className="dashboard-grid">
-            <div className="chart-card yearly-chart">
-              <h3>Pollutant Comparison ({selectedYear})</h3>
-              <div className="chart-container">
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={getDataByYear()} barSize={40}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                    <XAxis dataKey="name" stroke="#666" />
-                    <YAxis stroke="#666" />
-                    <Tooltip />
-                    <defs>
-                      <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#1E88E5" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#1E88E5" stopOpacity={0.4}/>
-                      </linearGradient>
-                    </defs>
-                    <Bar dataKey="value" fill="url(#barGradient)" radius={[5, 5, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+        
+        {/* Bottom Charts Row */}
+        <div className="charts-row" style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))',
+          gap: '20px',
+          marginBottom: '20px'
+        }}>
+          {/* Health Impacts */}
+          <div className="chart-card" style={{
+            background: theme.cardBg,
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
+          }}>
+            <div className="card-title" style={{ marginBottom: '15px', fontSize: '16px', color: theme.subtext }}>
+              <AlertTriangle size={16} style={{ verticalAlign: 'middle', marginRight: '8px' }} />
+              Health Impacts: {aqiLevel} ({currentAQI})
             </div>
             
-            <div className="chart-card">
-              <h3>Pollutant Distribution ({selectedCity})</h3>
-              <div className="chart-container">
-                <ResponsiveContainer width="100%" height={300}>
-                  <RadarChart outerRadius={90} data={getPollutantRadarData()}>
-                    <PolarGrid />
-                    <PolarAngleAxis dataKey="subject" />
-                    <PolarRadiusAxis angle={30} domain={[0, 'auto']} />
-                    <Radar 
-                      name={selectedCity} 
-                      dataKey="A" 
-                      stroke="#1E88E5" 
-                      fill="#1E88E5" 
-                      fillOpacity={0.6} 
-                    />
-                    <Tooltip />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
+            <div className="health-impacts" style={{ padding: '10px 0' }}>
+              {getHealthImpacts(aqiLevel).map((impact, index) => (
+                <div key={index} className="impact-item" style={{
+                  padding: '12px',
+                  margin: '8px 0',
+                  borderRadius: '8px',
+                  background: index % 2 === 0 ? 'rgba(30, 136, 229, 0.1)' : 'rgba(30, 136, 229, 0.05)',
+                  border: `1px solid ${theme.border}`
+                }}>
+                  <div className="impact-group" style={{ fontWeight: 'bold', marginBottom: '5px' }}>
+                    {impact.group}
+                  </div>
+                  <div className="impact-text" style={{ fontSize: '14px', color: theme.subtext }}>
+                    {impact.impact}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Annual Comparison */}
+          <div className="chart-card" style={{
+            background: theme.cardBg,
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
+          }}>
+            <div className="card-title" style={{ marginBottom: '15px', fontSize: '16px', color: theme.subtext }}>
+              <Calendar size={16} style={{ verticalAlign: 'middle', marginRight: '8px' }} />
+              Annual Pollutant Comparison
+            </div>
+            
+            <div className="annual-chart" style={{ height: '300px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={getPollutantYearlyComparison()}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                  <XAxis dataKey="name" tick={{ fill: theme.text }} />
+                  <YAxis tick={{ fill: theme.text }} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      background: theme.cardBg, 
+                      border: `1px solid ${theme.border}`, 
+                      color: theme.text 
+                    }} 
+                  />
+                  <Legend />
+                  <Bar dataKey="pm25" name="PM2.5" fill={pollutantColors.pm25} barSize={20} />
+                  <Line type="monotone" dataKey="pm10" name="PM10" stroke={pollutantColors.pm10} />
+                  <Line type="monotone" dataKey="o3" name="O₃" stroke={pollutantColors.o3} />
+                </ComposedChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
-
-        <div className="dashboard-section">
-          <h2>Yearly Pollutant Trends</h2>
-          <div className="yearly-comparison">
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={getPollutantYearlyComparison()} barSize={15}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis dataKey="name" stroke="#666" />
-                <YAxis stroke="#666" />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="pm25" name="PM2.5" fill="#1E88E5" />
-                <Bar dataKey="pm10" name="PM10" fill="#4CAF50" />
-                <Bar dataKey="o3" name="O₃" fill="#FFC107" />
-                <Bar dataKey="no2" name="NO₂" fill="#FF5722" />
-                <Bar dataKey="so2" name="SO₂" fill="#9C27B0" />
-                <Bar dataKey="co" name="CO" fill="#607D8B" />
-              </BarChart>
-            </ResponsiveContainer>
+        
+        {/* Pollution Sources and Year Stats */}
+        <div className="charts-row" style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))',
+          gap: '20px',
+          marginBottom: '20px'
+        }}>
+          {/* Top Pollutants */}
+          <div className="chart-card" style={{
+            background: theme.cardBg,
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
+          }}>
+            <div className="card-title" style={{ marginBottom: '15px', fontSize: '16px', color: theme.subtext }}>
+              Top Pollutants in {selectedCity}
+            </div>
+            
+            <div className="top-pollutants-chart" style={{ height: '300px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={getTopPollutantsData()}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    nameKey="name"
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {getTopPollutantsData().map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      background: theme.cardBg, 
+                      border: `1px solid ${theme.border}`, 
+                      color: theme.text 
+                    }} 
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
-
-        <div className="dashboard-section">
-          <h2>Historical Trends</h2>
-          <div className="dashboard-grid">
-            <div className="chart-card full-width">
-              <h3>Monthly Trends for {selectedYear}</h3>
-              <div className="chart-container">
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={timeframeData}>
-                    <defs>
-                      <linearGradient id="colorPm25" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#1E88E5" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#1E88E5" stopOpacity={0.1}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
-                    <XAxis dataKey="name" stroke="#666" />
-                    <YAxis stroke="#666" />
-                    <Tooltip />
-                    <Legend />
-                    <Line 
-                      type="monotone" 
-                      dataKey="pm25" 
-                      name="PM2.5" 
-                      stroke="#1E88E5" 
-                      activeDot={{ r: 8 }} 
-                      strokeWidth={2}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="pm10" 
-                      name="PM10" 
-                      stroke="#4CAF50" 
-                      activeDot={{ r: 8 }} 
-                      strokeWidth={2}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+          
+          {/* Year Summary Stats */}
+          <div className="chart-card" style={{
+            background: theme.cardBg,
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
+          }}>
+            <div className="card-title" style={{ marginBottom: '15px', fontSize: '16px', color: theme.subtext }}>
+              {selectedYear} - Year Summary
+            </div>
+            
+            <div className="year-stats" style={{ height: '300px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={getDataByYear()}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                  <XAxis dataKey="name" tick={{ fill: theme.text }} />
+                  <YAxis tick={{ fill: theme.text }} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      background: theme.cardBg, 
+                      border: `1px solid ${theme.border}`, 
+                      color: theme.text 
+                    }} 
+                  />
+                  <Bar dataKey="value" fill={theme.highlight}>
+                    {Object.entries(pollutantLabels).map(([key, label], index) => (
+                      <Cell key={`cell-${index}`} fill={pollutantColors[key]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
-
-        <div className="dashboard-footer">
-          <p>Data source: Historical Air Quality Data of Cities in Nepal</p>
-          <p>Last updated: {new Date().toLocaleDateString()}</p>
+        
+        {/* Historical Data Analysis */}
+        <div className="charts-row" style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr',
+          gap: '20px',
+          marginBottom: '20px'
+        }}>
+          <div className="chart-card" style={{
+            background: theme.cardBg,
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
+          }}>
+            <div className="card-title" style={{ marginBottom: '15px', fontSize: '16px', color: theme.subtext }}>
+              Historical Data Analysis
+            </div>
+            
+            <div className="historical-analysis" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '15px'
+            }}>
+              <div className="analysis-header" style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 1fr 1fr',
+                padding: '10px 0',
+                borderBottom: `1px solid ${theme.border}`,
+                fontWeight: 'bold'
+              }}>
+                <div>Pollutant</div>
+                <div>Previous Year</div>
+                <div>Current Year</div>
+                <div>Change</div>
+              </div>
+              
+              {getHistoricalComparison().map((item, index) => (
+                <div key={index} className="analysis-row" style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr 1fr 1fr',
+                  padding: '10px 0',
+                  borderBottom: `1px solid ${theme.border}`,
+                  color: item.change > 0 ? '#f44336' : (item.change < 0 ? '#4caf50' : theme.text)
+                }}>
+                  <div>{item.name}</div>
+                  <div>{item.previous}</div>
+                  <div>{item.current}</div>
+                  <div>{item.percentChange > 0 ? `+${item.percentChange}%` : `${item.percentChange}%`}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
+      </div>
+      
+      <div className="dashboard-footer" style={{
+        padding: '20px 0',
+        textAlign: 'center',
+        color: theme.subtext,
+        fontSize: '14px',
+        borderTop: `1px solid ${theme.border}`
+      }}>
+        Air Quality Dashboard · Data Updated: April 2025
       </div>
     </div>
   );
