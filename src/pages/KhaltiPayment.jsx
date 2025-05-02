@@ -1,452 +1,317 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
-  FiCreditCard, 
-  FiAlertCircle, 
-  FiArrowLeft, 
-  FiCalendar, 
-  FiCheckCircle, 
-  FiShield,
-  FiClock,
-  FiLock,
-  FiSmartphone,
-  FiInfo
-} from 'react-icons/fi';
-import './KhaltiPayment.css';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiCreditCard, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import khaltiLogo from '../assets/khalti.png';
 
 const KhaltiPayment = () => {
-  const [subscriptionData, setSubscriptionData] = useState(null);
-  const [paymentUrl, setPaymentUrl] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [paymentInitiated, setPaymentInitiated] = useState(false);
-  const [paymentStep, setPaymentStep] = useState(1);
-  const [toast, setToast] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState(null); // null, 'success', 'failed'
+  const [verificationAttempts, setVerificationAttempts] = useState(0);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Get subscription data from session storage
-    const storedData = sessionStorage.getItem('healthAlertSubscription');
-    
-    if (storedData) {
-      try {
-        const data = JSON.parse(storedData);
-        setSubscriptionData(data);
-      } catch (error) {
-        console.error("Error parsing subscription data:", error);
-        showToast('error', 'Invalid Data', 'Subscription data is invalid');
-        setTimeout(() => navigate('/healthalert'), 3000);
-      }
-    } else {
-      // No subscription data found, redirect to health alert page
-      showToast('error', 'Missing Data', 'No subscription data found');
-      setTimeout(() => navigate('/healthalert'), 3000);
-    }
+  const subscriptionData = JSON.parse(sessionStorage.getItem('healthAlertSubscription'));
+  const {
+    amount = 800,
+    months = 1,
+    planId = 'monthly',
+    userId = '787790',
+    email = 'thapashrijan78@gmail.com',
+    phoneNumber = '9863402224',
+    stations = [],
+    diseases = [],
+    isRenewal = false
+  } = subscriptionData;
 
-    // Check if we have a payment verification response in URL
+  // Calculate VAT (13%) and total amount
+  const vatAmount = Math.round(amount * 0.13);
+  const totalAmount = amount + vatAmount;
+
+  useEffect(() => {
+    // Check for Khalti callback parameters
     const urlParams = new URLSearchParams(window.location.search);
     const pidx = urlParams.get('pidx');
-    const txnId = urlParams.get('txnId');
-    const amount = urlParams.get('amount');
+    const transactionId = urlParams.get('transaction_id');
     const status = urlParams.get('status');
 
-    if (pidx && status) {
-      setPaymentStep(3);
-      verifyPayment(pidx, txnId, amount, status);
+    if (pidx && status === 'Completed') {
+      // Payment was successful, verify it
+      verifyPayment(pidx, transactionId);
+    } else if (status === 'Failed') {
+      // Payment failed
+      setPaymentStatus('failed');
     }
-  }, [navigate]);
+  }, []);
 
-  // Show toast notification
-  const showToast = (type, title, message) => {
-    setToast({ type, title, message });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  // Format date to display in a friendly format
-  const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  // Format amount with commas
-  const formatAmount = (amount) => {
-    return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  };
-
-  // Initialize Khalti payment
   const initiatePayment = async () => {
-    if (!subscriptionData) {
-      showToast('error', 'Payment Failed', 'No subscription data available');
-      return;
-    }
-
-    setIsLoading(true);
-    setMessage('');
-
-    const data = {
-      return_url: window.location.origin + "/khalti-payment",
-      website_url: window.location.origin,
-      amount: subscriptionData.amount * 100, // Convert to paisa (Khalti's smallest unit)
-      purchase_order_id: `healthalert-${Date.now()}`,
-      purchase_order_name: `NepAir Health Alert ${subscriptionData.months}-Month Subscription`,
-      customer_info: {
-        name: auth.currentUser?.displayName || "NepAir User",
-        email: subscriptionData.email,
-        phone: subscriptionData.phoneNumber,
-      },
-      amount_breakdown: [
-        {
-          label: `${subscriptionData.months}-Month Subscription`,
-          amount: subscriptionData.amount * 100,
-        }
-      ],
-      product_details: [
-        {
-          identity: "health-alert-subscription",
-          name: "NepAir Health Alert",
-          total_price: subscriptionData.amount * 100,
-          quantity: 1,
-          unit_price: subscriptionData.amount * 100,
-        },
-      ],
-    };
-
-    const headers = {
-      Authorization: "Key e53ffb1e15a443ce8c65cfb95e0037e8", // Replace with your Khalti Key
-    };
-
+    setIsProcessing(true);
+    
     try {
+      const data = {
+        return_url: `${window.location.origin}/khalti-callback?userId=${userId}`,
+        website_url: window.location.origin,
+        amount: totalAmount * 100, // Convert to paisa
+        purchase_order_id: `HA-${Date.now()}`,
+        purchase_order_name: `Health Alert ${months}-month ${isRenewal ? 'Renewal' : 'Subscription'}`,
+        customer_info: {
+          name: "Health Alert User",
+          email: email,
+          phone: phoneNumber,
+        },
+        amount_breakdown: [
+          {
+            label: "Subscription Fee",
+            amount: amount * 100,
+          },
+          {
+            label: "VAT (13%)",
+            amount: vatAmount * 100,
+          }
+        ],
+        product_details: [
+          {
+            identity: `HA-${userId}`,
+            name: `Health Alert ${months}-month Subscription`,
+            total_price: totalAmount * 100,
+            quantity: 1,
+            unit_price: totalAmount * 100,
+          },
+        ],
+      };
+
+      const headers = {
+        Authorization: `Key ${process.env.REACT_APP_KHALTI_SECRET_KEY}`,
+        'Content-Type': 'application/json'
+      };
+
       const response = await axios.post(
         "https://a.khalti.com/api/v2/epayment/initiate/",
         data,
         { headers }
       );
       
-      setPaymentUrl(response.data.payment_url);
-      setPaymentInitiated(true);
-      setPaymentStep(2);
-      setIsLoading(false);
+      // Store subscription data in local storage for verification after return
+      localStorage.setItem('pendingHealthSubscription', JSON.stringify({
+        ...subscriptionData,
+        pidx: response.data.pidx,
+        paymentUrl: response.data.payment_url,
+        amount: totalAmount
+      }));
       
-      // Auto-redirect to Khalti payment page
+      // Redirect to Khalti payment page
       window.location.href = response.data.payment_url;
+      
     } catch (error) {
-      console.error("Khalti payment initiation error:", error);
-      showToast('error', 'Payment Failed', 'Failed to initiate payment');
-      setIsLoading(false);
+      console.error("Payment initiation error:", error.response?.data || error.message);
+      setIsProcessing(false);
+      setPaymentStatus('failed');
     }
   };
 
-  // Verify payment and update subscription
-  const verifyPayment = async (pidx, txnId, amount, status) => {
-    setIsLoading(true);
-    
+  const verifyPayment = async (pidx, transactionId) => {
     try {
-      // Get subscription data from session storage again (in case page was refreshed)
-      const storedData = sessionStorage.getItem('healthAlertSubscription');
-      const subscriptionData = storedData ? JSON.parse(storedData) : null;
-      
-      if (!subscriptionData || !subscriptionData.userId) {
-        throw new Error('Subscription data not found');
-      }
-      
-      if (status === 'Completed') {
-        // Calculate subscription expiry date (based on selected number of months)
-        const today = new Date();
-        const expiryDate = new Date();
-        expiryDate.setMonth(today.getMonth() + subscriptionData.months);
-        
-        // Update user document with subscription details
-        await setDoc(
-          doc(db, 'users', subscriptionData.userId),
-          {
-            healthAlert: {
-              subscribed: true,
-              subscribedAt: today,
-              stations: subscriptionData.stations,
-              diseases: subscriptionData.diseases,
-              phoneNumber: subscriptionData.phoneNumber,
-              months: subscriptionData.months,
-              paymentInfo: {
-                pidx: pidx,
-                txnId: txnId,
-                amount: amount,
-                status: status,
-                paymentDate: today,
-                expiryDate: expiryDate
-              }
-            },
+      const response = await axios.get(
+        `https://a.khalti.com/api/v2/epayment/lookup/`,
+        {
+          headers: {
+            Authorization: `Key ${process.env.REACT_APP_KHALTI_SECRET_KEY}`
           },
-          { merge: true }
-        );
-        
-        // Set success flag in session storage
-        sessionStorage.setItem('paymentSuccess', 'true');
-        
-        // Clean up subscription data
-        sessionStorage.removeItem('healthAlertSubscription');
-        
-        // Show success message before redirecting
-        setMessage('Payment successful! Redirecting to Health Alert dashboard...');
-        setTimeout(() => navigate('/healthalert'), 3000);
+          params: { pidx }
+        }
+      );
+
+      if (response.data.status === 'Completed') {
+        // Payment verified successfully
+        await completeSubscription(pidx, transactionId, response.data);
+        setPaymentStatus('success');
       } else {
-        // Payment failed or was cancelled
-        setMessage(`Payment ${status.toLowerCase()}. Please try again.`);
-        setPaymentStep(1);
-        setTimeout(() => setIsLoading(false), 1000);
+        // Payment not yet completed, retry after delay
+        if (verificationAttempts < 5) {
+          setTimeout(() => {
+            setVerificationAttempts(prev => prev + 1);
+            verifyPayment(pidx, transactionId);
+          }, 2000);
+        } else {
+          // Max attempts reached
+          setPaymentStatus('failed');
+        }
       }
     } catch (error) {
-      console.error("Payment verification error:", error);
-      showToast('error', 'Verification Failed', 'Please contact support');
-      setIsLoading(false);
+      console.error("Payment verification error:", error.response?.data || error.message);
+      setPaymentStatus('failed');
     }
   };
 
-  // Payment progress steps
-  const renderProgressSteps = () => {
-    const steps = [
-      { label: 'Review', number: 1, icon: <FiInfo /> },
-      { label: 'Payment', number: 2, icon: <FiCreditCard /> },
-      { label: 'Confirmation', number: 3, icon: <FiCheckCircle /> }
-    ];
+  const completeSubscription = async (pidx, transactionId, paymentDetails) => {
+    try {
+      // Retrieve the pending subscription data
+      const pendingSubscription = JSON.parse(localStorage.getItem('pendingHealthSubscription'));
+      
+      if (!pendingSubscription) {
+        throw new Error('No pending subscription found');
+      }
 
-    return (
-      <div className="payment-progress">
-        {steps.map((step, index) => (
-          <React.Fragment key={step.number}>
-            <div className="progress-step">
-              <div 
-                className={`step-circle ${
-                  paymentStep === step.number ? 'active' : 
-                  paymentStep > step.number ? 'completed' : ''
-                }`}
-              >
-                {paymentStep > step.number ? <FiCheckCircle /> : step.icon}
-              </div>
-              <div 
-                className={`step-label ${
-                  paymentStep === step.number ? 'active' : 
-                  paymentStep > step.number ? 'completed' : ''
-                }`}
-              >
-                {step.label}
-              </div>
-            </div>
-            {index < steps.length - 1 && (
-              <div className={`progress-connector ${
-                paymentStep > index + 1 ? 'completed' : ''
-              }`}></div>
-            )}
-          </React.Fragment>
-        ))}
-      </div>
-    );
+      // Prepare subscription data for Firebase
+      const subscriptionRecord = {
+        userId: pendingSubscription.userId,
+        email: pendingSubscription.email,
+        phoneNumber: pendingSubscription.phoneNumber,
+        stations: pendingSubscription.stations,
+        diseases: pendingSubscription.diseases,
+        planId: pendingSubscription.planId,
+        months: pendingSubscription.months,
+        isRenewal: pendingSubscription.isRenewal,
+        paymentInfo: {
+          amount: pendingSubscription.amount,
+          pidx,
+          transactionId,
+          paymentMethod: paymentDetails.payment_method,
+          paymentDate: new Date(),
+          expiryDate: new Date(
+            new Date().setMonth(new Date().getMonth() + pendingSubscription.months)
+          ),
+          details: paymentDetails
+        },
+        subscribed: true,
+        createdAt: new Date()
+      };
+
+      // Here you would typically send this to your backend to save to Firebase
+      // For now, we'll simulate this and store in sessionStorage
+      sessionStorage.setItem('healthAlertSubscription', JSON.stringify(subscriptionRecord));
+      localStorage.removeItem('pendingHealthSubscription');
+
+      // Simulate API call to backend
+      console.log('Subscription completed:', subscriptionRecord);
+
+    } catch (error) {
+      console.error("Subscription completion error:", error);
+      throw error;
+    }
   };
+
+  const handleRetryPayment = () => {
+    setPaymentStatus(null);
+    initiatePayment();
+  };
+
+  const handleReturnToHealthAlerts = () => {
+    navigate('/health-alerts');
+  };
+
+  if (paymentStatus === 'success') {
+    return (
+      <motion.div 
+        className="payment-success-container"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="success-icon">
+          <FiCheckCircle size={80} color="#4BB543" />
+        </div>
+        <h2>Payment Successful!</h2>
+        <p>Your Health Alert subscription has been activated.</p>
+        <div className="payment-details">
+          <p><strong>Plan:</strong> {months}-month subscription</p>
+          <p><strong>Amount:</strong> NPR {totalAmount.toLocaleString()}</p>
+          <p><strong>Status:</strong> Active</p>
+        </div>
+        <button 
+          className="return-button"
+          onClick={handleReturnToHealthAlerts}
+        >
+          Return to Health Alerts
+        </button>
+      </motion.div>
+    );
+  }
+
+  if (paymentStatus === 'failed') {
+    return (
+      <motion.div 
+        className="payment-failed-container"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="failed-icon">
+          <FiAlertCircle size={80} color="#FF0000" />
+        </div>
+        <h2>Payment Failed</h2>
+        <p>We couldn't process your payment. Please try again.</p>
+        <div className="action-buttons">
+          <button 
+            className="retry-button"
+            onClick={handleRetryPayment}
+          >
+            Retry Payment
+          </button>
+          <button 
+            className="return-button"
+            onClick={handleReturnToHealthAlerts}
+          >
+            Return to Health Alerts
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <div className="khalti-payment-container">
-      {isLoading && (
-        <div className="loading-overlay">
-          <div className="loading-content">
-            <div className="spinner"></div>
-            <p>Processing your request...</p>
-          </div>
+      <div className="payment-header">
+        <h2>Complete Your Subscription</h2>
+        <p>Secure payment via Khalti</p>
+      </div>
+
+      <div className="payment-summary">
+        <div className="summary-item">
+          <span>Plan:</span>
+          <span>{months}-month Health Alert Subscription</span>
         </div>
-      )}
-      
-      {toast && (
-        <div className={`toast ${toast.type}`}>
-          <div className="toast-icon">
-            {toast.type === 'success' ? <FiCheckCircle /> : <FiAlertCircle />}
-          </div>
-          <div className="toast-content">
-            <div className="toast-title">{toast.title}</div>
-            <div>{toast.message}</div>
-          </div>
+        <div className="summary-item">
+          <span>Subscription Fee:</span>
+          <span>NPR {amount.toLocaleString()}</span>
         </div>
-      )}
-      
-      <div className="khalti-payment-card">
-        <div className="card-header">
-          <h2>
-            <FiCreditCard className="header-icon" /> 
-            <span>NepAir Health Alert</span>
-            <span className="header-subtitle">Payment Portal</span>
-          </h2>
+        <div className="summary-item">
+          <span>VAT (13%):</span>
+          <span>NPR {vatAmount.toLocaleString()}</span>
         </div>
-        
-        {renderProgressSteps()}
-        
-        {message && (
-          <div className={`message ${message.includes('successful') ? 'success' : 'error'}`}>
-            {message.includes('successful') ? <FiCheckCircle className="message-icon" /> : <FiAlertCircle className="message-icon" />}
-            {message}
-          </div>
-        )}
-        
-        {subscriptionData && !paymentInitiated && (
-          <div className="payment-summary">
-            <h3>Subscription Summary</h3>
-            
-            <div className="summary-details">
-              <div className="summary-row">
-                <span>Service:</span>
-                <span>Health Alert Subscription</span>
-              </div>
-              
-              <div className="summary-row highlight">
-                <span>Duration:</span>
-                <span>{subscriptionData.months} {subscriptionData.months === 1 ? 'Month' : 'Months'}</span>
-              </div>
-              
-              <div className="summary-row">
-                <span>Valid Until:</span>
-                <span className="valid-until">
-                  <FiCalendar className="inline-icon" /> 
-                  {formatDate(new Date(new Date().setMonth(new Date().getMonth() + subscriptionData.months)))}
-                </span>
-              </div>
-              
-              <div className="summary-row">
-                <span>Monitoring Stations:</span>
-                <span>{subscriptionData.stations.join(', ')}</span>
-              </div>
-              
-              <div className="summary-row">
-                <span>Health Conditions:</span>
-                <span>{subscriptionData.diseases.join(', ')}</span>
-              </div>
-              
-              <div className="summary-row">
-                <span>Contact Number:</span>
-                <span><FiSmartphone className="inline-icon" /> +977 {subscriptionData.phoneNumber}</span>
-              </div>
-              
-              <div className="summary-row total">
-                <span>Total Amount:</span>
-                <span>NPR {formatAmount(subscriptionData.amount)}</span>
-              </div>
-            </div>
-            
-            <div className="subscription-notice">
-              <FiInfo className="notice-icon" />
-              <p>
-                Your subscription will be active immediately after successful payment and will 
-                remain active until {formatDate(new Date(new Date().setMonth(new Date().getMonth() + subscriptionData.months)))}.
-              </p>
-            </div>
-            
-            <div className="payment-info">
-              <div className="payment-security">
-                <FiShield className="info-icon security" /> 
-                <span>Secure Payment via Khalti Digital Wallet</span>
-              </div>
-              <div className="payment-timing">
-                <FiClock className="info-icon" /> 
-                <span>Processing time: Less than 1 minute</span>
-              </div>
-            </div>
-            
-            <div className="payment-actions">
-              <button 
-                className="back-button"
-                onClick={() => navigate('/healthalert')}
-                aria-label="Go back to Health Alert page"
-              >
-                <FiArrowLeft className="button-icon" /> Back
-              </button>
-              
-              <button 
-                className="khalti-button"
-                onClick={initiatePayment}
-                disabled={isLoading}
-                aria-label="Pay with Khalti"
-              >
-                <FiLock className="button-icon" /> Pay NPR {formatAmount(subscriptionData?.amount || 0)}
-              </button>
-            </div>
-          </div>
-        )}
-        
-        {paymentInitiated && paymentUrl && (
-          <div className="payment-redirect">
-            <div className="redirect-message">
-              <FiAlertCircle className="redirect-icon pulse" />
-              <p>Redirecting to Khalti payment page...</p>
-              <p className="redirect-subtitle">If you're not redirected automatically, please click the button below:</p>
-            </div>
-            
-            <a 
-              href={paymentUrl} 
-              className="khalti-link-button"
-              target="_blank" 
-              rel="noopener noreferrer"
-              aria-label="Continue to Khalti Payment"
-            >
-              <FiCreditCard className="button-icon" /> Continue to Khalti Payment
-            </a>
-            
-            <button 
-              className="cancel-button"
-              onClick={() => {
-                setPaymentInitiated(false);
-                setPaymentUrl(null);
-                setPaymentStep(1);
-              }}
-              aria-label="Cancel Payment"
-            >
-              Cancel Payment
-            </button>
-          </div>
-        )}
-        
-        {paymentStep === 3 && (
-          <div className="payment-success">
-            <div className="success-icon-wrapper">
-              <FiCheckCircle className="success-icon" />
-            </div>
-            <h3>Payment Successful!</h3>
-            <p>Your Health Alert subscription is now active.</p>
-            <p className="transaction-id">Transaction ID: {new URLSearchParams(window.location.search).get('txnId') || 'N/A'}</p>
-            
-            <div className="success-details">
-              <div className="success-detail-row">
-                <span>Status:</span>
-                <span className="success-status">Active</span>
-              </div>
-              <div className="success-detail-row">
-                <span>Amount Paid:</span>
-                <span>NPR {formatAmount(subscriptionData?.amount || 0)}</span>
-              </div>
-              <div className="success-detail-row">
-                <span>Payment Date:</span>
-                <span>{formatDate(new Date())}</span>
-              </div>
-            </div>
-            
-            <button 
-              className="dashboard-button"
-              onClick={() => navigate('/healthalert')}
-              aria-label="Go to Health Alert Dashboard"
-            >
-              Go to Dashboard
-            </button>
-          </div>
-        )}
-        
-        <div className="card-footer">
-          <div className="secure-badge">
-            <FiLock className="footer-icon" /> Secured by Khalti
-          </div>
-          <div className="copyright">
-            © {new Date().getFullYear()} NepAir Health Alert
-          </div>
+        <div className="summary-item total">
+          <span>Total Amount:</span>
+          <span>NPR {totalAmount.toLocaleString()}</span>
         </div>
+      </div>
+
+      <div className="payment-method">
+        <div className="khalti-branding">
+          <img src={khaltiLogo} alt="Khalti Payment" />
+          <p>You'll be redirected to Khalti to complete your payment securely</p>
+        </div>
+      </div>
+
+      <div className="payment-actions">
+        <button 
+          className="pay-now-button"
+          onClick={initiatePayment}
+          disabled={isProcessing}
+        >
+          {isProcessing ? 'Processing...' : 'Pay with Khalti'}
+        </button>
+        <button 
+          className="cancel-button"
+          onClick={handleReturnToHealthAlerts}
+          disabled={isProcessing}
+        >
+          Cancel
+        </button>
+      </div>
+
+      <div className="payment-security">
+        <FiCreditCard className="security-icon" />
+        <p>Your payment is secure and encrypted. We don't store your payment details.</p>
       </div>
     </div>
   );

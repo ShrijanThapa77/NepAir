@@ -1,9 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import * as mobilenet from '@tensorflow-models/mobilenet';
-import * as tf from '@tensorflow/tfjs'; // ✅ Correct package for browser
+import * as tf from '@tensorflow/tfjs';
 import axios from 'axios';
+import { FiCamera, FiUpload, FiCheckCircle, FiAlertCircle, FiX } from 'react-icons/fi';
 import './ReportPollutionPage.css';
 
 const ReportPollutionPage = () => {
@@ -21,6 +22,9 @@ const ReportPollutionPage = () => {
   const [error, setError] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isVehicleImage, setIsVehicleImage] = useState(null);
+  const [locationSuggestions, setLocationSuggestions] = useState([]);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const [isModelLoading, setIsModelLoading] = useState(false);
   const imageRef = useRef(null);
   const navigate = useNavigate();
 
@@ -28,23 +32,57 @@ const ReportPollutionPage = () => {
   const uploadPreset = 'pollution_reports';
 
   const pollutionTypes = [
-    { value: 'smoke', label: 'Black Smoke' },
-    { value: 'dust', label: 'Excessive Dust' },
-    { value: 'liquid', label: 'Liquid Pollution' },
-    { value: 'noise', label: 'White smoke' },
-    { value: 'other', label: 'Other' },
+    { value: 'smoke', label: 'Black Smoke', icon: '💨' },
+    { value: 'dust', label: 'Excessive Dust', icon: '💨' },
+    { value: 'liquid', label: 'Liquid Pollution', icon: '💧' },
+    { value: 'noise', label: 'Noise Pollution', icon: '🔊' },
+    { value: 'white-smoke', label: 'White Smoke', icon: '💨' },
+    { value: 'other', label: 'Other', icon: '⚠️' },
   ];
 
   const severityLevels = [
-    { value: 'low', label: 'Low' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'high', label: 'High' },
-    { value: 'extreme', label: 'Extreme' },
+    { value: 'low', label: 'Low', color: '#4CAF50' },
+    { value: 'medium', label: 'Medium', color: '#FFC107' },
+    { value: 'high', label: 'High', color: '#FF9800' },
+    { value: 'extreme', label: 'Extreme', color: '#F44336' },
   ];
+
+  const nepaliCities = [
+    "Kathmandu", "Pokhara", "Lalitpur", "Bhaktapur", "Biratnagar", 
+    "Birgunj", "Dharan", "Butwal", "Nepalgunj", "Hetauda",
+    "Janakpur", "Bharatpur", "Mahendranagar", "Itahari", "Dhulikhel"
+  ];
+
+  useEffect(() => {
+    // Load TensorFlow.js model when component mounts
+    const loadModel = async () => {
+      setIsModelLoading(true);
+      await tf.ready();
+      setIsModelLoading(false);
+    };
+    loadModel();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    if (name === 'location') {
+      if (value.length > 2) {
+        const filtered = nepaliCities.filter(city => 
+          city.toLowerCase().includes(value.toLowerCase())
+        );
+        setLocationSuggestions(filtered);
+        setShowLocationSuggestions(true);
+      } else {
+        setShowLocationSuggestions(false);
+      }
+    }
+  };
+
+  const selectLocation = (location) => {
+    setFormData(prev => ({ ...prev, location }));
+    setShowLocationSuggestions(false);
   };
 
   const handleImageChange = async (e) => {
@@ -70,26 +108,40 @@ const ReportPollutionPage = () => {
     setError(null);
 
     // Run MobileNet model to validate if image is a vehicle
-    const img = new Image();
-    img.src = imageURL;
-    img.crossOrigin = 'anonymous';
-    img.onload = async () => {
-      const model = await mobilenet.load();
-      const predictions = await model.classify(img);
+    try {
+      setIsModelLoading(true);
+      const img = new Image();
+      img.src = imageURL;
+      img.crossOrigin = 'anonymous';
+      
+      img.onload = async () => {
+        try {
+          const model = await mobilenet.load();
+          const predictions = await model.classify(img);
 
-      const vehicleKeywords = ['car', 'truck', 'bus', 'motorcycle', 'bike', 'van', 'vehicle'];
-      const match = predictions.some(pred =>
-        vehicleKeywords.some(keyword =>
-          pred.className.toLowerCase().includes(keyword)
-        )
-      );
+          const vehicleKeywords = ['car', 'truck', 'bus', 'motorcycle', 'bike', 'van', 'vehicle', 'auto'];
+          const match = predictions.some(pred =>
+            vehicleKeywords.some(keyword =>
+              pred.className.toLowerCase().includes(keyword)
+            )
+          );
 
-      setIsVehicleImage(match);
-      if (!match) {
-        setError('Only vehicle images are accepted. Please upload a valid vehicle photo.');
-        setFormData(prev => ({ ...prev, image: null, imagePreview: null }));
-      }
-    };
+          setIsVehicleImage(match);
+          if (!match) {
+            setError('Image does not appear to be a vehicle. Please upload a clear photo of the vehicle.');
+            setFormData(prev => ({ ...prev, image: null, imagePreview: null }));
+          }
+        } catch (modelError) {
+          console.error('Model error:', modelError);
+          setError('Could not verify vehicle image. Please ensure it shows the vehicle clearly.');
+        } finally {
+          setIsModelLoading(false);
+        }
+      };
+    } catch (err) {
+      setIsModelLoading(false);
+      setError('Error processing image. Please try again.');
+    }
   };
 
   const uploadImageToCloudinary = async (imageFile) => {
@@ -118,9 +170,10 @@ const ReportPollutionPage = () => {
   };
 
   const submitReportToBackend = async (reportData) => {
-    console.log('Submitting:', reportData);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return { success: true };
+    // In a real app, this would be an API call to your backend
+    console.log('Submitting report:', reportData);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    return { success: true, reportId: `REP-${Date.now()}` };
   };
 
   const handleSubmit = async (e) => {
@@ -156,111 +209,278 @@ const ReportPollutionPage = () => {
         status: 'pending',
       };
 
-      await submitReportToBackend(reportData);
-      setSubmitSuccess(true);
-      setTimeout(() => navigate('/'), 3000);
+      const response = await submitReportToBackend(reportData);
+      if (response.success) {
+        setSubmitSuccess(true);
+        setTimeout(() => navigate('/'), 3000);
+      } else {
+        throw new Error('Failed to submit report');
+      }
     } catch (err) {
-      setError(err.message || 'Failed to submit report.');
+      setError(err.message || 'Failed to submit report. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const removeImage = () => {
+    setFormData(prev => ({ ...prev, image: null, imagePreview: null }));
+    setIsVehicleImage(null);
+  };
+
   return (
-    <div className="page-container">
-      <div className="form-background">
-        <div className="form-wrapper">
+    <motion.div 
+      className="report-pollution-page"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="report-container">
+        <motion.div 
+          className="report-card"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1, duration: 0.3 }}
+        >
+          <div className="report-header">
+            <h1>Report Polluting Vehicle</h1>
+            <p>Help make our cities cleaner by reporting vehicles causing pollution</p>
+          </div>
+
           <form onSubmit={handleSubmit} className="report-form">
-            <h2 className="form-title">Report Polluting Vehicle</h2>
+            <AnimatePresence>
+              {error && (
+                <motion.div 
+                  className="error-message"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <FiAlertCircle className="error-icon" />
+                  <span>{error}</span>
+                  <button 
+                    type="button" 
+                    className="close-error" 
+                    onClick={() => setError(null)}
+                  >
+                    <FiX />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {error && <div className="error-message">{error}</div>}
-
-            <input
-              type="text"
-              name="vehicleNumber"
-              placeholder="Vehicle Number"
-              value={formData.vehicleNumber}
-              onChange={handleChange}
-              required
-            />
-
-            <input
-              type="text"
-              name="location"
-              placeholder="Location"
-              value={formData.location}
-              onChange={handleChange}
-              required
-            />
-
-            <select
-              name="pollutionType"
-              value={formData.pollutionType}
-              onChange={handleChange}
-            >
-              {pollutionTypes.map(type => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-
-            <div className="severity-options">
-              {severityLevels.map(level => (
-                <label key={level.value}>
-                  <input
-                    type="radio"
-                    name="severity"
-                    value={level.value}
-                    checked={formData.severity === level.value}
-                    onChange={handleChange}
-                  />
-                  {level.label}
-                </label>
-              ))}
+            <div className="form-group">
+              <label htmlFor="vehicleNumber">Vehicle Number</label>
+              <input
+                type="text"
+                id="vehicleNumber"
+                name="vehicleNumber"
+                placeholder="e.g. Ba 1 Pa 1234"
+                value={formData.vehicleNumber}
+                onChange={handleChange}
+                required
+              />
             </div>
 
-            <textarea
-              name="description"
-              placeholder="Description"
-              rows={4}
-              value={formData.description}
-              onChange={handleChange}
-            />
+            <div className="form-group location-group">
+              <label htmlFor="location">Location</label>
+              <input
+                type="text"
+                id="location"
+                name="location"
+                placeholder="Where did you see this pollution?"
+                value={formData.location}
+                onChange={handleChange}
+                required
+              />
+              {showLocationSuggestions && locationSuggestions.length > 0 && (
+                <div className="location-suggestions">
+                  {locationSuggestions.map((city, index) => (
+                    <div 
+                      key={index} 
+                      className="suggestion-item"
+                      onClick={() => selectLocation(city)}
+                    >
+                      {city}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              disabled={isSubmitting}
-            />
+            <div className="form-group">
+              <label>Pollution Type</label>
+              <div className="pollution-types">
+                {pollutionTypes.map(type => (
+                  <label 
+                    key={type.value} 
+                    className={`pollution-type-option ${formData.pollutionType === type.value ? 'active' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="pollutionType"
+                      value={type.value}
+                      checked={formData.pollutionType === type.value}
+                      onChange={handleChange}
+                    />
+                    <span className="pollution-icon">{type.icon}</span>
+                    {type.label}
+                  </label>
+                ))}
+              </div>
+            </div>
 
-            {formData.imagePreview && (
-              <div>
-                <img
-                  src={formData.imagePreview}
-                  alt="Preview"
-                  ref={imageRef}
-                  style={{ maxWidth: '100%', marginTop: '10px' }}
-                />
-                {uploadProgress > 0 && (
-                  <div className="upload-progress-bar">
-                    <div
-                      className="upload-progress-fill"
-                      style={{ width: `${uploadProgress}%` }}
-                    ></div>
+            <div className="form-group">
+              <label>Severity Level</label>
+              <div className="severity-levels">
+                {severityLevels.map(level => (
+                  <label 
+                    key={level.value} 
+                    className="severity-option"
+                    style={{ 
+                      backgroundColor: formData.severity === level.value ? level.color : '#f5f5f5',
+                      color: formData.severity === level.value ? '#fff' : '#333'
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="severity"
+                      value={level.value}
+                      checked={formData.severity === level.value}
+                      onChange={handleChange}
+                    />
+                    {level.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="description">Description (Optional)</label>
+              <textarea
+                id="description"
+                name="description"
+                placeholder="Provide additional details about the pollution incident..."
+                rows={4}
+                value={formData.description}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Upload Vehicle Photo</label>
+              <div className={`image-upload ${formData.imagePreview ? 'has-image' : ''}`}>
+                {!formData.imagePreview ? (
+                  <>
+                    <label htmlFor="image-upload" className="upload-prompt">
+                      <FiCamera className="upload-icon" />
+                      <span>Click to upload vehicle photo</span>
+                      <span className="upload-hint">(Max 5MB, JPEG/PNG)</span>
+                    </label>
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      disabled={isSubmitting}
+                    />
+                  </>
+                ) : (
+                  <div className="image-preview-container">
+                    <div className="image-preview-wrapper">
+                      <img
+                        src={formData.imagePreview}
+                        alt="Vehicle preview"
+                        ref={imageRef}
+                        className="image-preview"
+                      />
+                      <button 
+                        type="button" 
+                        className="remove-image-btn"
+                        onClick={removeImage}
+                        disabled={isSubmitting}
+                      >
+                        <FiX />
+                      </button>
+                    </div>
+                    {isModelLoading && (
+                      <div className="image-processing">
+                        <div className="processing-spinner"></div>
+                        <span>Verifying vehicle image...</span>
+                      </div>
+                    )}
+                    {isVehicleImage === true && (
+                      <div className="image-verified">
+                        <FiCheckCircle className="verified-icon" />
+                        <span>Vehicle verified</span>
+                      </div>
+                    )}
+                    {uploadProgress > 0 && uploadProgress < 100 && (
+                      <div className="upload-progress">
+                        <div 
+                          className="progress-bar"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                        <span>{uploadProgress}% uploaded</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
+            </div>
 
-            <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Submitting...' : 'Submit Report'}
-            </button>
+            <div className="form-actions">
+              <button 
+                type="submit" 
+                className="submit-btn"
+                disabled={isSubmitting || isModelLoading}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="spinner"></div>
+                    Submitting Report...
+                  </>
+                ) : (
+                  <>
+                    <FiUpload className="submit-icon" />
+                    Submit Report
+                  </>
+                )}
+              </button>
+            </div>
           </form>
-        </div>
+        </motion.div>
+
+        <AnimatePresence>
+          {submitSuccess && (
+            <motion.div 
+              className="success-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div 
+                className="success-card"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+              >
+                <FiCheckCircle className="success-icon" />
+                <h2>Report Submitted Successfully!</h2>
+                <p>Thank you for helping make our environment cleaner. Your report has been received and will be reviewed.</p>
+                <button 
+                  className="success-btn"
+                  onClick={() => navigate('/')}
+                >
+                  Return to Home
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

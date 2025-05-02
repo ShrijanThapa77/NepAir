@@ -4,11 +4,12 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
 import { 
   FiAlertCircle, FiCheckCircle, FiEdit, FiTrash2, FiPhone, FiMail,
   FiMapPin, FiHeart, FiCreditCard, FiCalendar, FiInfo, FiRefreshCw,
   FiClock, FiShield, FiDollarSign, FiCheck, FiArrowUpRight, FiAlertTriangle,
-  FiX, FiMessageSquare, FiRepeat
+  FiX, FiMessageSquare, FiRepeat, FiLoader
 } from 'react-icons/fi';
 import { TbRefresh } from "react-icons/tb";
 import './HealthAlert.css';
@@ -41,6 +42,12 @@ function HealthAlert() {
   const [manualTestMode, setManualTestMode] = useState(false);
   const [testStartDate, setTestStartDate] = useState('');
   const [testEndDate, setTestEndDate] = useState('');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+  const [paymentUrl, setPaymentUrl] = useState('');
+  const [paymentVerificationInProgress, setPaymentVerificationInProgress] = useState(false);
+  const [transactionId, setTransactionId] = useState('');
   const navigate = useNavigate();
 
   const stationOptions = [
@@ -95,23 +102,19 @@ function HealthAlert() {
     }
   ];
 
-  // Calculate subscription amount based on selected plan
   const getSubscriptionAmount = () => {
     return plans.find(plan => plan.id === selectedPlan)?.price || 800;
   };
 
-  // Format number with thousands separator
   const formatNumber = (num) => {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   };
 
-  // Format number to display in health alert dashboard
   const formatNum = (num) => {
     num = num/100;
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   };
 
-  // Format date helper
   const formatDate = (date) => {
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -120,15 +123,6 @@ function HealthAlert() {
     });
   };
 
-  // Format time helper
-  const formatTime = (date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  // Calculate time remaining (in days, hours, minutes)
   const calculateTimeRemaining = (endDate) => {
     const now = new Date();
     const end = new Date(endDate);
@@ -145,21 +139,38 @@ function HealthAlert() {
     return { days, hours, minutes, expired: false };
   };
 
-  // Update subscription date preview based on selected plan
   useEffect(() => {
     if (!manualTestMode) {
       updateSubscriptionDates();
     }
   }, [selectedPlan, manualTestMode]);
 
-  // Check user authentication and subscription status
+  useEffect(() => {
+    // Check URL for payment verification
+    const queryParams = new URLSearchParams(window.location.search);
+    const pidx = queryParams.get('pidx');
+    const txnId = queryParams.get('txnId');
+    const amount = queryParams.get('amount');
+    const mobile = queryParams.get('mobile');
+    const purchase_order_id = queryParams.get('purchase_order_id');
+    const purchase_order_name = queryParams.get('purchase_order_name');
+    const status = queryParams.get('status');
+    
+    if (pidx && status === "Completed") {
+      setTransactionId(txnId || '');
+      setPaymentVerificationInProgress(true);
+      
+      // Clear URL parameters without refreshing page
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
         setIsLoading(true);
         try {
-          // Set up real-time listener for the user document
           const userDocRef = doc(db, 'users', user.uid);
           const unsubscribeDoc = onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists() && docSnap.data().healthAlert?.subscribed) {
@@ -170,7 +181,6 @@ function HealthAlert() {
               setPhoneNumber(healthAlertData.phoneNumber || '');
               setSubscriptionDetails(healthAlertData);
               
-              // Format the subscription dates and calculate time remaining
               if (healthAlertData.paymentInfo?.expiryDate) {
                 let expiryDate;
                 
@@ -184,11 +194,9 @@ function HealthAlert() {
                 
                 setSubscriptionEndDate(formatDate(expiryDate));
                 
-                // Calculate time remaining
                 const timeRemaining = calculateTimeRemaining(expiryDate);
                 setDaysRemaining(timeRemaining.days);
                 
-                // Check if subscription has expired
                 if (timeRemaining.expired) {
                   setSubscriptionExpired(true);
                   setShowExpiryModal(true);
@@ -197,7 +205,6 @@ function HealthAlert() {
                 }
               }
               
-              // Set subscription start date if available
               if (healthAlertData.paymentInfo?.paymentDate) {
                 let startDate;
                 
@@ -212,7 +219,6 @@ function HealthAlert() {
                 setSubscriptionStartDate(formatDate(startDate));
               }
               
-              // Handle "Other" disease option
               if (healthAlertData.diseases) {
                 const other = healthAlertData.diseases.find(d => !diseases.some(disease => disease.name === d));
                 if (other && other !== 'Other') {
@@ -228,15 +234,7 @@ function HealthAlert() {
             }
             setIsLoading(false);
           });
-          
-          // Check if we're returning from a successful payment
-          const paymentSuccessFlag = sessionStorage.getItem('paymentSuccess');
-          if (paymentSuccessFlag === 'true') {
-            setPaymentSuccess(true);
-            // Remove the flag from session storage
-            sessionStorage.removeItem('paymentSuccess');
-          }
-          
+                    
           return () => unsubscribeDoc();
           
         } catch (error) {
@@ -254,7 +252,6 @@ function HealthAlert() {
     return () => unsubscribe();
   }, [manualTestMode, testStartDate, testEndDate]);
 
-  // Update remaining time every minute
   useEffect(() => {
     if (isSubscribed && subscriptionDetails?.paymentInfo?.expiryDate) {
       let expiryDate;
@@ -267,7 +264,6 @@ function HealthAlert() {
         expiryDate = new Date(subscriptionDetails.paymentInfo.expiryDate);
       }
       
-      // Initial calculation
       const updateRemainingTime = () => {
         const timeRemaining = calculateTimeRemaining(expiryDate);
         setDaysRemaining(timeRemaining.days);
@@ -278,23 +274,77 @@ function HealthAlert() {
         }
       };
       
-      // Update immediately
       updateRemainingTime();
       
-      // Set up interval for updates
-      const intervalId = setInterval(updateRemainingTime, 60000); // Update every minute
+      const intervalId = setInterval(updateRemainingTime, 60000);
       
       return () => clearInterval(intervalId);
     }
   }, [isSubscribed, subscriptionDetails, subscriptionExpired, manualTestMode, testEndDate]);
 
-  // Update subscription dates
+  // Effect to handle payment verification
+  useEffect(() => {
+    if (paymentVerificationInProgress && user) {
+      const verifyPayment = async () => {
+        try {
+          setIsLoading(true);
+          
+          // Retrieve subscription data from localStorage
+          const subscriptionData = JSON.parse(localStorage.getItem('healthAlertSubscription') || '{}');
+          
+          if (!subscriptionData.amount) {
+            throw new Error('Subscription data missing');
+          }
+          
+          // Create subscription in database
+          await setDoc(
+            doc(db, 'users', user.uid),
+            {
+              healthAlert: {
+                subscribed: true,
+                stations: subscriptionData.stations,
+                diseases: subscriptionData.diseases,
+                phoneNumber: subscriptionData.phoneNumber,
+                planId: subscriptionData.planId,
+                months: subscriptionData.months,
+                paymentInfo: {
+                  amount: subscriptionData.amount * 100,
+                  transactionId: transactionId,
+                  paymentMethod: 'Khalti',
+                  paymentDate: new Date(),
+                  expiryDate: new Date(subscriptionData.endDate)
+                },
+                createdAt: new Date(),
+                updatedAt: new Date()
+              },
+            },
+            { merge: true }
+          );
+          
+          // Clear localStorage
+          localStorage.removeItem('healthAlertSubscription');
+          
+          // Show success message
+          setPaymentSuccess(true);
+          setPaymentVerificationInProgress(false);
+          setIsLoading(false);
+          
+        } catch (error) {
+          console.error('Payment verification error:', error);
+          setMessage('Failed to verify payment. Please contact support.');
+          setPaymentVerificationInProgress(false);
+          setIsLoading(false);
+        }
+      };
+      
+      verifyPayment();
+    }
+  }, [paymentVerificationInProgress, user, transactionId]);
+
   const updateSubscriptionDates = () => {
-    // Set start date (today)
     const startDate = new Date();
     setSubscriptionStartDate(formatDate(startDate));
     
-    // Set end date based on selected plan
     const endDate = new Date();
     const months = plans.find(plan => plan.id === selectedPlan)?.months || 1;
     endDate.setMonth(endDate.getMonth() + months);
@@ -318,7 +368,6 @@ function HealthAlert() {
     }
   };
 
-  // Validate the form before proceeding to payment
   const validateForm = () => {
     if (!stations.length) {
       setMessage('Please select at least one monitoring station');
@@ -343,30 +392,24 @@ function HealthAlert() {
     return true;
   };
 
-  // Start renewal process
   const startRenewal = (keepSamePlan = false) => {
     setIsRenewing(true);
     setShowExpiryModal(false);
     
-    // Prefill form with existing data
     if (subscriptionDetails) {
-      // Set stations and diseases from existing subscription
       setStations(subscriptionDetails.stations || []);
       setSelectedDiseases(subscriptionDetails.diseases || []);
       setPhoneNumber(subscriptionDetails.phoneNumber || '');
       
-      // Set the same plan if requested
       if (keepSamePlan && subscriptionDetails.planId) {
         setSelectedPlan(subscriptionDetails.planId);
       } else if (subscriptionDetails.months) {
-        // Try to match based on months
         const matchingPlan = plans.find(plan => plan.months === subscriptionDetails.months);
         if (matchingPlan) {
           setSelectedPlan(matchingPlan.id);
         }
       }
       
-      // Set other disease if applicable
       if (subscriptionDetails.diseases) {
         const other = subscriptionDetails.diseases.find(d => !diseases.some(disease => disease.name === d));
         if (other && other !== 'Other') {
@@ -374,65 +417,124 @@ function HealthAlert() {
         }
       }
       
-      // Set agreement checkbox
       setAgreed(true);
     }
     
     setCurrentStep(1);
   };
 
-  // Handle "Proceed to Payment" button click
-  const handleProceedToPayment = (e) => {
-    e.preventDefault();
-    
+  const initiateKhaltiPayment = async () => {
     if (!validateForm()) {
       return;
     }
     
     setMessage('');
+    setPaymentLoading(true);
+    setPaymentError('');
     
-    // Get months based on selected plan
-    const months = plans.find(plan => plan.id === selectedPlan)?.months || 1;
-    
-    // Get amount based on selected plan
-    const amount = getSubscriptionAmount();
-    
-    // Prepare the subscription data to be stored in session storage
-    const diseasesToSave = selectedDiseases
-      .filter(d => d !== 'Other')
-      .concat(selectedDiseases.includes('Other') ? [otherDisease] : []);
+    try {
+      const months = plans.find(plan => plan.id === selectedPlan)?.months || 1;
+      const amount = getSubscriptionAmount();
       
-    const subscriptionData = {
-      email: user.email,
-      phoneNumber: phoneNumber,
-      stations: stations,
-      diseases: diseasesToSave,
-      amount: amount,
-      months: months,
-      planId: selectedPlan,
-      startDate: new Date(),
-      endDate: new Date(subscriptionEndDate),
-      userId: user.uid,
-      isRenewal: isRenewing
-    };
-    
-    // Store the data in session storage for the payment page
-    sessionStorage.setItem('healthAlertSubscription', JSON.stringify(subscriptionData));
-    
-    // Navigate to the payment page
-    navigate('/khalti-payment');
+      const diseasesToSave = selectedDiseases
+        .filter(d => d !== 'Other')
+        .concat(selectedDiseases.includes('Other') ? [otherDisease] : []);
+      
+      // Create a unique order ID based on user ID and timestamp
+      const purchaseOrderId = `health-${user.uid}-${Date.now()}`;
+      
+      // Prepare end date for subscription
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + months);
+      
+      // Store subscription data in localStorage for later use
+      const subscriptionData = {
+        email: user.email,
+        phoneNumber: phoneNumber,
+        stations: stations,
+        diseases: diseasesToSave,
+        amount: amount,
+        months: months,
+        planId: selectedPlan,
+        startDate: startDate,
+        endDate: endDate,
+        userId: user.uid,
+        isRenewal: isRenewing
+      };
+      
+      localStorage.setItem('healthAlertSubscription', JSON.stringify(subscriptionData));
+      
+      // Prepare payload for Khalti
+      const khaltiPayload = {
+        return_url: window.location.href, // Return to this same page
+        website_url: window.location.origin,
+        amount: amount * 100, // Amount in paisa (100 paisa = 1 NPR)
+        purchase_order_id: purchaseOrderId,
+        purchase_order_name: `NepAir Health Alert - ${months} Month${months > 1 ? 's' : ''}`,
+        customer_info: {
+          name: user.displayName || user.email,
+          email: user.email,
+          phone: phoneNumber,
+        },
+        amount_breakdown: [
+          {
+            label: `Health Alert Subscription (${months} Month${months > 1 ? 's' : ''})`,
+            amount: amount * 100,
+          },
+        ],
+        product_details: [
+          {
+            identity: purchaseOrderId,
+            name: `NepAir Health Alert - ${months} Month${months > 1 ? 's' : ''}`,
+            total_price: amount * 100,
+            quantity: 1,
+            unit_price: amount * 100,
+          },
+        ],
+      };
+      
+      // Make API request to Khalti
+      const headers = {
+        'Authorization': 'Key f10f753336fa4eef9c8c506d125703d3', // Your Khalti secret key
+        'Content-Type': 'application/json'
+      };
+      
+      const response = await axios.post(
+        'https://a.khalti.com/api/v2/epayment/initiate/',
+        khaltiPayload,
+        { headers }
+      );
+      
+      // Redirect to Khalti payment page
+      if (response.data && response.data.payment_url) {
+        window.location.href = response.data.payment_url;
+      } else {
+        throw new Error('Invalid response from payment gateway');
+      }
+      
+    } catch (error) {
+      console.error('Payment initiation error:', error);
+      setPaymentError('Failed to initiate payment. Please try again later.');
+      setPaymentLoading(false);
+    }
+  };
+
+  const handleProceedToPayment = (e) => {
+    e.preventDefault();
+    initiateKhaltiPayment();
   };
 
   const handleRenewSubscription = () => {
     setSubscriptionExpired(false);
     setShowExpiryModal(false);
-    startRenewal(false); // Don't automatically keep the same plan
+    startRenewal(false);
   };
 
   const handleRenewWithSamePlan = () => {
     setSubscriptionExpired(false);
     setShowExpiryModal(false);
-    startRenewal(true); // Keep the same plan
+    startRenewal(true);
   };
 
   const handleUnsubscribeClick = () => {
@@ -486,16 +588,14 @@ function HealthAlert() {
     setCurrentStep(currentStep - 1);
   };
 
-  // For testing subscription expiration with custom dates
   const enableTestMode = () => {
     setManualTestMode(true);
-    // Initialize with current dates if not already set
     if (!testStartDate) {
       const today = new Date();
       setTestStartDate(today.toISOString().split('T')[0]);
       
       const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 30); // Default to 30 days in future
+      futureDate.setDate(futureDate.getDate() + 30);
       setTestEndDate(futureDate.toISOString().split('T')[0]);
     }
   };
@@ -513,7 +613,6 @@ function HealthAlert() {
       setSubscriptionStartDate(formatDate(start));
       setSubscriptionEndDate(formatDate(end));
       
-      // Calculate if subscription is expired
       const timeRemaining = calculateTimeRemaining(end);
       setDaysRemaining(timeRemaining.days);
       setSubscriptionExpired(timeRemaining.expired);
@@ -584,7 +683,6 @@ function HealthAlert() {
               <img src={khalti} alt="Khalti Payment" />
             </div>
             
-            {/* Test Mode Controls (Hidden in Production) */}
             <div className="test-mode-controls">
               <button 
                 className="test-mode-toggle"
@@ -710,533 +808,430 @@ function HealthAlert() {
                 </div>
                 
                 {selectedDiseases.includes('Other') && (
-                  <div className="other-disease-input">
-                    <input
-                      type="text"
-                      value={otherDisease}
-                      onChange={(e) => setOtherDisease(e.target.value)}
-                      placeholder="Specify other condition"
-                      className="form-control"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    placeholder="Please specify your condition"
+                    value={otherDisease}
+                    onChange={(e) => setOtherDisease(e.target.value)}
+                    className="other-disease-input"
+                  />
                 )}
               </div>
               
+              <div className="form-group">
+                <label>
+                  <FiPhone className="label-icon" /> Phone Number:
+                  <input
+                    type="tel"
+                    placeholder="Your 10-digit mobile number"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    required
+                  />
+                </label>
+                <small className="phone-hint">We'll send alerts to this number</small>
+              </div>
+              
+              <div className="form-group agreement">
+                <label className="agreement-label">
+                  <input
+                    type="checkbox"
+                    checked={agreed}
+                    onChange={(e) => setAgreed(e.target.checked)}
+                    required
+                  />
+                  <span>
+                    I agree to receive alerts about air quality and health recommendations based on my selected conditions.
+                  </span>
+                </label>
+              </div>
+              
+              {message && <div className="message">{message}</div>}
+              
               <div className="navigation-buttons">
-                <button className="nav-button back" onClick={prevStep}>
+                <button className="back-button" onClick={prevStep}>
                   Back
                 </button>
-                <button className="nav-button next" onClick={nextStep}>
-                  Next
+                <button 
+                  className="next-button" 
+                  onClick={handleProceedToPayment}
+                  disabled={paymentLoading}
+                >
+                  {paymentLoading ? (
+                    <>
+                      <FiLoader className="loading-icon spin" /> Processing...
+                    </>
+                  ) : (
+                    <>
+                      Proceed to Payment
+                    </>
+                  )}
                 </button>
               </div>
+              
+              {paymentError && (
+                <div className="payment-error">
+                  <FiAlertTriangle className="error-icon" />
+                  {paymentError}
+                </div>
+              )}
             </div>
           </div>
         );
-      
-      case 3:
-        return (
-          <div className="contact-details-step">
-            <h2>Contact Details</h2>
-            
-            <div className="step-content">
-              <div className="contact-form">
-                <div className="form-group">
-                  <label>
-                    <FiMail className="label-icon" /> 
-                    Email Address for Alerts:
-                  </label>
-                  <input
-                    type="email"
-                    value={user?.email || ''}
-                    disabled
-                    className="form-control"
-                  />
-                  <small className="input-hint">
-                    Alerts will be sent to your registered email address
-                  </small>
-                </div>
-                
-                <div className="form-group">
-                  <label>
-                    <FiPhone className="label-icon" /> 
-                    Mobile Number for SMS Alerts:
-                  </label>
-                  <div className="phone-input-container">
-                    <div className="country-code">+977</div>
-                    <input
-                      type="tel"
-                      value={phoneNumber}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '');
-                        setPhoneNumber(value);
-                      }}
-                      placeholder="98XXXXXXXX"
-                      maxLength="10"
-                      className="form-control phone-input"
-                      required
-                    />
-                  </div>
-                  <small className="input-hint">
-                    Enter a 10-digit Nepali mobile number without country code
-                  </small>
-                </div>
-                
-                <div className="checkbox-group">
-                  <motion.label 
-                    className="checkbox-label"
-                    whileHover={{ scale: 1.02 }}
-                  >
-                    <div className='radiodiv'>
-                      <input
-                        type="checkbox"
-                        checked={agreed}
-                        onChange={(e) => setAgreed(e.target.checked)}
-                        required
-                      />
-                      <p>
-                        I agree to receive SMS and email alerts about air quality conditions 
-                        that may affect my health conditions
-                      </p>
-                    </div>
-                  </motion.label>
-                </div>
-                
-                <div className="alert-reminder">
-                  <FiShield className="alert-reminder-icon" />
-                  <p>
-                    Your subscription will begin immediately after payment and will be valid until <strong>{subscriptionEndDate}</strong>.
-                  </p>
-                </div>
-                
-                {message && (
-                  <motion.div 
-                    className="alert-message"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                  >
-                    <FiAlertCircle className="alert-icon" />
-                    {message}
-                  </motion.div>
-                )}
-                
-                <div className="navigation-buttons">
-                  <button className="nav-button back" onClick={prevStep}>
-                    Back
-                  </button>
-                  <button 
-                    className="nav-button payment"
-                    onClick={handleProceedToPayment}
-                    disabled={isLoading}
-                  >
-                    <FiCreditCard className="button-icon" />
-                    {isRenewing ? 'Renew Subscription' : 'Proceed to Payment'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      
+          
       default:
         return null;
     }
   };
 
-  // Render payment success message
-  const renderPaymentSuccess = () => {
+  if (!user) {
     return (
-      <motion.div 
-        className="payment-success-container"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        <div className="success-icon-container">
-          <FiCheckCircle className="success-icon" />
+      <div className="health-alert-container">
+        <div className="login-prompt">
+          <FiAlertCircle className="alert-icon" />
+          <h2>Please Login</h2>
+          <p>You need to log in to subscribe to health alerts</p>
+          <button onClick={() => navigate('/login')}>Go to Login</button>
         </div>
-        <h2>Payment Successful!</h2>
-        <p>Your Health Alert subscription has been activated successfully.</p>
-        <div className="subscription-details">
-          <div className="detail-item">
-            <FiCalendar className="detail-icon" />
-            <div>
-              <span className="detail-label">Subscription Period:</span>
-              <span className="detail-value">{subscriptionStartDate} - {subscriptionEndDate}</span>
-            </div>
-          </div>
-          <div className="detail-item">
-            <FiDollarSign className="detail-icon" />
-            <div>
-              <span className="detail-label">Amount Paid:</span>
-              <span className="detail-value">NPR {formatNum(subscriptionDetails?.paymentInfo?.amount || 0)}</span>
-            </div>
-          </div>
-          <div className="detail-item">
-            <FiCheck className="detail-icon" />
-            <div>
-              <span className="detail-label">Status:</span>
-              <span className="detail-value success">Active</span>
-            </div>
-          </div>
-        </div>
-        <p className="success-message">
-          You will now receive personalized health alerts based on your preferences and air quality conditions.
-        </p>
-        <button 
-          className="view-dashboard-btn"
-          onClick={() => setPaymentSuccess(false)}
-        >
-          View Your Health Alert Dashboard
-        </button>
-      </motion.div>
+      </div>
     );
-  };
+  }
 
-  // Render subscription details dashboard
-  const renderSubscriptionDashboard = () => {
+  if (isLoading) {
     return (
-      <div className="subscription-dashboard">
-        <div className="dashboard-header">
-          <h2>Health Alert Dashboard</h2>
-          {subscriptionExpired ? (
-            <div className="subscription-status expired">
-              <FiAlertTriangle className="status-icon" />
-              Expired
-            </div>
-          ) : (
-            <div className="subscription-status active">
-              <FiCheckCircle className="status-icon" />
-              Active
-            </div>
-          )}
+      <div className="health-alert-container loading">
+        <div className="loading-indicator">
+          <FiLoader className="loading-icon spin" />
+          <p>Loading your health alert subscription...</p>
         </div>
-        
-        <div className="dashboard-content">
-          <div className="subscription-info-panel">
-            <div className="subscription-info-item">
-              <div className="info-header">
-                <FiCalendar className="info-icon" />
-                <h3>Subscription Period</h3>
-              </div>
-              <div className="info-content date-range">
-                <div className="date">
-                  <span className="label">From:</span>
-                  <span className="value">{subscriptionStartDate}</span>
-                </div>
-                <div className="date">
-                  <span className="label">To:</span>
-                  <span className="value">{subscriptionEndDate}</span>
-                </div>
+      </div>
+    );
+  }
+
+  if (paymentVerificationInProgress) {
+    return (
+      <div className="health-alert-container">
+        <div className="payment-verification">
+          <FiLoader className="loading-icon spin" />
+          <h2>Verifying Payment</h2>
+          <p>Please wait while we verify your payment...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (paymentSuccess) {
+    return (
+      <div className="health-alert-container">
+        <div className="success-container">
+          <motion.div 
+            className="success-animation"
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <FiCheckCircle className="success-icon" />
+          </motion.div>
+          <h2>Subscription Successful!</h2>
+          <p>Thank you for subscribing to our Health Alert service.</p>
+          
+          <div className="subscription-summary">
+            <h3>Your Subscription Details</h3>
+            
+            <div className="summary-item">
+              <FiCalendar className="summary-icon" />
+              <div className="summary-content">
+                <span className="summary-label">Subscription Period:</span>
+                <span className="summary-value">{subscriptionStartDate} - {subscriptionEndDate}</span>
               </div>
             </div>
             
-            <div className="subscription-info-item">
-              <div className="info-header">
-                <FiClock className="info-icon" />
-                <h3>Time Remaining</h3>
-              </div>
-              <div className="info-content time-remaining">
-                {subscriptionExpired ? (
-                  <div className="expired-message">
-                    <FiAlertTriangle className="expired-icon" />
-                    Your subscription has expired
-                  </div>
-                ) : (
-                  <div className="days-count">
-                    <span className="value">{daysRemaining}</span>
-                    <span className="unit">days</span>
-                  </div>
-                )}
+            <div className="summary-item">
+              <FiMapPin className="summary-icon" />
+              <div className="summary-content">
+                <span className="summary-label">Monitoring Stations:</span>
+                <span className="summary-value">{stations.join(', ')}</span>
               </div>
             </div>
             
-            <div className="subscription-info-item">
-              <div className="info-header">
-                <FiInfo className="info-icon" />
-                <h3>Plan Details</h3>
+            <div className="summary-item">
+              <FiHeart className="summary-icon" />
+              <div className="summary-content">
+                <span className="summary-label">Health Conditions:</span>
+                <span className="summary-value">
+                  {selectedDiseases
+                    .filter(d => d !== 'Other')
+                    .concat(selectedDiseases.includes('Other') ? [otherDisease] : [])
+                    .join(', ')}
+                </span>
               </div>
-              <div className="info-content plan-details">
-                <div className="plan-detail">
-                  <span className="label">Plan:</span>
-                  <span className="value">
-                    {subscriptionDetails?.months === 1 ? 'Monthly' :
-                     subscriptionDetails?.months === 6 ? '6 Months' :
-                     subscriptionDetails?.months === 12 ? 'Annual' :
-                     'Custom'} Plan
-                  </span>
-                </div>
-                <div className="plan-detail">
-                  <span className="label">Amount Paid:</span>
-                  <span className="value">
-                    NPR {formatNum(subscriptionDetails?.paymentInfo?.amount || 0)}
-                  </span>
-                </div>
+            </div>
+            
+            <div className="summary-item">
+              <FiPhone className="summary-icon" />
+              <div className="summary-content">
+                <span className="summary-label">Notifications Sent To:</span>
+                <span className="summary-value">{phoneNumber}</span>
+              </div>
+            </div>
+            
+            <div className="summary-item">
+              <FiDollarSign className="summary-icon" />
+              <div className="summary-content">
+                <span className="summary-label">Payment Amount:</span>
+                <span className="summary-value">
+                  NPR {subscriptionDetails?.paymentInfo?.amount ? 
+                    formatNum(subscriptionDetails.paymentInfo.amount) : 
+                    formatNumber(getSubscriptionAmount())}
+                </span>
               </div>
             </div>
           </div>
           
-          <div className="monitored-info-panel">
-            <div className="monitored-info-item">
-              <div className="info-header">
-                <FiMapPin className="info-icon" />
-                <h3>Monitored Stations</h3>
-              </div>
-              <div className="stations-grid">
-                {stations.map(station => (
-                  <div key={station} className="station-item">
-                    {station}
-                  </div>
-                ))}
-              </div>
+          <p className="help-text">
+            You will now receive air quality alerts and health recommendations based on your preferences. 
+            You can update your preferences or unsubscribe at any time.
+          </p>
+          
+          <button className="dashboard-btn" onClick={() => navigate('/')}>
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isSubscribed && !isRenewing) {
+    return (
+      <div className="health-alert-container">
+        <div className="subscription-status">
+          <div className="status-header">
+            <div className="status-badge active">
+              <FiCheckCircle className="status-icon" />
+              <span>Subscription Active</span>
             </div>
             
-            <div className="monitored-info-item">
-              <div className="info-header">
-                <FiHeart className="info-icon" />
+            {!subscriptionExpired && (
+              <div className="time-remaining">
+                <FiClock className="time-icon" />
+                <span>
+                  {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} remaining
+                </span>
+              </div>
+            )}
+          </div>
+          
+          <div className="subscription-details">
+            <h2>Your Health Alert Subscription</h2>
+            
+            <div className="details-grid">
+              <div className="detail-card">
+                <FiCalendar className="detail-icon" />
+                <h3>Subscription Period</h3>
+                <p>{subscriptionStartDate} - {subscriptionEndDate}</p>
+              </div>
+              
+              <div className="detail-card">
+                <FiHeart className="detail-icon" />
                 <h3>Health Conditions</h3>
+                <p>
+                  {subscriptionDetails?.diseases
+                    .filter(d => d !== 'Other')
+                    .concat(subscriptionDetails?.diseases.includes('Other') ? [otherDisease] : [])
+                    .join(', ')}
+                </p>
               </div>
-              <div className="diseases-list">
-                {subscriptionDetails?.diseases?.map(disease => (
-                  <div key={disease} className="disease-item">
-                    {disease}
-                  </div>
-                ))}
+              
+              <div className="detail-card">
+                <FiMapPin className="detail-icon" />
+                <h3>Monitoring Stations</h3>
+                <p>{subscriptionDetails?.stations.join(', ')}</p>
+              </div>
+              
+              <div className="detail-card">
+                <FiPhone className="detail-icon" />
+                <h3>Alerts Sent To</h3>
+                <p>{subscriptionDetails?.phoneNumber}</p>
               </div>
             </div>
             
-            <div className="monitored-info-item">
-              <div className="info-header">
-                <FiMessageSquare className="info-icon" />
-                <h3>Contact Details</h3>
+            <div className="subscription-actions">
+              <button 
+                className="renew-subscription" 
+                onClick={() => startRenewal(true)}
+              >
+                <FiRefreshCw className="action-icon" />
+                Renew Subscription
+              </button>
+              
+              <button 
+                className="unsubscribe-button"
+                onClick={handleUnsubscribeClick}
+              >
+                <FiX className="action-icon" />
+                Unsubscribe
+              </button>
+            </div>
+            
+            <div className="subscription-info">
+              <div className="info-item">
+                <FiInfo className="info-icon" />
+                <p>
+                  You will receive alerts when air quality in your selected regions may affect your health conditions.
+                </p>
               </div>
-              <div className="contact-details">
-                <div className="contact-detail">
-                  <FiMail className="contact-icon" />
-                  <span>{user.email || 'No email set'}</span>
-                </div>
-                <div className="contact-detail">
-                  <FiPhone className="contact-icon" />
-                  <span>+977 {phoneNumber || 'No phone number set'}</span>
-                </div>
+              
+              <div className="info-item">
+                <FiShield className="info-icon" />
+                <p>
+                  Your subscription automatically expires on {subscriptionEndDate}. We'll remind you before it expires.
+                </p>
               </div>
             </div>
           </div>
         </div>
         
-        <div className="dashboard-actions">
-          {subscriptionExpired ? (
-            <button 
-              className="action-button renew"
-              onClick={handleRenewSubscription}
+        <AnimatePresence>
+          {showUnsubscribeModal && (
+            <motion.div 
+              className="modal-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
-              <FiRepeat className="button-icon" />
-              Renew Subscription
-            </button>
-          ) : (
-            <>
-              <button 
-                className="action-button unsubscribe"
-                onClick={handleUnsubscribeClick}
+              <motion.div 
+                className="modal-content unsubscribe-modal"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
               >
-                <FiX className="button-icon" />
-                Unsubscribe
-              </button>
-              <button 
-                className="action-button renew"
-                onClick={handleRenewSubscription}
-              >
-                <FiRepeat className="button-icon" />
-                Renew/Change Plan
-              </button>
-            </>
+                <h2>Unsubscribe from Health Alerts</h2>
+                <p>We're sorry to see you go. Please tell us why you're unsubscribing:</p>
+                
+                <div className="unsubscribe-options">
+                  {unsubscribeReasons.map(reason => (
+                    <label key={reason} className="unsubscribe-option">
+                      <input
+                        type="radio"
+                        name="unsubscribe-reason"
+                        value={reason}
+                        checked={unsubscribeReason === reason}
+                        onChange={() => setUnsubscribeReason(reason)}
+                      />
+                      <span>{reason}</span>
+                    </label>
+                  ))}
+                </div>
+                
+                <textarea
+                  placeholder="Any additional feedback? (optional)"
+                  value={unsubscribeFeedback}
+                  onChange={(e) => setUnsubscribeFeedback(e.target.value)}
+                  rows={3}
+                />
+                
+                <div className="modal-actions">
+                  <button className="cancel-btn" onClick={handleCancelUnsubscribe}>
+                    Cancel
+                  </button>
+                  <button 
+                    className="confirm-unsubscribe" 
+                    onClick={handleSubmitUnsubscribe}
+                    disabled={!unsubscribeReason}
+                  >
+                    Confirm Unsubscribe
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
           )}
-        </div>
+          
+          {showExpiryModal && (
+            <motion.div 
+              className="modal-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div 
+                className="modal-content expiry-modal"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+              >
+                <div className="expiry-icon">
+                  <FiAlertTriangle className="icon" />
+                </div>
+                
+                <h2>Your Subscription Has Expired</h2>
+                <p>Your Health Alert subscription ended on {subscriptionEndDate}. Renew now to continue receiving alerts.</p>
+                
+                <div className="expiry-actions">
+                  <button className="renew-same-plan" onClick={handleRenewWithSamePlan}>
+                    <FiRepeat className="action-icon" />
+                    Renew with Same Plan
+                  </button>
+                  
+                  <button className="renew-different-plan" onClick={handleRenewSubscription}>
+                    <FiEdit className="action-icon" />
+                    Choose Different Plan
+                  </button>
+                  
+                  <button className="unsubscribe-btn" onClick={handleUnsubscribeClick}>
+                    <FiX className="action-icon" />
+                    Unsubscribe
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
-  };
+  }
 
-  // Render the subscription expiry modal
-  const renderExpiryModal = () => {
-    return (
-      <AnimatePresence>
-        {showExpiryModal && (
-          <motion.div
-            className="modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="expiry-modal"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-            >
-              <div className="modal-header">
-                <FiAlertTriangle className="expired-icon" />
-                <h2>Subscription Expired</h2>
-              </div>
-              
-              <div className="modal-content">
-                <p>Your Health Alert subscription has expired on <strong>{subscriptionEndDate}</strong>.</p>
-                <p>To continue receiving personalized air quality health alerts, please renew your subscription.</p>
-                
-                <div className="previous-plan-details">
-                  <h4>Your Previous Plan</h4>
-                  <p>
-                    <strong>Type:</strong> {
-                      subscriptionDetails?.months === 1 ? 'Monthly' :
-                      subscriptionDetails?.months === 6 ? '6 Months' :
-                      subscriptionDetails?.months === 12 ? 'Annual' : 'Custom'
-                    } Plan
-                  </p>
-                  <p><strong>Amount:</strong> NPR {formatNum(subscriptionDetails?.paymentInfo?.amount || 0)}</p>
-                </div>
-              </div>
-              
-              <div className="modal-actions">
-                <button 
-                  className="modal-action renew-same"
-                  onClick={handleRenewWithSamePlan}
-                >
-                  <FiCheck className="button-icon" />
-                  Renew Same Plan
-                </button>
-                <button
-                  className="modal-action renew-different"
-                  onClick={handleRenewSubscription}
-                >
-                  <FiRefreshCw className="button-icon" />
-                  Choose Different Plan
-                </button>
-                <button
-                  className="modal-action close"
-                  onClick={() => setShowExpiryModal(false)}
-                >
-                  <FiX className="button-icon" />
-                  Close
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    );
-  };
-
-  // Render the unsubscribe confirmation modal
-  const renderUnsubscribeModal = () => {
-    return (
-      <AnimatePresence>
-        {showUnsubscribeModal && (
-          <motion.div
-            className="modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="unsubscribe-modal"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-            >
-              <div className="modal-header">
-                <FiAlertCircle className="warning-icon" />
-                <h2>Unsubscribe from Health Alerts</h2>
-              </div>
-              
-              <div className="modal-content">
-                <p>Are you sure you want to unsubscribe from Health Alerts? This action cannot be undone.</p>
-                <p>Your subscription will end immediately, and you will no longer receive any air quality health alerts.</p>
-                
-                <div className="feedback-form">
-                  <h4>Help us improve our service</h4>
-                  <div className="form-group">
-                    <label>Why are you unsubscribing?</label>
-                    <select
-                      value={unsubscribeReason}
-                      onChange={(e) => setUnsubscribeReason(e.target.value)}
-                      className="form-control"
-                    >
-                      <option value="">Select a reason...</option>
-                      {unsubscribeReasons.map(reason => (
-                        <option key={reason} value={reason}>{reason}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>Additional feedback (optional):</label>
-                    <textarea
-                      value={unsubscribeFeedback}
-                      onChange={(e) => setUnsubscribeFeedback(e.target.value)}
-                      placeholder="Please let us know how we can improve..."
-                      className="form-control"
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="modal-actions">
-                <button
-                  className="modal-action confirm-unsubscribe"
-                  onClick={handleSubmitUnsubscribe}
-                  disabled={isLoading}
-                >
-                  <FiX className="button-icon" />
-                  {isLoading ? 'Processing...' : 'Confirm Unsubscribe'}
-                </button>
-                <button
-                  className="modal-action cancel"
-                  onClick={handleCancelUnsubscribe}
-                >
-                  <FiArrowUpRight className="button-icon" />
-                  Keep My Subscription
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    );
-  };
-
-  // Main render
+  // Sign up flow
   return (
     <div className="health-alert-container">
-      {!user ? (
-        <div className="login-prompt">
-          <FiAlertCircle className="alert-icon" />
-          <h2>Please log in to access Health Alerts</h2>
-          <p>You need to be logged in to subscribe to health alerts.</p>
-          <button 
-            className="login-button"
-            onClick={() => navigate('/login')}
-          >
-            Log In / Sign Up
-          </button>
+      <div className="subscription-form">
+        <div className="form-header">
+          <h1 className="form-title">
+            <FiAlertCircle className="title-icon" />
+            Health Alert Subscription
+          </h1>
+          <p className="form-description">
+            Get personalized air quality alerts based on your location and health conditions
+          </p>
         </div>
-      ) : isLoading ? (
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading your subscription details...</p>
+        
+        <div className="subscription-benefits">
+          <div className="benefit-item">
+            <FiMessageSquare className="benefit-icon" />
+            <div className="benefit-content">
+              <h3>SMS Alerts</h3>
+              <p>Receive timely SMS alerts when air quality may affect your health</p>
+            </div>
+          </div>
+          
+          <div className="benefit-item">
+            <FiMapPin className="benefit-icon" />
+            <div className="benefit-content">
+              <h3>Location-Based</h3>
+              <p>Monitor air quality in specific areas you care about</p>
+            </div>
+          </div>
+          
+          <div className="benefit-item">
+            <FiHeart className="benefit-icon" />
+            <div className="benefit-content">
+              <h3>Health-Focused</h3>
+              <p>Get personalized recommendations based on your health conditions</p>
+            </div>
+          </div>
         </div>
-      ) : paymentSuccess ? (
-        renderPaymentSuccess()
-      ) : isSubscribed && !isRenewing ? (
-        <>
-          {renderSubscriptionDashboard()}
-          {renderExpiryModal()}
-          {renderUnsubscribeModal()}
-        </>
-      ) : (
-        <>
-          {renderStepContent()}
-          {renderUnsubscribeModal()}
-        </>
-      )}
+        
+        {renderStepContent()}
+      </div>
     </div>
   );
 }
