@@ -17,33 +17,33 @@ const Bhaktapur = () => {
       try {
         // Current air data
         const currentAirData = {
-          aqi: 142,
+          aqi: 118,
           date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-          pm25: 58.2,
-          pm10: 98.7,
-          o3: 38.5,
-          no2: 24.3,
+          pm25: 48.6,
+          pm10: 92.3,
+          o3: 35.2,
+          no2: 22.7,
           so2: 12.8,
-          co: 1.5
+          co: 1.2
         };
 
         // Tomorrow's predicted data
         const tomorrowPrediction = {
-          aqi: 135,
-          pm25: 55.1,
-          pm10: 92.4,
-          o3: 36.2,
-          no2: 22.7,
-          so2: 12.3,
-          co: 1.4
+          aqi: 112,
+          pm25: 45.3,
+          pm10: 88.1,
+          o3: 33.9,
+          no2: 21.5,
+          so2: 12.1,
+          co: 1.1
         };
 
         // Weather data
         const weather = {
-          temperature: 23,
-          windSpeed: 7,
+          temperature: 24,
+          windSpeed: 5,
           humidity: 68,
-          condition: "Mostly Sunny"
+          condition: "Partly Cloudy"
         };
 
         setAirData(currentAirData);
@@ -86,20 +86,20 @@ const Bhaktapur = () => {
 
   const getPollutionSources = () => {
     return {
-      mainSources: ["Vehicle emissions", "Traditional brick kilns", "Road dust", "Tourist activities"],
-      description: "Bhaktapur's air pollution stems from its traditional brick industries, increasing vehicular traffic, and urban development. While generally better than Kathmandu, the city still faces air quality challenges, especially during dry seasons when dust becomes a major pollutant."
+      mainSources: ["Vehicle emissions", "Construction activities", "Traditional brick kilns", "Local industries"],
+      description: "Bhaktapur, though smaller and less industrialized than Kathmandu, faces air quality challenges from increasing urbanization and its proximity to the capital. The city's traditional brick kilns, growing vehicular traffic, and construction activities for heritage preservation contribute to pollution. However, its relatively smaller size and fewer industries result in better air quality compared to Kathmandu proper."
     };
   };
 
   const allCities = [
-    { name: "Pokhara", path: "/pokhara" },
-    { name: "Janakpur", path: "/janakpur" },
-    { name: "Butwal", path: "/butwal" },
     { name: "Kathmandu", path: "/kathmandu" },
+    { name: "Pokhara", path: "/pokhara" },
     { name: "Nepalgunj", path: "/nepalgunj" },
+    { name: "Janakpur", path: "/janakpur" },
     { name: "Mahendranagar", path: "/mahendranagar" },
-    { name: "Biratnagar", path: "/biratnagar" },
+    { name: "Butwal", path: "/butwal" },
     { name: "Birgunj", path: "/birgunj" },
+    { name: "Biratnagar", path: "/biratnagar" },
     { name: "Dharan", path: "/dharan" },
     { name: "Lalitpur", path: "/lalitpur" },
     { name: "Bharatpur", path: "/bharatpur" },
@@ -116,10 +116,16 @@ const Bhaktapur = () => {
 
   return (
     <>
-      <div className="kathmandu-container">
+      <div className="birgunj-container">
         <div className="content-wrapper">
           <div className="header-section">
             <h1 className="head">Bhaktapur Air Quality</h1>
+            <button 
+              onClick={toggleFavorite} 
+              className={`favorite-btn ${isFavorite ? 'favorited' : ''}`}
+            >
+              {isFavorite ? '★ Favorited' : '☆ Add to Favorites'}
+            </button>
           </div>
 
           <div className="aqi-section">
