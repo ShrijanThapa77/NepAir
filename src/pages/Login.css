@@ -1,12 +1,27 @@
-/* Login Page Styles */
 .login-page {
   min-height: 100vh;
   width: 100%;
-  background-color: #f5f7fa;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 30px 0;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  background: #f5f7fa; /* White background fallback */
+}
+
+.login-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1a3a8f 0%, #0d2b6b 100%);
+  clip-path: polygon(0 0, 65% 0, 45% 100%, 0% 100%);
+  z-index: -1;
 }
 
 .login-container {
@@ -16,8 +31,7 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  overflow: hidden;
-  padding: 1rem; /* Added padding to prevent edge touching */
+  z-index: 2;
 }
 
 .login-background {
@@ -26,8 +40,6 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #1a3a8f 0%, #0d2b6b 100%);
-  clip-path: polygon(0 0, 65% 0, 45% 100%, 0% 100%);
   z-index: 0;
 }
 
@@ -35,13 +47,12 @@
   display: flex;
   width: 90%;
   max-width: 1200px;
-  height: auto; /* Changed from fixed height to auto */
-  min-height: 600px; /* Added minimum height */
-  max-height: 85vh; /* Maximum height as viewport percentage */
+  height: auto;
+  /* max-height: 800px; */
   border-radius: 16px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   overflow: hidden;
-  z-index: 1;
+  z-index: 100;
   background-color: #ffffff;
   position: relative;
 }
@@ -64,7 +75,7 @@
   right: 0;
   width: 30%;
   height: 100%;
-  background: linear-gradient(to right, rgba(241, 242, 245, 0), rgba(255, 255, 255, 0.1));
+  background: linear-gradient(to right, rgba(26, 58, 143, 0), rgba(255, 255, 255, 0.1));
 }
 
 .login-info {
@@ -79,8 +90,8 @@
 }
 
 .logo-wrapper {
-  width: 60px;
-  height: 60px;
+  width: 70px;
+  height: 70px;
   background-color: white;
   border-radius: 12px;
   display: flex;
@@ -91,7 +102,7 @@
 }
 
 .nepair-logo {
-  width: 45px;
+  width: 80px;
   height: auto;
 }
 
@@ -107,7 +118,6 @@
   font-weight: 600;
   margin-bottom: 1rem;
   letter-spacing: -0.5px;
-  color: white;
 }
 
 .brand-message p {
@@ -115,6 +125,16 @@
   line-height: 1.6;
   margin-bottom: 2rem;
   opacity: 0.9;
+}
+
+.brandText, .feature-text{
+  color: white;;
+}
+
+.feature-text h3, p{
+  color: white;
+}
+.feature-text p{
   color: white;
 }
 
@@ -162,7 +182,6 @@
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 0.3rem;
-  color: white;
 }
 
 .feature-text p {
@@ -170,7 +189,6 @@
   opacity: 0.8;
   line-height: 1.5;
   margin: 0;
-  color: white;
 }
 
 .login-right {
@@ -180,15 +198,19 @@
   align-items: center;
   padding: 2rem;
   background-color: white;
+  /* overflow-y: auto; */
+  height: auto;
 }
 
 .login-card {
   width: 100%;
   max-width: 420px;
-  padding: 2rem; /* Reduced padding */
+  padding: 2.5rem;
   border-radius: 16px;
   background-color: white;
   position: relative;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
 }
 
 .signup-card {
@@ -257,19 +279,23 @@
 .login-form {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .form-scroll-container {
-  max-height: 350px; /* Reduced max height */
+  max-height: 400px;
   overflow-y: auto;
   padding-right: 10px;
-  margin-bottom: 1rem;
+  padding-left: 10px;
+  margin-bottom: 1.5rem;
+  margin-top: 1.5rem;
   scrollbar-width: thin;
   scrollbar-color: #1a3a8f #f1f1f1;
 }
 
 .signup-form {
-  max-height: 350px; /* Reduced max height */
+  max-height: 500px;
 }
 
 .form-scroll-container::-webkit-scrollbar {
@@ -295,8 +321,9 @@
 
 .input-group {
   position: relative;
-  margin-bottom: 1rem; /* Reduced margin */
+  margin-bottom: 1.25rem;
 }
+
 
 .input-icon {
   position: absolute;
@@ -306,7 +333,29 @@
   color: #7f8c8d;
   font-size: 1rem;
   opacity: 0.7;
-  z-index: 1;
+  z-index: 2; /* Ensure icons appear above inputs */
+  pointer-events: none; /* Make icons non-interactive */
+}
+
+.form-row input,
+.form-row select {
+  padding-left: 2.5rem !important; /* Force same padding for all */
+}
+
+.select-icon{
+  position: absolute !important;
+  left: 12px !important;
+  top: 33% !important;
+  transform: translateY(-50%)!important;
+  color: #7f8c8d;
+  font-size: 1rem;
+  opacity: 0.7;
+  z-index: 2; /* Ensure icons appear above inputs */
+  pointer-events: none; /* Make icons non-interactive */
+}
+
+.role-select{
+  padding-left: 2.5rem !important; /* Force same padding for all */
 }
 
 input, select {
@@ -320,7 +369,7 @@ input, select {
   color: #2c3e50;
   background-color: #f9fafc;
   font-family: inherit;
-  height: 42px; /* Added fixed height */
+  margin-left: 4px;
 }
 
 input:focus, select:focus {
@@ -364,7 +413,6 @@ input.error, select.error {
   justify-content: center;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   margin-top: 0.5rem;
-  height: 48px; /* Fixed height */
 }
 
 .signin-button {
@@ -434,8 +482,8 @@ input.error, select.error {
 }
 
 .password-requirements {
-  margin-top: 0.75rem; /* Reduced margin */
-  padding: 0.75rem; /* Reduced padding */
+  margin-top: 1rem;
+  padding: 1rem;
   background-color: #f9fafc;
   border-radius: 8px;
 }
@@ -497,16 +545,10 @@ input.error, select.error {
   font-weight: 500;
 }
 
-/* Add padding to bottom of the form */
-.login-form {
-  padding-bottom: 1rem;
-}
-
 /* Responsive styles */
 @media (max-width: 1024px) {
   .login-content {
     height: auto;
-    min-height: auto;
   }
   
   .features {
@@ -519,12 +561,10 @@ input.error, select.error {
     flex-direction: column;
     height: auto;
     max-height: none;
-    overflow: auto;
   }
   
   .login-left {
     padding: 2rem;
-    min-height: auto;
   }
   
   .login-background {
@@ -534,15 +574,11 @@ input.error, select.error {
   .features {
     grid-template-columns: 1fr;
   }
-  
-  .form-scroll-container {
-    max-height: 300px;
-  }
 }
 
 @media (max-width: 480px) {
   .login-container {
-    padding: 0.5rem;
+    padding: 1rem;
   }
   
   .login-content {
@@ -554,19 +590,23 @@ input.error, select.error {
     padding: 1.5rem;
   }
   
-  .login-right {
-    padding: 1rem;
-  }
-  
   .login-card {
-    padding: 1rem;
+    padding: 1.5rem;
   }
   
   .form-row {
     grid-template-columns: 1fr;
   }
-  
-  .input-group {
-    margin-bottom: 0.75rem;
-  }
+  /* Target all input fields */
+.input-group input {
+    height: 50px; /* Increase the height */
+    padding: 0.75rem 0.75rem 0.75rem 2.5rem; /* Adjust padding if needed */
+    font-size: 1rem; /* Optional: Increase font size */
+}
+
+/* Specific to email and password fields */
+.input-group input[type="email"],
+.input-group input[type="password"] {
+    height: 50px; /* Ensure consistent height */
+}
 }

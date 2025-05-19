@@ -39,10 +39,6 @@ function HealthAlert() {
   const [showUnsubscribeModal, setShowUnsubscribeModal] = useState(false);
   const [unsubscribeFeedback, setUnsubscribeFeedback] = useState('');
   const [unsubscribeReason, setUnsubscribeReason] = useState('');
-  const [manualTestMode, setManualTestMode] = useState(false);
-  const [testStartDate, setTestStartDate] = useState('');
-  const [testEndDate, setTestEndDate] = useState('');
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState('');
   const [paymentUrl, setPaymentUrl] = useState('');
@@ -140,27 +136,18 @@ function HealthAlert() {
   };
 
   useEffect(() => {
-    if (!manualTestMode) {
-      updateSubscriptionDates();
-    }
-  }, [selectedPlan, manualTestMode]);
+    updateSubscriptionDates();
+  }, [selectedPlan]);
 
   useEffect(() => {
-    // Check URL for payment verification
     const queryParams = new URLSearchParams(window.location.search);
     const pidx = queryParams.get('pidx');
     const txnId = queryParams.get('txnId');
-    const amount = queryParams.get('amount');
-    const mobile = queryParams.get('mobile');
-    const purchase_order_id = queryParams.get('purchase_order_id');
-    const purchase_order_name = queryParams.get('purchase_order_name');
     const status = queryParams.get('status');
     
     if (pidx && status === "Completed") {
       setTransactionId(txnId || '');
       setPaymentVerificationInProgress(true);
-      
-      // Clear URL parameters without refreshing page
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
@@ -184,9 +171,7 @@ function HealthAlert() {
               if (healthAlertData.paymentInfo?.expiryDate) {
                 let expiryDate;
                 
-                if (manualTestMode && testEndDate) {
-                  expiryDate = new Date(testEndDate);
-                } else if (healthAlertData.paymentInfo.expiryDate.seconds) {
+                if (healthAlertData.paymentInfo.expiryDate.seconds) {
                   expiryDate = new Date(healthAlertData.paymentInfo.expiryDate.seconds * 1000);
                 } else {
                   expiryDate = new Date(healthAlertData.paymentInfo.expiryDate);
@@ -208,9 +193,7 @@ function HealthAlert() {
               if (healthAlertData.paymentInfo?.paymentDate) {
                 let startDate;
                 
-                if (manualTestMode && testStartDate) {
-                  startDate = new Date(testStartDate);
-                } else if (healthAlertData.paymentInfo.paymentDate.seconds) {
+                if (healthAlertData.paymentInfo.paymentDate.seconds) {
                   startDate = new Date(healthAlertData.paymentInfo.paymentDate.seconds * 1000);
                 } else {
                   startDate = new Date(healthAlertData.paymentInfo.paymentDate);
@@ -250,15 +233,13 @@ function HealthAlert() {
     });
     
     return () => unsubscribe();
-  }, [manualTestMode, testStartDate, testEndDate]);
+  }, []);
 
   useEffect(() => {
     if (isSubscribed && subscriptionDetails?.paymentInfo?.expiryDate) {
       let expiryDate;
       
-      if (manualTestMode && testEndDate) {
-        expiryDate = new Date(testEndDate);
-      } else if (subscriptionDetails.paymentInfo.expiryDate.seconds) {
+      if (subscriptionDetails.paymentInfo.expiryDate.seconds) {
         expiryDate = new Date(subscriptionDetails.paymentInfo.expiryDate.seconds * 1000);
       } else {
         expiryDate = new Date(subscriptionDetails.paymentInfo.expiryDate);
@@ -280,23 +261,20 @@ function HealthAlert() {
       
       return () => clearInterval(intervalId);
     }
-  }, [isSubscribed, subscriptionDetails, subscriptionExpired, manualTestMode, testEndDate]);
+  }, [isSubscribed, subscriptionDetails, subscriptionExpired]);
 
-  // Effect to handle payment verification
   useEffect(() => {
     if (paymentVerificationInProgress && user) {
       const verifyPayment = async () => {
         try {
           setIsLoading(true);
           
-          // Retrieve subscription data from localStorage
           const subscriptionData = JSON.parse(localStorage.getItem('healthAlertSubscription') || '{}');
           
           if (!subscriptionData.amount) {
             throw new Error('Subscription data missing');
           }
           
-          // Create subscription in database
           await setDoc(
             doc(db, 'users', user.uid),
             {
@@ -321,10 +299,7 @@ function HealthAlert() {
             { merge: true }
           );
           
-          // Clear localStorage
           localStorage.removeItem('healthAlertSubscription');
-          
-          // Show success message
           setPaymentSuccess(true);
           setPaymentVerificationInProgress(false);
           setIsLoading(false);
@@ -392,7 +367,7 @@ function HealthAlert() {
     return true;
   };
 
-  const startRenewal = (keepSamePlan = false) => {
+  const startRenewal = () => {
     setIsRenewing(true);
     setShowExpiryModal(false);
     
@@ -401,13 +376,8 @@ function HealthAlert() {
       setSelectedDiseases(subscriptionDetails.diseases || []);
       setPhoneNumber(subscriptionDetails.phoneNumber || '');
       
-      if (keepSamePlan && subscriptionDetails.planId) {
+      if (subscriptionDetails.planId) {
         setSelectedPlan(subscriptionDetails.planId);
-      } else if (subscriptionDetails.months) {
-        const matchingPlan = plans.find(plan => plan.months === subscriptionDetails.months);
-        if (matchingPlan) {
-          setSelectedPlan(matchingPlan.id);
-        }
       }
       
       if (subscriptionDetails.diseases) {
@@ -440,15 +410,12 @@ function HealthAlert() {
         .filter(d => d !== 'Other')
         .concat(selectedDiseases.includes('Other') ? [otherDisease] : []);
       
-      // Create a unique order ID based on user ID and timestamp
       const purchaseOrderId = `health-${user.uid}-${Date.now()}`;
       
-      // Prepare end date for subscription
       const startDate = new Date();
       const endDate = new Date();
       endDate.setMonth(endDate.getMonth() + months);
       
-      // Store subscription data in localStorage for later use
       const subscriptionData = {
         email: user.email,
         phoneNumber: phoneNumber,
@@ -465,11 +432,10 @@ function HealthAlert() {
       
       localStorage.setItem('healthAlertSubscription', JSON.stringify(subscriptionData));
       
-      // Prepare payload for Khalti
       const khaltiPayload = {
-        return_url: window.location.href, // Return to this same page
+        return_url: window.location.href,
         website_url: window.location.origin,
-        amount: amount * 100, // Amount in paisa (100 paisa = 1 NPR)
+        amount: amount * 100,
         purchase_order_id: purchaseOrderId,
         purchase_order_name: `NepAir Health Alert - ${months} Month${months > 1 ? 's' : ''}`,
         customer_info: {
@@ -494,9 +460,8 @@ function HealthAlert() {
         ],
       };
       
-      // Make API request to Khalti
       const headers = {
-        'Authorization': 'Key f10f753336fa4eef9c8c506d125703d3', // Your Khalti secret key
+        'Authorization': 'Key f10f753336fa4eef9c8c506d125703d3',
         'Content-Type': 'application/json'
       };
       
@@ -506,7 +471,6 @@ function HealthAlert() {
         { headers }
       );
       
-      // Redirect to Khalti payment page
       if (response.data && response.data.payment_url) {
         window.location.href = response.data.payment_url;
       } else {
@@ -528,13 +492,7 @@ function HealthAlert() {
   const handleRenewSubscription = () => {
     setSubscriptionExpired(false);
     setShowExpiryModal(false);
-    startRenewal(false);
-  };
-
-  const handleRenewWithSamePlan = () => {
-    setSubscriptionExpired(false);
-    setShowExpiryModal(false);
-    startRenewal(true);
+    startRenewal();
   };
 
   const handleUnsubscribeClick = () => {
@@ -558,14 +516,10 @@ function HealthAlert() {
         { merge: true }
       );
       setIsSubscribed(false);
-      setStations([]);
-      setSelectedDiseases([]);
-      setPhoneNumber('');
-      setMessage('You have been unsubscribed from health alerts.');
-      setPaymentSuccess(false);
-      setCurrentStep(1);
+      setSubscriptionDetails(null);
       setShowUnsubscribeModal(false);
       setShowExpiryModal(false);
+      navigate('/');
     } catch (error) {
       console.error('Unsubscribe error:', error);
       setMessage('Failed to unsubscribe. Please try again.');
@@ -588,41 +542,6 @@ function HealthAlert() {
     setCurrentStep(currentStep - 1);
   };
 
-  const enableTestMode = () => {
-    setManualTestMode(true);
-    if (!testStartDate) {
-      const today = new Date();
-      setTestStartDate(today.toISOString().split('T')[0]);
-      
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 30);
-      setTestEndDate(futureDate.toISOString().split('T')[0]);
-    }
-  };
-
-  const disableTestMode = () => {
-    setManualTestMode(false);
-    updateSubscriptionDates();
-  };
-
-  const applyTestDates = () => {
-    if (testStartDate && testEndDate) {
-      const start = new Date(testStartDate);
-      const end = new Date(testEndDate);
-      
-      setSubscriptionStartDate(formatDate(start));
-      setSubscriptionEndDate(formatDate(end));
-      
-      const timeRemaining = calculateTimeRemaining(end);
-      setDaysRemaining(timeRemaining.days);
-      setSubscriptionExpired(timeRemaining.expired);
-      
-      if (timeRemaining.expired && !showExpiryModal) {
-        setShowExpiryModal(true);
-      }
-    }
-  };
-
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
@@ -633,7 +552,7 @@ function HealthAlert() {
             {isRenewing && (
               <div className="renewal-notice">
                 <FiRefreshCw className="renewal-icon" />
-                <p>You are renewing your Health Alert subscription. Choose a plan below or continue with your previous plan.</p>
+                <p>You are renewing your Health Alert subscription. Choose a plan below.</p>
               </div>
             )}
             
@@ -660,11 +579,6 @@ function HealthAlert() {
                       <span className="discount-badge">{plan.discount}% OFF</span>
                     </div>
                   )}
-                  {plan.discount === 0 && (
-                    <div className='empty'>
-                      <p>.</p>
-                    </div>
-                  )}
                   <button 
                     className="choose-plan-btn"
                     onClick={() => {
@@ -681,45 +595,6 @@ function HealthAlert() {
             <div className='powr'>
               <h1>Powered by Khalti</h1>
               <img src={khalti} alt="Khalti Payment" />
-            </div>
-            
-            <div className="test-mode-controls">
-              <button 
-                className="test-mode-toggle"
-                onClick={manualTestMode ? disableTestMode : enableTestMode}
-              >
-                {manualTestMode ? "Disable Test Mode" : "Enable Test Mode"}
-              </button>
-              
-              {manualTestMode && (
-                <div className="date-test-controls">
-                  <h4>Test Subscription Dates</h4>
-                  <div className="date-inputs">
-                    <div className="date-input-group">
-                      <label>Start Date:</label>
-                      <input 
-                        type="date" 
-                        value={testStartDate}
-                        onChange={(e) => setTestStartDate(e.target.value)}
-                      />
-                    </div>
-                    <div className="date-input-group">
-                      <label>End Date:</label>
-                      <input 
-                        type="date" 
-                        value={testEndDate}
-                        onChange={(e) => setTestEndDate(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <button 
-                    className="apply-test-dates"
-                    onClick={applyTestDates}
-                  >
-                    Apply Test Dates
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         );
@@ -779,9 +654,6 @@ function HealthAlert() {
                     required
                   />
                 </div>
-                <small className="select-hint">
-                  Hold Ctrl (Windows) or Command (Mac) to select multiple stations
-                </small>
               </div>
               
               <div className="form-group">
@@ -829,7 +701,6 @@ function HealthAlert() {
                     required
                   />
                 </label>
-                <small className="phone-hint">We'll send alerts to this number</small>
               </div>
               
               <div className="form-group agreement">
@@ -974,24 +845,7 @@ function HealthAlert() {
                 <span className="summary-value">{phoneNumber}</span>
               </div>
             </div>
-            
-            <div className="summary-item">
-              <FiDollarSign className="summary-icon" />
-              <div className="summary-content">
-                <span className="summary-label">Payment Amount:</span>
-                <span className="summary-value">
-                  NPR {subscriptionDetails?.paymentInfo?.amount ? 
-                    formatNum(subscriptionDetails.paymentInfo.amount) : 
-                    formatNumber(getSubscriptionAmount())}
-                </span>
-              </div>
-            </div>
           </div>
-          
-          <p className="help-text">
-            You will now receive air quality alerts and health recommendations based on your preferences. 
-            You can update your preferences or unsubscribe at any time.
-          </p>
           
           <button className="dashboard-btn" onClick={() => navigate('/')}>
             Go to Dashboard
@@ -1047,18 +901,12 @@ function HealthAlert() {
                 <h3>Monitoring Stations</h3>
                 <p>{subscriptionDetails?.stations.join(', ')}</p>
               </div>
-              
-              <div className="detail-card">
-                <FiPhone className="detail-icon" />
-                <h3>Alerts Sent To</h3>
-                <p>{subscriptionDetails?.phoneNumber}</p>
-              </div>
             </div>
             
             <div className="subscription-actions">
               <button 
                 className="renew-subscription" 
-                onClick={() => startRenewal(true)}
+                onClick={() => startRenewal()}
               >
                 <FiRefreshCw className="action-icon" />
                 Renew Subscription
@@ -1071,22 +919,6 @@ function HealthAlert() {
                 <FiX className="action-icon" />
                 Unsubscribe
               </button>
-            </div>
-            
-            <div className="subscription-info">
-              <div className="info-item">
-                <FiInfo className="info-icon" />
-                <p>
-                  You will receive alerts when air quality in your selected regions may affect your health conditions.
-                </p>
-              </div>
-              
-              <div className="info-item">
-                <FiShield className="info-icon" />
-                <p>
-                  Your subscription automatically expires on {subscriptionEndDate}. We'll remind you before it expires.
-                </p>
-              </div>
             </div>
           </div>
         </div>
@@ -1167,19 +999,17 @@ function HealthAlert() {
                 <p>Your Health Alert subscription ended on {subscriptionEndDate}. Renew now to continue receiving alerts.</p>
                 
                 <div className="expiry-actions">
-                  <button className="renew-same-plan" onClick={handleRenewWithSamePlan}>
-                    <FiRepeat className="action-icon" />
-                    Renew with Same Plan
+                  <button className="renew-btn" onClick={handleRenewSubscription}>
+                    <FiRefreshCw className="action-icon" />
+                    Renew Subscription
                   </button>
                   
-                  <button className="renew-different-plan" onClick={handleRenewSubscription}>
-                    <FiEdit className="action-icon" />
-                    Choose Different Plan
-                  </button>
-                  
-                  <button className="unsubscribe-btn" onClick={handleUnsubscribeClick}>
+                  <button 
+                    className="unsubscribe-btn" 
+                    onClick={handleUnsubscribeClick}
+                  >
                     <FiX className="action-icon" />
-                    Unsubscribe
+                    I Don't Want to Continue
                   </button>
                 </div>
               </motion.div>
@@ -1190,7 +1020,6 @@ function HealthAlert() {
     );
   }
 
-  // Sign up flow
   return (
     <div className="health-alert-container">
       <div className="subscription-form">

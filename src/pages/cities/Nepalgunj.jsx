@@ -17,7 +17,7 @@ const Nepalgunj = () => {
       try {
         // Current air data
         const currentAirData = {
-          aqi: 128,
+          aqi: 135,
           date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
           pm25: 52.7,
           pm10: 98.3,
@@ -29,7 +29,7 @@ const Nepalgunj = () => {
 
         // Tomorrow's predicted data
         const tomorrowPrediction = {
-          aqi: 135,
+          aqi: 165,
           pm25: 58.2,
           pm10: 105.4,
           o3: 38.1,

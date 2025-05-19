@@ -8,9 +8,10 @@ import {
 } from "firebase/auth";
 import { auth, db } from "../firebase";
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { FaUser, FaLock, FaEnvelope, FaVenusMars, FaBirthdayCake, FaShieldAlt, FaArrowRight, FaCheck, FaChevronLeft } from 'react-icons/fa';
+import { FaUser, FaLock, FaEnvelope, FaVenusMars, FaBirthdayCake, FaShieldAlt, FaArrowRight, FaCheck, FaChevronLeft, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import './Login.css';
+import logo from "../assets/logo.png";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -27,6 +28,8 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
   const toggleForm = () => {
@@ -43,6 +46,8 @@ const Login = () => {
     });
     setErrors({});
     setPasswordStrength(0);
+    setShowPassword(false);
+    setShowConfirmPassword(false);
   };
 
   const handleChange = (e) => {
@@ -111,26 +116,61 @@ const Login = () => {
 
     try {
       if (isLogin) {
+        // First authenticate with Firebase Auth
         const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+        
+        // Then get the user document from Firestore
         const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
         
         if (userDoc.exists()) {
-          if (userCredential.user.emailVerified) {
-            const userData = userDoc.data();
-            if (userData.role === 'admin' && userData.status !== 'approved') {
+          const userData = userDoc.data();
+          
+          // Check if email is verified
+          if (!userCredential.user.emailVerified) {
+            alert("Please verify your email address before logging in.");
+            setIsLoading(false);
+            return;
+          }
+          
+          // Handle admin approval check - with trim() to handle extra spaces
+          if (userData.role === 'admin') {
+            // Trim the status to handle extra spaces
+            const userStatus = userData.status ? userData.status.trim() : '';
+            
+            console.log("Admin login attempt - Status:", userStatus);
+            
+            if (userStatus === 'pending') {
               alert("Your admin account is pending approval.");
               setIsLoading(false);
               return;
+            } else if (userStatus === 'approved') {
+              // Admin is approved, proceed with login
+              console.log("Admin login successful");
+              navigate('/');
+              return;
+            } else {
+              console.log("Admin status unknown:", userStatus);
+              // For unknown status, still allow login
+              navigate('/');
+              return;
             }
-            navigate('/');
           } else {
-            setIsLoading(false);
-            alert("Please verify your email address.");
+            // Regular user, proceed with login
+            console.log("Regular user login successful");
+            navigate('/');
+            return;
           }
+        } else {
+          // User document doesn't exist
+          alert("User account not found. Please sign up.");
+          setIsLoading(false);
         }
       } else {
+        // Handle sign up
         const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
         await sendEmailVerification(userCredential.user);
+        
+        // Create user document in Firestore
         await setDoc(doc(db, "users", userCredential.user.uid), {
           firstName: formData.firstName,
           lastName: formData.lastName,
@@ -141,43 +181,67 @@ const Login = () => {
           status: formData.role === 'admin' ? 'pending' : 'approved',
           createdAt: new Date(),
         });
+        
         setIsLoading(false);
         alert("Account created! Please verify your email.");
         toggleForm();
       }
     } catch (error) {
       console.error("Auth Error:", error.message);
-      alert(error.message);
+      
+      // Provide more user-friendly error messages
+      let errorMessage = error.message;
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        errorMessage = "Invalid email or password. Please try again.";
+      } else if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "This email is already registered. Please log in or use a different email.";
+      }
+      
+      alert(errorMessage);
       setIsLoading(false);
     }
   };
 
   const handleForgotPassword = async () => {
     const email = prompt("Please enter your email address:");
-    if (email) {
-      try {
-        const usersRef = collection(db, "users");
-        const q = query(usersRef, where("email", "==", email));
-        const querySnapshot = await getDocs(q);
-        
-        if (!querySnapshot.empty) {
-          const userDoc = querySnapshot.docs[0];
-          const userData = userDoc.data();
-          
-          if (userData.status === "approved") {
-            await sendPasswordResetEmail(auth, email);
-            alert("Password reset email sent. Please check your inbox.");
-          } else {
-            alert("Your account is not approved. Please contact the administrator.");
-          }
-        } else {
-          alert("No user found with this email.");
-        }
-      } catch (error) {
-        console.error("Password Reset Error:", error.message);
-        alert(error.message);
-      }
+    
+    if (!email) return; // User cancelled the prompt
+    
+    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      alert("Please enter a valid email address.");
+      return;
     }
+    
+    setIsLoading(true);
+    
+    try {
+      // Check if the email exists in Firestore first
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("email", "==", email));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        // User exists in Firestore, send password reset email
+        await sendPasswordResetEmail(auth, email);
+        alert("Password reset email sent. Please check your inbox.");
+      } else {
+        // User doesn't exist in Firestore
+        alert("No user found with this email address.");
+      }
+    } catch (error) {
+      console.error("Password Reset Error:", error.message);
+      alert("An error occurred while processing your request. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
   };
 
   return (
@@ -194,7 +258,7 @@ const Login = () => {
                 transition={{ duration: 0.6 }}
               >
                 <div className="logo-wrapper">
-                  <img src="/images/nepal_logo copy.png" alt="NepAir Logo" className="nepair-logo" />
+                  <img src={logo} alt="NepAir Logo" className="nepair-logo" />
                 </div>
                 <h1 className="logo-text">NepAir</h1>
               </motion.div>
@@ -204,8 +268,8 @@ const Login = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
-                <h2>Breathe Better with NepAir</h2>
-                <p>Get real-time air quality updates across Nepal and make informed decisions about your outdoor activities.</p>
+                <h2 className='brandText'>Breathe Better with NepAir</h2>
+                <p className='brandText'>Get real-time air quality updates across Nepal and make informed decisions about your outdoor activities.</p>
                 <div className="features">
                   <motion.div 
                     className="feature"
@@ -350,7 +414,7 @@ const Login = () => {
                         </div>
 
                         <div className="input-group">
-                          <FaShieldAlt className="input-icon" />
+                          <FaShieldAlt className="select-icon" />
                           <select 
                             name="role" 
                             value={formData.role} 
@@ -378,16 +442,24 @@ const Login = () => {
                       {errors.email && <span className="error-message">{errors.email}</span>}
                     </div>
 
-                    <div className="input-group">
+                    <div className="input-group password-input-group">
                       <FaLock className="input-icon" />
                       <input
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         name="password"
                         placeholder="Password"
                         value={formData.password}
                         onChange={handleChange}
                         className={errors.password ? 'error' : ''}
                       />
+                      <button 
+                        type="button" 
+                        className="toggle-password" 
+                        onClick={togglePasswordVisibility}
+                        tabIndex="-1"
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
                       {errors.password && <span className="error-message">{errors.password}</span>}
                       
                       {!isLogin && formData.password && (
@@ -398,22 +470,29 @@ const Login = () => {
                             <div className={`strength-bar ${passwordStrength >= 3 ? 'active' : ''}`}></div>
                             <div className={`strength-bar ${passwordStrength >= 4 ? 'active' : ''}`}></div>
                           </div>
-                         
                         </div>
                       )}
                     </div>
 
                     {!isLogin && (
-                      <div className="input-group">
+                      <div className="input-group password-input-group">
                         <FaLock className="input-icon" />
                         <input
-                          type="password"
+                          type={showConfirmPassword ? "text" : "password"}
                           name="confirmPassword"
                           placeholder="Confirm Password"
                           value={formData.confirmPassword}
                           onChange={handleChange}
                           className={errors.confirmPassword ? 'error' : ''}
                         />
+                        <button 
+                          type="button" 
+                          className="toggle-password" 
+                          onClick={toggleConfirmPasswordVisibility}
+                          tabIndex="-1"
+                        >
+                          {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                        </button>
                         {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
                       </div>
                     )}
@@ -442,6 +521,7 @@ const Login = () => {
                     <button 
                       onClick={handleForgotPassword} 
                       className="forgot-password-button"
+                      disabled={isLoading}
                     >
                       Forgot Password?
                     </button>
